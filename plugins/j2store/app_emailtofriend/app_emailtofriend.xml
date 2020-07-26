@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="3.0" type="plugin" group="j2store" method="upgrade">
+	<name>Email to friend</name>
+	<version>1.2</version>
+	<creationDate>February 2016</creationDate>
+	<author>JoomlaBuff</author>
+	<authorEmail>supports@joomlabuff.com</authorEmail>
+	<authorUrl>http://www.joomlabuff.com</authorUrl>
+	<copyright>2015 JoomlaBuff</copyright>
+	<license>GNU General Public License v2</license>
+	<description>PLG_APP_J2STORE_EMAIL_TO_FRIEND_DESC</description>
+	<scriptfile>script.app_emailtofriend.php</scriptfile>
+	<files>
+		<filename plugin="app_emailtofriend">app_emailtofriend.php</filename>
+		<fielname>index.html</fielname>
+		<folder>app_emailtofriend</folder>
+	</files>
+	<languages folder="languages">
+		<language tag="en-GB">en-GB.plg_j2store_app_emailtofriend.ini</language>
+		<language tag="en-GB">en-GB.plg_j2store_app_emailtofriend.sys.ini</language>		
+	</languages>
+	<config>
+		<fields name="params">
+			<fieldset name="basic" label="J2STORE_BASIC_SETTINGS">				
+			 	 <field name="display_text" label="j2store_app_emailtofriend_display_text" default="J2STORE_APP_EMAILTOFRIEND_MESSAGE_EMAIL_TO_FRIEND" lable="j2store_app_emailtofriend_display_text" />
+			 	 <field name="modal_header" label="j2store_app_emailtofriend_modal_header" default="J2STORE_APP_EMAILTOFRIEND_MESSAGE_MODEL_TITLE" lable="j2store_app_emailtofriend_modal_header" />			 	 
+			</fieldset>
+		</fields>
+	</config>
+</extension>
+

@@ -1,0 +1,10 @@
+@CHARSET "UTF-8";
+
+.modjbvt-block .jbvt-hlist {
+ float:left;
+}
+
+.modjbvt-block .nav.nav-pills.nav-stacked.nav-tabs .jbvt-hlist {
+ float:left;
+}
+ 

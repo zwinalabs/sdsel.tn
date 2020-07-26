@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="3.0" type="plugin" group="j2store" method="upgrade">
+	<name>Social Media</name>
+	<version>1.2</version>
+	<creationDate>June 2015</creationDate>
+	<author>Sasi varna kumar</author>
+	<authorEmail>supports@j2store.org</authorEmail>
+	<authorUrl>http://www.j2store.org</authorUrl>
+	<copyright>2015 J2Store</copyright>
+	<license>GNU General Public License v2</license>
+	<description>PLG_J2STORE_APP_SOCIAL_MEDIA_DESC</description>
+	<scriptfile>script.app_socialmedia.php</scriptfile>
+	<files>
+		<filename plugin="app_socialmedia">app_socialmedia.php</filename>
+		<folder>app_socialmedia</folder>
+		<folder>languages</folder>		
+		<filename>index.html</filename>
+	</files>
+	<languages>
+		<language tag="en-GB">languages/en-GB.plg_j2store_app_socialmedia.ini</language>
+		<language tag="en-GB">languages/en-GB.plg_j2store_app_socialmedia.sys.ini</language>
+	</languages>
+	<config>
+		<fields name="params"> 
+			<fieldset id="basic_options" class="tab-pane active" name="basic" label="PLG_J2STORE_BASIC_OPTIONS" 
+					  addfieldpath="/plugins/j2store/app_socialmedia/app_socialmedia/models/fields">
+				<field name="display_socialmedia_in" type="list" label="plg_j2store_app_socialmedia_display_in_layout" desc="plg_j2store_app_socialmedia_display_in_layout_desc">
+					<option value="product_view">plg_j2store_app_socialmedia_product_view_only </option>
+					<option value="category_view">plg_j2store_app_socialmedia_category_view_only</option>
+					<option value="both">plg_j2store_app_socialmedia_both_view</option>
+				</field>
+				<field name="display_event" type="j2storedisplayevents"  label="plg_j2store_app_socialmedia_display_event"  desc="plg_j2store_app_socialmedia_display_event_desc">
+				</field>
+				<field name="show_facebook_icon" type="radio" class="btn-group" label="plg_j2store_app_socialmedia_display_facebook" 	desc="plg_j2store_app_socialmedia_display_facebook_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>
+				<field name="facebook_icon" type="media"  label="plg_j2store_app_socialmedia_display_facebook_icon_image" 	desc="plg_j2store_app_socialmedia_display_facebook_icon_image_desc" />
+				
+				<field name="show_twitter_icon" type="radio" class="btn-group" label="plg_j2store_app_socialmedia_display_twitter" 	desc="plg_j2store_app_socialmedia_display_twitter_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>
+				
+				<field name="twitter_icon" type="media"  label="plg_j2store_app_socialmedia_display_twitter_icon_image" 	desc="plg_j2store_app_socialmedia_display_twitter_icon_image_desc" />
+				<field name="show_google_plus_icon" type="radio" class="btn-group" label="plg_j2store_app_socialmedia_display_google_plus" 	desc="plg_j2store_app_socialmedia_display_google_plus_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>
+				<field name="googleplus_icon" type="media"  label="plg_j2store_app_socialmedia_display_google_icon_image" 	desc="plg_j2store_app_socialmedia_display_googleplus_icon_image_desc" />
+			
+				<field name="show_linkedin_icon" type="radio" class="btn-group" label="plg_j2store_app_socialmedia_display_linkedin" 	desc="plg_j2store_app_socialmedia_display_linkedin_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>
+				<field name="linkedin_icon" type="media"  label="plg_j2store_app_socialmedia_display_linkedin_icon_image" desc="plg_j2store_app_socialmedia_display_linkedin_icon_image_desc" />
+				
+				
+				<field name="show_pinterest_icon" type="radio" class="btn-group" label="plg_j2store_app_socialmedia_display_pinterest" 	desc="plg_j2store_app_socialmedia_display_pinterest_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>			
+				
+				<field name="pinterest_icon" type="media"  label="plg_j2store_app_socialmedia_display_pinterest_icon_image" desc="plg_j2store_app_socialmedia_display_pinterest_icon_image_desc" />
+				
+				<field name="socialmedia_image_width" default="30" type="text"  label="plg_j2store_app_socialmedia_socialmedia_image_width" desc="plg_j2store_app_socialmedia_socialmedia_image_width_desc"  />
+
+				<field name="socialmedia_share_text" default="PLG_J2STORE_APP_SOCIALMEDIA_CHECKOUT" type="textarea"  label="plg_j2store_app_socialmedia_share_text" description="plg_j2store_app_socialmedia_share_text_desc"  />
+
+				<field name="include_price" type="radio" class="btn-group" 
+					label="plg_j2store_app_socialmedia_include_price" 	
+					desc="plg_j2store_app_socialmedia_include_price_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>
+				
+			</fieldset>
+			<fieldset id="facebook_settings" class="tab-pane" name="facebook_options" label="PLG_J2STORE_FACEBOOK_SETTINGS"  addfieldpath="/administrator/components/com_j2store/models/fields">
+				<field name="fb_app_id" type="text"  label="plg_j2store_app_socialmedia_facebook_appid" 	desc="plg_j2store_app_socialmedia_facebook_appid_desc"  />				
+				<field name="fb_contact_email" type="text"  label="plg_j2store_app_socialmedia_facebook_email" 	desc="plg_j2store_app_socialmedia_facebook_email_desc"  />
+			</fieldset>			
+			<fieldset  id="twitter_settings" class="tab-pane" name="twitter_options"
+				label="PLG_J2STORE_TWITTER_SETTINGS"  addfieldpath="/administrator/components/com_j2store/models/fields">
+				<field name="twitter_meta_tags" type="radio" class="btn-group" 
+					label="plg_j2store_app_socialmedia_twitter_meta_tags" 	
+					desc="plg_j2store_app_socialmedia_twitter_meta_tags_desc"  default="1">
+					<option value="0">j2store_no</option>
+					<option value="1">j2store_yes</option>
+				</field>				
+				
+				<field name="twitter_personal_account" type="text"  label="plg_j2store_app_socialmedia_twitter_personal_user_account" desc="plg_j2store_app_socialmedia_twitter_personal_user_desc"  />
+				
+				<field name="twitter_site_account" type="text"  label="plg_j2store_app_socialmedia_twitter_site_user_account" desc="plg_j2store_app_socialmedia_twitter_site_user_account_desc"  />
+				
+				<field name="twitter_product_image_width" default="50" type="text"  label="plg_j2store_app_socialmedia_twitter_image_width" desc="plg_j2store_app_socialmedia_twitter_image_width_desc"  />
+				
+				<!-- <field name="twitter_add_card_meta"  type="checkbox"  label="PLG_J2STORE_APP_SOCIALMEDIA_TWITTER_ADD_CARD_META_DATA" desc="PLG_J2STORE_APP_SOCIALMEDIA_TWITTER_ADD_CARD_META_DATA_DESC"  /> -->
+				
+				<field name="twitter_product_description_limit" default="50" type="text"  label="plg_j2store_app_socialmedia_twitter_description_limit" desc="plg_j2store_app_socialmedia_twitter_description_limit_desc"  />
+				
+				<field name="twitter_summary_card_type" default="summary" type="radio" class="btn-group" label="plg_j2store_app_socialmedia_twitter_summary_card_type" desc="plg_j2store_app_socialmedia_twitter_twitter_summary_card_type_desc"  >
+					<option value="summary">plg_j2store_app_socialmedia_twitter_summary_card</option>
+					<option value="summary_large_image">plg_j2store_app_socialmedia_twitter_summary_large_card</option>
+				</field>
+
+			</fieldset>
+		</fields>
+	</config>		
+</extension>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="3.0" type="plugin" group="content" method="upgrade">
+	<name>JB Tabs</name>
+	<version>1.0</version>
+	<creationDate>June 2016</creationDate>
+	<author>Priya Bose</author>
+	<authorEmail>supports@joomlabuff.com</authorEmail>
+	<authorUrl>http://www.joomlabuff.com</authorUrl>
+	<copyright>2015 JoomlaBuff</copyright>
+	<license>GNU General Public License v2</license>
+	<description>Joomla Content plugin jb vertical tabs- JoomlaBuff </description>	
+	<files>
+		<filename plugin="jbtabs">jbtabs.php</filename>
+		<fielname>index.html</fielname>	
+		<folder>forms</folder>	
+	</files> 
+	<config>	 
+	</config>
+</extension>

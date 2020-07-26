@@ -1,0 +1,143 @@
+.dropdown-menu > li > a {
+  padding: 5px 20px;
+}
+.dropdown-header {
+  padding: 3px 20px;
+  font-size: 14px;
+}
+.dropdown-header a {
+  color: #999999;
+}
+.dropdown-submenu > a:after {
+  border-left-color: #333333;
+}
+.dropdown-submenu:hover > a:after {
+  border-left-color: #262626;
+}
+.nav > li > .separator {
+  position: relative;
+  display: block;
+  padding: 10px 15px;
+  line-height: 20px;
+}
+@media (min-width: 768px) {
+  .nav > li > .separator {
+    padding-top: 15px;
+    padding-bottom: 15px;
+  }
+}
+@media (max-width: 991px) {
+  .nav > li > span {
+    padding: 10px 15px;
+    display: inline-block;
+  }
+}
+.nav .caret {
+  border-top-color: #e74c3c;
+  border-bottom-color: #e74c3c;
+  border-bottom-width: 0;
+  border-style: solid;
+}
+.nav a:hover .caret {
+  border-top-color: #bf2718;
+  border-bottom-color: #bf2718;
+}
+.inner-banner {
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  padding: 125px 0px;
+  position: relative;
+}
+.inner-banner .container {
+  position: relative;
+}
+.inner-banner:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 23, 45, 0.85);
+}
+.inner-banner h2 {
+  font-size: 60px;
+  line-height: 60px;
+  font-weight: bold;
+  margin: 0;
+  color: #fff;
+  text-transform: uppercase;
+}
+.t3-navhelper {
+  background: #f5f5f5;
+  color: #555555;
+  text-align: center;
+}
+.breadcrumb {
+  margin-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border-radius: 0;
+  padding: 0px !important;
+}
+.breadcrumb > li {
+  line-height: 60px;
+  font-weight: 400;
+  color: #eeeeee;
+}
+.breadcrumb > li + li:before {
+  content: "";
+}
+.breadcrumb > li a {
+  color: #555555;
+}
+.breadcrumb > li span {
+  color: #e74c3c;
+}
+.breadcrumb > .active {
+  color: #999999;
+}
+.breadcrumb > .active + li:before {
+  content: "";
+  padding: 0;
+}
+.breadcrumb > .active .hasTooltip {
+  padding-right: 10px;
+  display: none;
+}
+.breadcrumb .divider {
+  padding: 10px;
+}
+.pagination {
+  display: block;
+}
+.pagination:before,
+.pagination:after {
+  content: " ";
+  display: table;
+}
+.pagination:after {
+  clear: both;
+}
+@media screen and (min-width: 768px) {
+  .pagination {
+    float: left;
+  }
+}
+.pagination .pagination {
+  display: inline-block;
+}
+.counter {
+  display: inline-block;
+  margin-top: 20px;
+  padding: 6px 12px;
+  background-color: #ffffff;
+  border: 1px solid #dddddd;
+  border-radius: 4px;
+}
+@media screen and (min-width: 768px) {
+  .counter {
+    float: right;
+  }
+}

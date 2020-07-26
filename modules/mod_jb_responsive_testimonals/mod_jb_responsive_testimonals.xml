@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="3.1" client="site" method="upgrade">
+	<name>mod_jb_responsive_testimonals</name>
+	<author>Joomlabuff</author>
+	<creationDate>May 2016</creationDate>
+	<copyright>Copyright (C) 2014 - 2019 JoomlaBuff http://joomlabuff.com
+	</copyright>
+	<license>GNU General Public License version 2 or later; see LICENSE.txt
+	</license>
+	<authorEmail>support@joomlabuff.com</authorEmail>
+	<authorUrl>www.joomlabuff.com</authorUrl>
+	<version>2.0</version>
+	<description>MOD_JB_RESPONSIVE_TESTIMONALS_XML_DESCRIPTION</description>
+	<files>
+		<filename module="mod_jb_responsive_testimonals">mod_jb_responsive_testimonals.php</filename>
+		<folder>assets</folder>
+		<folder>elements</folder>
+		<folder>tmpl</folder>
+		<filename>helper.php</filename>
+		<filename>index.html</filename>
+		<filename>mod_jb_responsive_testimonals.xml</filename>
+	</files>
+	<languages>
+		<language tag="en-GB">languages/en-GB.mod_jb_responsive_testimonals.ini
+		</language>
+		<language tag="en-GB">languages/en-GB.mod_jb_responsive_testimonals.sys.ini
+		</language>
+	</languages>
+	<help key="JHELP_EXTENSIONS_MODULE_MANAGER_ARTICLES_ARCHIVE" />
+	<config>
+		<fields name="params">
+			<fieldset name="basic">
+				<field
+					name="moduleclass_sfx"
+					type="textarea" rows="3"
+					label="COM_MODULES_FIELD_MODULECLASS_SFX_LABEL"
+					description="COM_MODULES_FIELD_MODULECLASS_SFX_DESC" />
+				<field name="layout" type="jbmedialayout" label="MOD_JB_RESPONSIVE_TESTIMONALS_SELECT_STYLE_LABEL"
+					description="MOD_JB_RESPONSIVE_TESTIMONALS_SELECT_STYLE_DESC" />
+
+				<field type="spacer" label="MOD_JB_RESPONSIVE_TESTIMONALS_SLIDER_OPTIONS" class="text-info" />
+
+				<field name="sinlgeitem" label="MOD_JB_RESPONSIVE_TESTIMONALS_SINGLEITEM_LABEL" class="btn-group" type="radio" default="0">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+
+				<field type="text" label="MOD_JB_RESPONSIVE_TESTIMONALS_NO_OF_ITEMS_LABEL" 	name="count_items" default="3" />
+
+				<field type="text" label="MOD_JB_RESPONSIVE_TESTIMONALS_SLIDESPEED_LABEL" name="slidespeed" default="200" />
+
+				<field name="autoscroll" label="MOD_JB_RESPONSIVE_TESTIMONALS_AUTOSCROLL_LABEL"
+					class="btn-group" type="radio" default="0">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+
+				<field name="navigation" label="MOD_JB_RESPONSIVE_TESTIMONALS_NAVIGATION_LABEL"
+					class="btn-group" type="radio" default="0">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+
+				<field name="pagination" label="MOD_JB_RESPONSIVE_TESTIMONALS_PAGINATION_LABEL"
+					class="btn-group" type="radio" default="0">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+
+				<field type="text" label="MOD_JB_RESPONSIVE_TESTIMONALS_SLIDESPEED_LABEL"
+					name="pagination_speed" default="800" />
+
+
+				<field name="paginationNumber"
+					label="MOD_JB_RESPONSIVE_TESTIMONALS_PAGINATION_NUMBER_LABEL"
+					class="btn-group" type="radio" default="0">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+				<field name="transition_type"
+					label="MOD_JB_RESPONSIVE_TESTIMONALS_SELECT_TRANSITION_TYPE_LABEL"
+					type="list" default="fade">
+					<option value="fade">MOD_JB_FADE_IN</option>
+					<option value="backSlide">MOD_JB_BACKSLIDE</option>
+					<option value="goDown">MOD_JB_GODOWN</option>
+					<option value="fadeUp">MOD_JB_FADEUP</option>
+
+				</field>
+			</fieldset>
+			<fieldset name="main-settings" label="MOD_JB_RESPONSIVE_TESTIMONALS_MAIN_SETTINGS"  addfieldpath="/modules/mod_jb_responsive_testimonals/elements/">		
+				<field name="testimonals" type="jbmedia" default="" label="" description="" />
+			</fieldset> 
+			
+			
+		</fields>
+	</config>
+</extension>

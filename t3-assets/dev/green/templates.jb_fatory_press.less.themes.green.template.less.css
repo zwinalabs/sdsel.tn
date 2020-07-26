@@ -1,0 +1,30 @@
+.home .t3-sl-1 .jumbotron .btn,
+.home .t3-sl-5 .jumbotron .btn {
+  border-color: #fff;
+}
+.t3-mainnav {
+  border-bottom: none;
+}
+
+.home .t3-sl-1 .jumbotron .btn,
+.home .t3-sl-5 .jumbotron .btn {
+  border-color: #fff;
+}
+.t3-mainnav {
+  border-bottom: none;
+}
+.our-features {
+  background: #34495e;
+}
+.our-features:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(52, 73, 94, 0.9);
+}
+.our-features .overlay:before {
+  background: rgba(33, 51, 68, 0.9);
+}

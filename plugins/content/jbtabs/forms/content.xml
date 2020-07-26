@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+	<form>
+      <fields name="attribs" addfieldpath="/plugins/content/jbtabs/fields">
+       <fieldset name="jbtabs" label="JBTABS">
+			<field
+				name="menuid"
+				type="menuitem"
+				class="input"
+				label="PLG_CONTENT_JBTABS_SELECT_MENU"			 
+				/> 
+		 
+		</fieldset>
+	</fields>
+</form>

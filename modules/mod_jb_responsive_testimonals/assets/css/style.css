@@ -1,0 +1,149 @@
+@CHARSET "UTF-8";
+
+
+/* Common styling*/
+
+.jb-responsive-testimonial-list{
+	padding:0px;
+}
+
+.jbt-avatar-name{
+	font-weight:bold;
+	text-transform:capitalize;
+}
+.jbt-avatar-company{
+	font-weight:normal
+}
+
+
+.jbt-quote-info{
+	min-height: 120px;
+}
+
+.jbt-quote:before{
+   content: "\f10d";
+   display: inline-block;
+   font-family: FontAwesome;
+   font-size: 40px;
+}
+
+.owl-controls{
+	float:none;
+	top:0px;
+}
+
+/* Theme-style-1 and style-2 starts here*/
+
+.jbt-style-1,
+.jbt-style-2{
+	text-align:center;
+}
+
+.jbt-style-1 li,
+.jbt-style-2 li{
+	list-style:none;
+	display:inline;
+	
+}
+
+
+.jbt-style-1 .jbt-avatar img,
+.jbt-style-2 .jbt-avatar img{
+	opacity:0.5;
+	display: inline-block;
+	height: auto;
+	margin: 0px 2px;
+	position: relative;
+	overflow: hidden;
+	width: auto;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+
+
+.jbt-style-1 .jbt-avatar.active img,
+.jbt-style-2 .jbt-avatar.active img{
+	cursor:pointer;
+	opacity:1;
+	-webkit-transition: all 0.5s;
+	-o-transition: all 0.5s;
+	transition: all 0.5s;
+}
+
+
+
+/* Theme-style-3 and style-4 */
+
+.jbt-style-3,
+.jbt-style-4{
+	text-align:center;
+}
+
+.jbt-style-3 .jbt-avatar img,
+.jbt-style-4 .jbt-avatar img{
+	display: inline-block;
+	height: auto;
+	margin: 0px 2px;
+	position: relative;
+	overflow: hidden;
+	width: auto;
+	-webkit-border-radius: 50%;
+	-moz-border-radius: 50%;
+	border-radius: 50%;
+}
+
+/* Theme-style-5 and style-6 */
+
+.jbt-style-5 .item,
+.jbt-style-6 .item{
+	padding:10px;
+}
+
+.jbt-style-5 .jbt-avatar img,
+.jbt-style-5 .jbt-avatar img{
+	float:left;
+	display: inline-block;
+	height: auto;
+	margin: 0px 2px;
+	position: relative;
+	overflow: hidden;
+	width: auto;
+	-webkit-border-radius: 50%;
+	-moz-border-radius: 50%;
+	border-radius: 50%;
+}
+
+
+.jbt-style-5 .jbt-quote{
+	width:100%;
+	height:auto;
+	padding:20px;
+	background:#F7F7F7;
+	-webkit-border-radius:5px;
+	-moz-border-radius:5px;
+	border-radius:5px;
+	position:relative;
+	line-height:28px;
+	font-size:16px;
+}
+.jbt-style-5 .jbt-quote:after {
+	position: absolute;
+    bottom: -27px;
+    left: 100px;
+    content: "";
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 35px 30px 0px 0px;
+    border-color: #F7F7F7 transparent transparent transparent;
+    -webkit-transform: translateX(-50%);
+    -moz-transform: translateX(-50%);
+    -ms-transform: translateX(-50%);
+    -o-transform: translateX(-50%);
+    transform: translateX(-50%);
+}
+
+img .jb-rt-image.jb-rt-owl-image {
+    width: 150px !important; 
+}

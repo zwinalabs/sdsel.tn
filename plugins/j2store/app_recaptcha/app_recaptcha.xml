@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="j2store" method="upgrade">
+    <name>Recaptcha for J2Store Register</name>
+    <version>1.1</version>
+    <creationDate>March 2016</creationDate>
+    <author>Alagesan</author>
+    <authorEmail>support@j2store.org</authorEmail>
+    <authorUrl>http://www.j2store.org</authorUrl>
+    <copyright>2016 Weblogicx India Private Limited</copyright>
+    <license>GNU General Public License v or later</license>
+    <description>PLG_J2STORE_APP_RECAPTCHA_DESC</description>
+    <scriptfile>script.app_recaptcha.php</scriptfile>
+    <languages folder="languages">
+        <language tag="en-GB">en-GB.plg_j2store_app_recaptcha.ini</language>
+        <language tag="en-GB">en-GB.plg_j2store_app_recaptcha.sys.ini</language>
+    </languages>
+    <files>
+        <filename plugin="app_recaptcha">app_recaptcha.php</filename>
+        <folder>app_recaptcha</folder>
+        <filename>index.html</filename>
+    </files>
+    <config>
+        <fields name="params">
+            <fieldset name="basic">
+                <field
+                        name="public_key"
+                        type="text"
+                        default=""
+                        label="J2STORE_APP_RECAPTCHA_PUBLIC_KEY"
+                        description="J2STORE_APP_RECAPTCHA_PUBLIC_KEY_DESC"
+                        required="true"
+                        filter="string"
+                        size="50" />
+
+                <field
+                        name="private_key"
+                        type="text"
+                        default=""
+                        label="J2STORE_APP_RECAPTCHA_PRIVATE_KEY"
+                        description="J2STORE_APP_RECAPTCHA_PRIVATE_KEY_DESC"
+                        required="true"
+                        filter="string"
+                        size="50" />
+
+                <field
+                        name="theme"
+                        type="list"
+                        default="dark"
+                        label="J2STORE_APP_RECAPTCHA_THEME"
+                        description="J2STORE_APP_RECAPTCHA_THEME_DESC"
+                        required="false"
+                        showon="version:2.0"
+                        filter="">
+                    <option
+                            value="light">J2STORE_APP_RECAPTCHA_THEME_LIGHT</option>
+                    <option
+                            value="dark">J2STORE_APP_RECAPTCHA_THEME_DARK</option>
+                </field>
+            </fieldset>
+        </fields>
+    </config>
+</extension>
