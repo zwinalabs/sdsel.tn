@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension type="module" version="2.5" client="site" method="upgrade">
+  <name>Creative Slider</name>
+  <creationDate>2014-03-24</creationDate>
+  <copyright>Copyright (C) 2016. All rights reserved.</copyright>
+  <author>John Gera, George Krupa, Janos Biro, Balint Polgarfi</author>
+  <authorEmail>info@offlajn.com</authorEmail>
+  <authorUrl>http://offlajn.com</authorUrl>
+  <version>6.6.053</version>
+  <description>This module displays a slider on the Frontend.</description>
+  <updateservers>
+    <server type="extension" priority="1" name="Creative Slider Updates">http://offlajn.com/updates/CreativeSlider.xml</server>
+  </updateservers>
+  <media destination="offlajn">
+    <filename>jquery.noconflict.js</filename>
+    <filename>index.html</filename>
+  </media>
+  <config>
+    <fields name="params">
+      <fieldset name="basic">
+        <field name="slider" type="sql" default="0" label="Select a slider" query="SELECT id AS value, CONCAT(id,' - ',name) AS slider FROM #__layerslider WHERE flag_deleted=0 ORDER BY id DESC"/>
+        <field name="script" type="spacer" label="&lt;button class='btn btn-small' id='ls-open' type='button'&gt;Open Slider Editor&lt;/button&gt;      &lt;script&gt; var b = document.getElementById('ls-open'); var s = document.getElementById('jform_params_slider'); s.style.width = '240px'; s.parentNode.appendChild(b); if (s.children.length) {  b.onclick = function() { location.href = 'index.php?option=com_layer_slider&amp;action=edit&amp;id='+s.children[s.selectedIndex].value }; } else {  b.onclick = function() { location.href = 'index.php?option=com_layer_slider' };  s.innerHTML = '&lt;option&gt;You haven\'t created any slider yet&lt;/option&gt;'; }      &lt;/script&gt;"/>
+      </fieldset>
+      <fieldset name="advanced">
+        <field name="moduleclass_sfx" type="text" label="COM_MODULES_FIELD_MODULECLASS_SFX_LABEL" description="COM_MODULES_FIELD_MODULECLASS_SFX_DESC"/>
+        <field name="cache" type="list" default="1" label="COM_MODULES_FIELD_CACHING_LABEL" description="COM_MODULES_FIELD_CACHING_DESC">
+          <option value="1">JGLOBAL_USE_GLOBAL</option>
+          <option value="0">COM_MODULES_FIELD_VALUE_NOCACHING</option>
+        </field>
+        <field name="cache_time" type="text" default="900" label="COM_MODULES_FIELD_CACHE_TIME_LABEL" description="COM_MODULES_FIELD_CACHE_TIME_DESC"/>
+        <field name="cachemode" type="hidden" default="itemid">
+          <option value="itemid"/>
+        </field>
+      </fieldset>
+    </fields>
+  </config>
+  <languages>
+    <language tag="en-GB">en-GB.mod_layer_slider.ini</language>
+  </languages>
+  <license>http://www.gnu.org/licenseses/gpl-2.0.html GNU/GPL</license>
+  <releaseDate>2019-02-14</releaseDate>
+  <files>
+    <filename>en-GB.mod_layer_slider.ini</filename>
+    <filename>index.html</filename>
+    <folder>installmsg</folder>
+    <filename>jquery.noconflict.js</filename>
+    <filename>layer_slider_helper.php</filename>
+    <filename module="mod_layer_slider">mod_layer_slider.php</filename>
+    <filename>mod_layer_slider.xml</filename>
+  </files>
+<hash>uOYgJqpPTrBqb1g2jJMMw6ZMbv6jG8unckPSGXb/wpc=</hash></extension>

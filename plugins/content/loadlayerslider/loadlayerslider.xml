@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="content" method="upgrade">
+	<name>Content - Creative Slider</name>
+	<author>Janos Biro, Balint Polgarfi</author>
+	<creationDate>Oct 2017</creationDate>
+  <copyright>Copyright (C) 2017 Offlajn.com All rights reserved.</copyright>
+  <license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
+	<authorEmail>info@offlajn.com</authorEmail>
+  <authorUrl>http://offlajn.com</authorUrl>
+	<version>6.6.0</version>
+	<description>Within content this plugin loads a slider by id, Syntax: {creativeslider id="1"} or by slug, Syntax: {creativeslider id="slug"}.</description>
+	<files>
+		<filename plugin="loadlayerslider">loadlayerslider.php</filename>
+		<filename>index.html</filename>
+	</files>
+</extension>

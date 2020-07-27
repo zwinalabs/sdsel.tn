@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<extension version="2.5" type="plugin" group="editors-xtd" method="upgrade">
+	<name>Button - Creative Slider</name>
+	<author>Janos Biro, Balint Polgarfi</author>
+	<creationDate>Oct 2017</creationDate>
+	<copyright>Copyright (C) 2017 Offlajn.com All rights reserved.</copyright>
+	<license>http://www.gnu.org/licenses/gpl-2.0.html GNU/GPL</license>
+	<authorEmail>info@offlajn.com</authorEmail>
+	<authorUrl>http://offlajn.com</authorUrl>
+	<version>6.6.0</version>
+	<description>Displays a button to make it possible to insert a slider into an Article. Displays a popup allowing you to choose the slider.</description>
+	<files>
+		<filename plugin="layer_slider">layer_slider.php</filename>
+		<filename>index.html</filename>
+	</files>
+</extension>
