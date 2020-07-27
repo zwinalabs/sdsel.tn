@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Util;
@@ -198,7 +197,7 @@ class ConfigurationCheck
 	{
 		static $detailedStatus = null;
 
-		if (is_null($detailedStatus))
+		if (is_null($detailedStatus) || $low_priority)
 		{
 			$detailedStatus = array();
 
@@ -578,14 +577,21 @@ class ConfigurationCheck
 		}
 	}
 
-	private function _return_bytes($val)
+	private function _return_bytes($setting)
 	{
-		$val = trim($val);
-		$last = strtolower($val{strlen($val) - 1});
+		$val = trim($setting);
+		$last = strtolower(substr($val, -1));
+		$val = substr($val, 0, -1);
+
+		if (is_numeric($last))
+		{
+			return $setting;
+		}
 
 		switch ($last)
 		{
-			// The 'G' modifier is available since PHP 5.1.0
+			case 't':
+				$val *= 1024;
 			case 'g':
 				$val *= 1024;
 			case 'm':
@@ -594,6 +600,6 @@ class ConfigurationCheck
 				$val *= 1024;
 		}
 
-		return $val;
+		return (int) $val;
 	}
 }

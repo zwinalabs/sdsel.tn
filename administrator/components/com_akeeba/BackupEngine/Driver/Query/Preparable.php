@@ -1,13 +1,17 @@
 <?php
 /**
- * @package     Awf
- * @copyright   2014-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
- * @license     GNU GPL version 3 or later
+ * Akeeba Engine
+ * The PHP-only site backup engine
  *
- * This class is adapted from the Joomla! Framework
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   GNU GPL version 3 or, at your option, any later version
+ * @package   akeebaengine
  */
 
 namespace Akeeba\Engine\Driver\Query;
+
+// Protection against direct access
+defined('AKEEBAENGINE') or die();
 
 /**
  * Database Query Preparable Interface.

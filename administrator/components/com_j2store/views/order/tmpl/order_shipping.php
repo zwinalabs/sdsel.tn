@@ -12,7 +12,7 @@ echo $this->shipping_address_id;
 ?>
 
 <div class="row-fluid">
-	<div class="span8 <?php echo (isset($this->orderinfo->j2store_orderinfo_id) && !empty($this->orderinfo->j2store_orderinfo_id) && !empty($this->orderinfo->shipping_country_id) && !empty($this->orderinfo->shipping_zone_id)) ? 'hide':'';?>" id="select_shipping_address">
+	<div class="span8 <?php echo (isset($this->orderinfo->j2store_orderinfo_id) && !empty($this->orderinfo->j2store_orderinfo_id) && !empty($this->orderinfo->shipping_country_id) /*&& !empty($this->orderinfo->shipping_zone_id)*/) ? 'hide':'';?>" id="select_shipping_address">
 		<input type="hidden" value="<?php echo $this->address_type;?>" name="address_type" />
 		<div class="display_message" id="display_message"></div>
 		<div class="shipping-infos">
@@ -23,11 +23,11 @@ echo $this->shipping_address_id;
 				    <?php foreach ($this->addresses as $address) :  ?>
 				    <?php if ($address->j2store_address_id == $this->shipping_address_id) : ?>
 				    	<option value="<?php echo $address->j2store_address_id; ?>" selected="selected">
-				    		<?php echo $address->first_name; ?> 	<?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo $address->zone_name; ?>, <?php echo $address->country_name; ?>
+				    		<?php echo $address->first_name; ?> 	<?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo JText::_($address->zone_name); ?>, <?php echo JText::_($address->country_name); ?>
 				    	</option>
 				    <?php else: ?>
 				    	<option value="<?php echo $address->j2store_address_id; ?>">
-				    		<?php echo $address->first_name; ?> <?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo $address->zone_name; ?>, <?php echo $address->country_name; ?>
+				    		<?php echo $address->first_name; ?> <?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo JText::_($address->zone_name); ?>, <?php echo JText::_($address->country_name); ?>
 				    	</option>
 				    <?php endif; ?>
 				    <?php endforeach; ?>
@@ -111,7 +111,7 @@ echo $this->shipping_address_id;
 		<div id="baddress-info">
 			<?php
 
-			if(isset($this->orderinfo->j2store_orderinfo_id) && $this->orderinfo->j2store_orderinfo_id > 0 && !empty($this->orderinfo->shipping_country_id) && !empty($this->orderinfo->shipping_zone_id)):?>
+			if(isset($this->orderinfo->j2store_orderinfo_id) && $this->orderinfo->j2store_orderinfo_id > 0 && !empty($this->orderinfo->shipping_country_id) /*&& !empty($this->orderinfo->shipping_zone_id)*/):?>
 				<strong><?php echo JText::_('J2STORE_SHIPPING_ADDRESS');?></strong>
 			<?php echo J2StorePopup::popupAdvanced("index.php?option=com_j2store&view=orders&task=setOrderinfo&order_id=".$this->order->order_id."&address_type=shipping&layout=address&tmpl=component",'',array('class'=>'fa fa-pencil','update'=>true,'width'=>700,'height'=>600));?>
 				<br/>

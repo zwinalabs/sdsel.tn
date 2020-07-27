@@ -32,24 +32,26 @@ class J2Utilities {
 	}
 	
 	public function clear_cache() {
-		
-		//clean it just once.
-		if(!$this->_is_cleaned) {
-			$cache = JFactory::getCache();
-			$cache->clean('com_j2store');
-			$cache->clean('com_content');
-			$this->_is_cleaned = true;			
+		try{
+			//clean it just once.
+			if(!$this->_is_cleaned) {
+				$cache = JFactory::getCache();
+				$cache->clean('com_j2store');
+				$cache->clean('com_content');
+				$this->_is_cleaned = true;
+			}
+		}catch (Exception $e){
+
 		}
-		
 	}
 	
 	public function nocache() {
-		if(headers_sent()) return false;		
-		header('Cache-Control: no-store, no-cache, must-revalidate');
-		header('Cache-Control: post-check=0, pre-check=0', false);
-		header('Pragma: no-cache');
-		header('Expires: Wed, 17 Sep 1975 21:32:10 GMT');
-		return true;
+			if(headers_sent()) return false;
+			header('Cache-Control: no-store, no-cache, must-revalidate');
+			header('Cache-Control: post-check=0, pre-check=0', false);
+			header('Pragma: no-cache');
+			header('Expires: Wed, 17 Sep 1975 21:32:10 GMT');
+			return true;
 	}
 
 	public function isJson($string) {
@@ -211,7 +213,15 @@ class J2Utilities {
 		if(empty( $string )){
 			return $string;
 		}
-		return preg_replace('/[^A-Za-z0-9\-]/', '', $string);
+		$string = str_replace ( '(','' , $string );
+		$string = str_replace ( ')','' , $string );
+		$string = str_replace ( '.','' , $string );
+		return JFilterOutput::stringURLSafe ( $string );
+	}
+
+	public function activeMenu($options = array()) {
+		$app = JFactory::getApplication('site');
+		return $app->getMenu()->getActive()->id;
 	}
 
 	public function world_currencies() {
@@ -232,7 +242,7 @@ class J2Utilities {
             'BSD' => 'Bahamas Dollar',
             'BBD' => 'Barbados Dollar',
             'BDT' => 'Bangladeshi taka',
-            'BYR' => 'Belarus Ruble',
+            'BYN' => 'Belarus Ruble',
             'BZD' => 'Belize Dollar',
             'BMD' => 'Bermuda Dollar',
             'BOB' => 'Bolivia Boliviano',
@@ -335,5 +345,84 @@ class J2Utilities {
             'ZWD' => 'Zimbabwe Dollar'
         );
 	}
+
+	/**
+     * Remove unwanted content
+     * @param $str - un-process content
+     * @return string
+	*/
+	function text_sanitize($str){
+        $str = $this->remove_unwanted_text($str);
+        return $str;
+    }
+
+	function remove_unwanted_text($str, $keep_newlines = true){
+        $filtered = $this->convert_utf8( $str );
+        if ( strpos( $filtered, '<' ) !== false ) {
+            $filtered = $this->pre_kses_less_than( $filtered );
+            // This will strip extra whitespace for us.
+            $filtered = $this->strip_all_tags( $filtered, false );
+
+            // Use html entities in a special case to make sure no later
+            // newline stripping stage could lead to a functional tag
+            $filtered = str_replace( "<\n", "&lt;\n", $filtered );
+        }
+
+        if ( ! $keep_newlines ) {
+            $filtered = preg_replace( '/[\r\n\t ]+/', ' ', $filtered );
+        }
+        $filtered = trim( $filtered );
+
+        $found = false;
+        while ( preg_match( '/%[a-f0-9]{2}/i', $filtered, $match ) ) {
+            $filtered = str_replace( $match[0], '', $filtered );
+            $found    = true;
+        }
+
+        if ( $found ) {
+            // Strip out the whitespace that may now exist after removing the octets.
+            $filtered = trim( preg_replace( '/ +/', ' ', $filtered ) );
+        }
+
+        return $filtered;
+    }
+
+    function convert_utf8($string, $strip = false){
+        // Check for support for utf8 in the installed PCRE library once and store the result in a static
+        static $utf8_pcre = null;
+        if ( ! isset( $utf8_pcre ) ) {
+            $utf8_pcre = @preg_match( '/^./u', 'a' );
+        }
+        // We can't demand utf8 in the PCRE installation, so just return the string in those cases
+        if ( ! $utf8_pcre ) {
+            return $string;
+        }
+
+        // preg_match fails when it encounters invalid UTF8 in $string
+        if ( 1 === @preg_match( '/^./us', $string ) ) {
+            return $string;
+        }
+
+        // Attempt to strip the bad chars if requested (not recommended)
+        if ( $strip && function_exists( 'iconv' ) ) {
+            return iconv( 'utf-8', 'utf-8', $string );
+        }
+        return '';
+    }
+
+    function pre_kses_less_than( $text ) {
+        return preg_replace_callback( '%<[^>]*?((?=<)|>|$)%', 'pre_kses_less_than_callback', $text );
+    }
+
+    function strip_all_tags( $string, $remove_breaks = false ) {
+        $string = preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', $string );
+        $string = strip_tags( $string );
+
+        if ( $remove_breaks ) {
+            $string = preg_replace( '/[\r\n\t ]+/', ' ', $string );
+        }
+
+        return trim( $string );
+    }
 }
 

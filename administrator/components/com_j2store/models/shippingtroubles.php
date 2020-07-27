@@ -26,7 +26,7 @@ class J2StoreModelShippingtroubles extends F0FModel {
 			$query->order('#__j2store_products.created_on DESC');
 		}
 		
-		//J2Store::plugin()->event('AfterProductListQuery', array(&$query, &$this));
+		J2Store::plugin()->event('AfterShippingTroubleListQuery', array(&$query, &$this));
 		return $query;
 	}
 	

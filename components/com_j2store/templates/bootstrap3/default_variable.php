@@ -9,9 +9,10 @@
 defined('_JEXEC') or die;
 ?>
 
-
-<?php echo $this->loadTemplate('images'); ?>
-
+<?php $images = $this->loadTemplate('images');
+J2Store::plugin()->event('BeforeDisplayImages', array(&$images, $this, 'com_j2store.products.list.bootstrap'));
+echo $images;
+?>
 <?php echo $this->loadTemplate('title'); ?>
 <?php if(isset($this->product->event->afterDisplayTitle)) : ?>
 		<?php echo $this->product->event->afterDisplayTitle; ?>
@@ -34,7 +35,7 @@ defined('_JEXEC') or die;
 	<?php echo $this->loadTemplate('stock'); ?>
 <?php endif; ?>
 
-<?php if($this->params->get('catalog_mode', 0) == 0): ?>
+<?php if( J2Store::product()->canShowCart($this->params) ): ?>
 
 <form action="<?php echo $this->product->cart_form_action; ?>"
 		method="post" class="j2store-addtocart-form"

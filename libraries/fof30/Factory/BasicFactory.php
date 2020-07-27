@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -14,12 +14,13 @@ use FOF30\Factory\Exception\ControllerNotFound;
 use FOF30\Factory\Exception\DispatcherNotFound;
 use FOF30\Factory\Exception\FormLoadData;
 use FOF30\Factory\Exception\FormLoadFile;
+use FOF30\Factory\Exception\FormNotFound;
 use FOF30\Factory\Exception\ModelNotFound;
 use FOF30\Factory\Exception\ToolbarNotFound;
 use FOF30\Factory\Exception\TransparentAuthenticationNotFound;
 use FOF30\Factory\Exception\ViewNotFound;
-use FOF30\Factory\Scaffolding\Layout\Builder as LayoutBuilder;
 use FOF30\Factory\Scaffolding\Controller\Builder as ControllerBuilder;
+use FOF30\Factory\Scaffolding\Layout\Builder as LayoutBuilder;
 use FOF30\Factory\Scaffolding\Model\Builder as ModelBuilder;
 use FOF30\Factory\Scaffolding\View\Builder as ViewBuilder;
 use FOF30\Form\Form;
@@ -314,11 +315,22 @@ class BasicFactory implements FactoryInterface
 	 * @return  Form|null  The loaded form or null if the form filename doesn't exist
 	 *
 	 * @throws  \RuntimeException If the form exists but cannot be loaded
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
     public function form($name, $source, $viewName, array $options = array(), $replace = true, $xpath = false)
 	{
-		// Get a new form instance
-		$form = new Form($this->container, $name, $options);
+        $formClass = $this->container->getNamespacePrefix($this->getSection()) . 'Form\\Form';
+
+        try
+        {
+            $form = $this->createForm($formClass, $name, $options);
+        }
+        catch (FormNotFound $e)
+        {
+            // Not found. Return the default Toolbar
+            $form = new Form($this->container, $name, $options);
+        }
 
 		// If $source looks like raw XML data, parse it directly
 		if (strpos($source, '<form') !== false)
@@ -368,7 +380,9 @@ class BasicFactory implements FactoryInterface
 	 * @param   View  $view   The view this view template finder will be attached to
 	 * @param   array $config Configuration variables for the object
 	 *
-	 * @return  mixed
+	 * @return  ViewTemplateFinder
+	 *
+     * @throws \Exception
 	 */
     public function viewFinder(View $view, array $config = array())
 	{
@@ -549,7 +563,7 @@ class BasicFactory implements FactoryInterface
 	 * @param   string  $viewClass  The fully qualified class name for the View
 	 * @param   array   $config     Optional MVC configuration values for the View object.
 	 *
-	 * @return  Model
+	 * @return  View
 	 *
 	 * @throws  \RuntimeException  If the $viewClass does not exist
 	 */
@@ -582,6 +596,27 @@ class BasicFactory implements FactoryInterface
 
 		return new $toolbarClass($this->container, $config);
 	}
+
+    /**
+     * Creates a Form object
+     *
+     * @param   string  $formClass     The fully qualified class name for the Form
+     * @param   string  $name          The name of the form
+     * @param   array   $options       The options values for the Form object
+     *
+     * @return  Toolbar
+     *
+     * @throws  FormNotFound  	If the $formClass does not exist
+     */
+    protected function createForm($formClass, $name, array $options = array())
+    {
+        if (!class_exists($formClass))
+        {
+            throw new FormNotFound($formClass);
+        }
+
+        return new $formClass($this->container, $name, $options);
+    }
 
 	/**
 	 * Creates a Dispatcher object

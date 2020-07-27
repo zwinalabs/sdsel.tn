@@ -1,16 +1,16 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
  */
 
 namespace Akeeba\Engine\Driver;
 
-use Akeeba\Engine\Base\Object;
+use Akeeba\Engine\Base\BaseObject;
 use Akeeba\Engine\Driver\Query\Base as QueryBase;
 
 // Protection against direct access
@@ -23,7 +23,7 @@ defined('AKEEBAENGINE') or die();
  * @method qn(string $name, string $as = null)  Alias for quoteName
  * @method q(string $text, bool $escape = true)  Alias for quote
  */
-abstract class Base extends Object
+abstract class Base extends BaseObject
 {
 	/** @var string The name of the database. */
 	protected $_database;
@@ -449,7 +449,7 @@ abstract class Base extends Object
 	}
 
 	/**
-	 * Gets the name of the database used by this conneciton.
+	 * Gets the name of the database used by this connection.
 	 *
 	 * @return  string
 	 */

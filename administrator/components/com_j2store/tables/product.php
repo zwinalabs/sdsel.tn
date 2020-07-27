@@ -16,10 +16,13 @@ class J2StoreTableProduct extends F0FTable
 	public function __construct($table, $key, &$db, $config=array())
 	{
 		$query = $db->getQuery(true)
-		->select($db->qn('#__j2store_productimages').'.'.$db->qn('j2store_productimage_id'))
-		->select($db->qn('#__j2store_productimages').'.'.$db->qn('main_image'))
-		->select($db->qn('#__j2store_productimages').'.'.$db->qn('thumb_image'))
-		->select($db->qn('#__j2store_productimages').'.'.$db->qn('additional_images'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('j2store_productimage_id'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('main_image'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('main_image_alt'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('thumb_image'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('thumb_image_alt'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('additional_images'))
+        ->select($db->qn('#__j2store_productimages').'.'.$db->qn('additional_images_alt'))
 		->join('LEFT OUTER', $db->qn('#__j2store_productimages').' ON '.
 				$db->qn('#__j2store_products').'.'.$db->qn('j2store_product_id').' = '.
 				$db->qn('#__j2store_productimages').'.'.$db->qn('product_id')
@@ -118,6 +121,7 @@ class J2StoreTableProduct extends F0FTable
 		if($oid){
 			$status = $this->deleteChildren($oid, $item->product_type);
 		}
+        J2Store::plugin()->event('AfterProductDeletion', array($item, $oid, $status));
 		return $status;
 	}
 
@@ -238,10 +242,7 @@ class J2StoreTableProduct extends F0FTable
 
 		$app = JFactory::getApplication();
 		$html = '';
-		$results = $app->triggerEvent('onJ2StoreBeforeRenderingProductHtml', array($this));
-		foreach($results as $result) {
-			$html .= $result;
-		}
+		$html .= J2Store::plugin ()->eventWithHtml ( 'BeforeRenderingProductHtml' , array($this) );
 
 		//ok. We have a product.
 		$controller = F0FController::getTmpInstance('com_j2store', 'products', $this->get_view_config());
@@ -251,10 +252,24 @@ class J2StoreTableProduct extends F0FTable
 		$model->setState('task', 'read');
 		//now get the product
 		$product = $this->get_product();
-		if($this->is_visible($product)) {
-			J2StoreStrapper::addJS();
+
+        $user = JFactory::getUser();
+        //access
+        $access_groups = $user->getAuthorisedViewLevels();
+        
+		if($this->is_visible($product) && ((isset($product->source->access) && !empty($product->source->access) && in_array($product->source->access,$access_groups)) || !isset($product->source->access))){
+            J2StoreStrapper::addJS();
 			J2StoreStrapper::addCSS();
 			$params = J2Store::config();
+            $session = JFactory::getSession();
+            $is_admin_request = $session->get('is_admin_request',0,'j2store');
+            if($is_admin_request){
+                $params->set('isregister',0);
+                $view->setLayout('adminitem');
+            }else{
+                $view->setLayout('item');
+            }
+
 			$taxModel = F0FModel::getTmpInstance('TaxProfiles', 'J2StoreModel');
 			$view->assign('product', $product);
 			$view->assign('params', $params);
@@ -262,17 +277,13 @@ class J2StoreTableProduct extends F0FTable
 			if($sublayout) {
 				$view->assign('sublayout', $sublayout);
 			}
-			$view->setLayout('item');
 
+			J2Store::plugin ()->event ( 'ViewItemProduct' , array(&$product,&$view) );
 			ob_start();
 			$view->display();
-			$html = ob_get_contents();
+			$html .= ob_get_contents();
 			ob_end_clean();
-
-			$results = $app->triggerEvent('onJ2StoreAfterRenderingProductHtml', array($this));
-			foreach($results as $result) {
-				$html .= $result;
-			}
+			$html .= J2Store::plugin ()->eventWithHtml ( 'AfterRenderingProductHtml' , array($this) );
 		}
 		return $html;
 	}
@@ -310,10 +321,7 @@ class J2StoreTableProduct extends F0FTable
 
 		$app = JFactory::getApplication();
 		$html = '';
-		$results = $app->triggerEvent('onJ2StoreBeforeRenderingProductImages', array($this));
-		foreach($results as $result) {
-			$html .= $result;
-		}
+		$html .= J2Store::plugin ()->eventWithHtml ( 'BeforeRenderingProductImages' , array($this) );
 		//now get the product
 		$product = $this->get_product();
 		if($this->is_visible($product)) {
@@ -362,13 +370,11 @@ class J2StoreTableProduct extends F0FTable
 			$view->setLayout('item_images');
 			ob_start();
 			$view->display();
-			$html = ob_get_contents();
+			$html .= ob_get_contents();
 			ob_end_clean();
-
-			$results = $app->triggerEvent('onJ2StoreAfterRenderingProductImages', array($this));
-			foreach($results as $result) {
-				$html .= $result;
-			}
+			J2Store::plugin()->event('BeforeDisplayImages', array(&$html, $view, 'com_j2store.products.view.default'));
+			$html .= J2Store::plugin ()->eventWithHtml ( 'AfterRenderingProductImages' , array($this) );
+			
 		}
 		return $html;
 
@@ -567,7 +573,9 @@ class J2StoreTableProduct extends F0FTable
 	 * @return bool
 	 */
 	public function is_downloadable() {
-		return $this->product_type == 'downloadable' ? true : false;
+		$status = $this->product_type == 'downloadable' ? true : false;
+		J2Store::plugin ()->event ( 'IsDownloadableProduct', array($this, &$status) );
+		return $status;
 	}
 
 	/**
@@ -622,7 +630,7 @@ class J2StoreTableProduct extends F0FTable
 
 			$downloadable_files[$this->j2store_product_id] = F0FModel::getTmpInstance('ProductFiles', 'J2StoreModel')->product_id($this->j2store_product_id)->getList();
 
-			J2Store::plugin()->event('ProductFiles',  array($downloadable_files[$this->j2store_product_id], $this));
+			J2Store::plugin()->event('ProductFiles',  array(&$downloadable_files[$this->j2store_product_id], $this));
 		}
 		return $downloadable_files[$this->j2store_product_id];
 	}

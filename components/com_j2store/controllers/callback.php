@@ -15,6 +15,8 @@ defined('_JEXEC') or die('Restricted access');
 class J2StoreControllerCallback extends F0FController
 {
 
+	protected $cacheableTasks = array();
+
 	function __construct() {
 		$config['csrfProtection'] = 0;
 		parent::__construct($config);	

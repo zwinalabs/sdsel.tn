@@ -11,6 +11,8 @@ $currency = J2Store::currency();
 ?>
 <?php if(count($items)):?>
 <h3><?php echo JText::_('J2STORE_ORDER_SUMMARY')?></h3>
+	<div class="alert alert-danger"><?php echo JText::_ ( 'J2STORE_ORDER_EDIT_SUMMARY_TAX_WARRING_MESSAGE' );?></div>
+	<?php echo J2Store::plugin ()->eventWithHtml ( 'BeforeAdminOrderSummery', array(&$order,&$items) );?>
 	<table class="j2store-cart-table table table-bordered">
 		<thead>
 			<tr>
@@ -147,7 +149,7 @@ $currency = J2Store::currency();
 			<!-- shipping tax -->
 			<?php foreach ( $this->order->get_fees() as $fee ) :?>			
 			<tr>
-				<td colspan="<?php echo $colmspan;?>"><?php echo JText::_($fee->name); ?>
+				<td colspan="<?php echo $colmspan;?>"><?php echo JText::_($fee->name); ?><a class="j2store-remove remove-icon" href="javascript:void(0)" onClick="removeFee('<?php echo $fee->j2store_orderfee_id;?>')">X</a>
 				</td>
 				<td><?php echo $this->currency->format($this->order->get_formatted_fees($fee, $this->params->get('checkout_price_display_options', 1)), $this->order->currency_code, $this->order->currency_value); ?>
 				</td>
@@ -213,16 +215,113 @@ $currency = J2Store::currency();
 				<td><?php echo $this->currency->format($this->order->get_formatted_grandtotal(),$this->order->currency_code, $this->order->currency_value); ?>
 				</td>
 				
-			</tr>				
-			<tr><td colspan="<?php echo $colmspan+1;?>"><button id="calculate_tax" class="btn btn-warning"><?php echo JText::_('J2STORE_CALCULATE_TAX');?></button></td></tr>
+			</tr>
+			<tr class="add_fee_con">
+
+				<td colspan="<?php echo $colmspan+1;?>">
+					<input type="text" name="fee_name" id="fee_name" value="" placeholder="Fee Name">
+					<input type="text" name="fee_amount" id="fee_amount" value="" placeholder="Fee Amount">
+					<?php
+					echo J2Html::select()->clearState()
+						->type('genericlist')
+						->name('fee_tax_class_id')
+						->value('')
+						->setPlaceHolders(array(''=>JText::_('J2STORE_NOT_TAXABLE')))
+						->hasOne('Taxprofiles')
+						->setRelations(
+							array (
+								'fields' => array (
+
+									'key'=>'j2store_taxprofile_id',
+									'name'=>'taxprofile_name'
+								)
+							)
+						)->getHtml();
+					?>
+					<input type="button" id="add_additional_fee" onclick="addAdditionalFee()" class="btn btn-warning" value="<?php echo JText::_('J2STORE_ADD_ADDITIONAL_FEE');?>"/>
+				</td>
+			</tr>
+			<tr>
+				<td colspan="<?php echo $colmspan+1;?>" >
+					<span class="pull-right">
+						<button id="calculate_tax" class="btn btn-warning"><?php echo JText::_('J2STORE_CALCULATE_TAX');?></button>
+					</span>
+				</td>
+			</tr>
 		</tfoot>				
 	</table>
+	
 <?php else :?>
 <span class="cart-no-items">
 				<?php echo JText::_('J2STORE_CART_NO_ITEMS'); ?>
 </span>
 <?php endif;?>	
-<script type="text/javascript">							
+<script type="text/javascript">
+	function addAdditionalFee() {
+		(function ($) {
+			var fee_name = $('.add_fee_con #fee_name').val();
+			var fee_amount = $('.add_fee_con #fee_amount').val();
+			var fee_tax_class_id = $('.add_fee_con #j2store_fee_tax_class_id').val();
+			if(fee_name == '' ){
+				$('.add_fee_con #fee_name').addClass('invalid');
+				return false;
+			}
+			$('.add_fee_con #fee_name').removeClass('invalid');
+			if(fee_amount == ''){
+				$('.add_fee_con #fee_amount').addClass('invalid');
+				return false;
+			}
+			$('.add_fee_con #fee_amount').removeClass('invalid');
+			var order_id = "<?php echo $this->order->order_id;?>";
+			$('.j2error').remove();
+			$.ajax({
+				type: 'post',
+				url: 'index.php',
+				data: {
+					'option': 'com_j2store',
+					'view': 'orders',
+					'task': 'saveOrderFee',
+					'order_id': order_id,
+					'name': fee_name,
+					'amount': fee_amount,
+					'tax_class_id': fee_tax_class_id
+				},
+				dataType: 'json',
+				success: function (json) {
+					if (json['success']) {
+						location.reload();
+					} else if(json['error']){
+						// do error message
+						$('.add_fee_con #add_additional_fee').after('<span class="j2error">'+json['error']+'</span>');
+					}
+				}
+			});
+		})(j2store.jQuery);
+	}
+
+	function removeFee(id) {
+		(function ($) {
+			$.ajax({
+				type: 'post',
+				url: 'index.php',
+				data: {
+					'option': 'com_j2store',
+					'view': 'orders',
+					'task': 'removeOrderFee',
+					'fee_id': id
+				},
+				dataType: 'json',
+				success: function (json) {
+					if (json['success']) {
+						location.reload();
+					} else if(json['error']){
+						// do error message
+					}
+				}
+			});
+		})(j2store.jQuery);
+	}
+
 	(function($){
 		$('#calculate_tax').on('click', function(e){
 			e.preventDefault();
@@ -332,4 +431,6 @@ function removeVouchers(){
 		});
 	})(j2store.jQuery);
 }
+
+
 </script>

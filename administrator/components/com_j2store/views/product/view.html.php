@@ -87,11 +87,57 @@ class J2StoreViewProduct extends F0FViewHtml
 														)->getHtml();
 
 		}
+        $tags = new JHelperTags;
+        $tags->getItemTags('com_content.article', $this->item->product_source_id);
+        $tag_options = array();
+        $tag_options[''] = JText::_('J2STORE_SELECT_TAG');
+        if(count($tags->itemTags) > 0){
+            foreach($tags->itemTags as $product_tag) {
+                $tag_options[$product_tag->alias] =  JText::_($product_tag->title);
+            }
+        }
+
+        $this->tag_lists = J2Html::select()->clearState()
+            ->type('genericlist')
+            ->name($this->form_prefix.'[main_tag]')
+            ->attribs(array())
+            ->value($this->item->main_tag)
+            ->setPlaceHolders($tag_options)
+            ->getHtml();
+        $productfilter_model = F0FModel::getTmpInstance('ProductFilters', 'J2StoreModel');
+        $productfilter_model->setState('limit',10);
+        $this->filter_limit = 10;
 		if($this->item->j2store_product_id > 0) {
-			$this->product_filters = F0FTable::getAnInstance('ProductFilter', 'J2StoreTable')->getFiltersByProduct($this->item->j2store_product_id);
+            $productfilter_model->setState('product_id',$this->item->j2store_product_id);
+            $productfilter_list = $productfilter_model->getList();
+            $product_filters = array();
+            foreach($productfilter_list as $row) {
+                if(!isset($product_filters[$row->group_id])){
+                    $product_filters[$row->group_id] = array();
+                }
+                $product_filters[$row->group_id]['group_name'] = $row->group_name;
+                $product_filters[$row->group_id]['filters'][] = $row;
+            }
+			$this->product_filters = $product_filters;//F0FTable::getAnInstance('ProductFilter', 'J2StoreTable')->getFiltersByProduct($this->item->j2store_product_id);
 		}else {
 			$this->product_filters = array();
-		}	
+		}
+        $this->item->productfilter_pagination = $productfilter_model->getPagination();
+        $this->product_option_list =  $this->getProductOptionList($this->item->product_type);
 		return true;
 	}
+
+	public function getProductOptionList($product_type){
+        $db = JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $query->select('j2store_option_id, option_unique_name, option_name');
+        $query->from('#__j2store_options');
+        //based on the product type
+        if(isset($product_type) && in_array($product_type,array('variable','flexivariable'))){
+            $query->where("type IN ('select' , 'radio' ,'checkbox')");
+        }
+        $query->where('enabled=1');
+        $db->setQuery($query);
+        return $db->loadObjectList();
+    }
 }

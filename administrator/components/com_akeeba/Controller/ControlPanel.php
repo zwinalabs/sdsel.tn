@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -84,8 +84,7 @@ class ControlPanel extends Controller
 			return;
 		}
 
-		$session = $this->container->session;
-		$session->set('profile', $newProfile, 'akeeba');
+		$this->container->platform->setSessionVar('profile', $newProfile, 'akeeba');
 		$url       = '';
 		$returnurl = $this->input->get('returnurl', '', 'base64');
 
@@ -120,28 +119,28 @@ class ControlPanel extends Controller
 				'infolbl' => JText::_('COM_AKEEBA_CPANEL_MSG_MOREINFO'),
 			);
 
-			$result = <<<ENDRESULT
-	<div class="alert alert-warning">
+			$result = <<<HTML
+	<div class="akeeba-block--warning">
 		<h3>
 			<span class="icon icon-exclamation-sign glyphicon glyphicon-exclamation-sign"></span>
 			{$strings['header']}
 		</h3>
 		<p>
-			<a href="index.php?option=com_installer&view=update" class="btn btn-primary">
+			<a href="index.php?option=com_installer&view=update" class="akeeba-btn--primary">
 				{$strings['button']}
 			</a>
-			<a href="{$strings['infourl']}" target="_blank" class="btn btn-small btn-info">
+			<a href="{$strings['infourl']}" target="_blank" class="akeeba-btn--ghost akeeba-btn--small">
 				{$strings['infolbl']}
 			</a>
 		</p>
 	</div>
-ENDRESULT;
+HTML;
 		}
 
 		echo '###' . $result . '###';
 
 		// Cut the execution short
-		JFactory::getApplication()->close();
+		$this->container->platform->closeApplication();
 	}
 
 	/**
@@ -193,14 +192,13 @@ ENDRESULT;
 		// CSRF prevention
 		$this->csrfProtection();
 
-		$session   = $this->container->session;
-		$newSecret = $session->get('newSecretWord', null, 'akeeba.cpanel');
+		$newSecret = $this->container->platform->getSessionVar('newSecretWord', null, 'akeeba.cpanel');
 
 		if (empty($newSecret))
 		{
 			$random    = new \Akeeba\Engine\Util\RandomValue();
 			$newSecret = $random->generateString(32);
-			$session->set('newSecretWord', $newSecret, 'akeeba.cpanel');
+			$this->container->platform->setSessionVar('newSecretWord', $newSecret, 'akeeba.cpanel');
 		}
 
 		$this->container->params->set('frontend_secret_word', $newSecret);

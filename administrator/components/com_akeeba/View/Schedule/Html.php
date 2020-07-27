@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -46,5 +46,7 @@ class Html extends BaseView
 		$model           = $this->getModel();
 		$this->croninfo  = $model->getPaths();
 		$this->checkinfo = $model->getCheckPaths();
+
+		\JHtml::_('bootstrap.framework');
 	}
 }

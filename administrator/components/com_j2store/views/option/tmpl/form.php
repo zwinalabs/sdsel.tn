@@ -22,6 +22,7 @@ if(isset($this->optionvalues))
 {
  $optionvalues = $this->optionvalues;
 }
+
 ?>
 <style>
 #option-value  .option-images{
@@ -46,7 +47,7 @@ width:100px;
 				</label>
 			</td>
 			<td>
-				<input type="text" name="option_unique_name" id="option_unique_name" class="required" value="<?php echo $this->item->option_unique_name;?>" />
+				<input type="text" name="option_unique_name" id="option_unique_name" class="required" value="<?php echo htmlentities($this->item->option_unique_name);?>" />
 			</td>
 		</tr>
 		<tr>
@@ -56,7 +57,7 @@ width:100px;
 				</label>
 			</td>
 			<td>
-				<input type="text" name="option_name" id="option_name" class="required" value="<?php echo $this->item->option_name;?>" />
+				<input type="text" name="option_name" id="option_name" class="required" value="<?php echo htmlentities($this->item->option_name);?>" />
 			</td>
 		</tr>
 		<tr>
@@ -69,7 +70,41 @@ width:100px;
 				<?php echo J2StoreHelperSelect::getOptionTypesList('type', 'option-type', $this->item); ?>
 			</td>
 		</tr>
+		<?php
+		if($this->item->type == 'text'){
+			?>
+			<style>
+				#place_holder{
+					display: table-row;
+				}
+			</style>
+		<?php
+		}else{
+			?>
+			<style>
+				#place_holder{
+					display: none;
+				}
+			</style>
+		<?php
+		}
+		if(!empty($this->item->option_params) ) {
+			$this->item->option_params = new JRegistry($this->item->option_params);
+		}else{
+			$this->item->option_params = new JRegistry('{}');
+		}
 
+		?>
+		<tr id="place_holder" >
+			<td width="100" align="right" class="key">
+				<label for="place_holder">
+					<?php echo JText::_( 'J2STORE_OPTION_PLACEHOLDER' ); ?>:
+				</label>
+			</td>
+			<td>
+				<?php echo J2Html::text('option_params[place_holder]', $this->item->option_params->get('place_holder', '' )); ?>
+			</td>
+		</tr>
 		<tr>
 			<td valign="top" align="right" class="key">
 				<?php echo JText::_( 'J2STORE_OPTION_STATE' ); ?>:
@@ -78,15 +113,12 @@ width:100px;
 				<?php echo J2StoreHelperSelect::publish('enabled',$this->item->enabled); ?>
 			</td>
 		</tr>
+
 		<?php
 
 		if($this->item->type == 'date' || $this->item->type == 'datetime'  ):
-		if(!empty($this->item->option_params) ) {
-			$this->item->option_params = new JRegistry($this->item->option_params);
-		}else{
-			$this->item->option_params = new JRegistry('{}');
-		}
-		?>
+			?>
+
 
 		<tr>
 			<td>
@@ -146,7 +178,7 @@ width:100px;
 		              <td class="left">
 
 		              	<input type="hidden"  name="option_value[<?php echo $option_value_row; ?>][j2store_optionvalue_id]" value="<?php echo $option_value->j2store_optionvalue_id	; ?>" />
-		                <input type="text" class="input-small" name="option_value[<?php echo $option_value_row; ?>][optionvalue_name]" value="<?php echo isset($option_value->optionvalue_name) ? $option_value->optionvalue_name: ''; ?>" />
+		                <input type="text" class="input-small" name="option_value[<?php echo $option_value_row; ?>][optionvalue_name]" value="<?php echo isset($option_value->optionvalue_name) ? htmlentities($option_value->optionvalue_name): ''; ?>" />
 		                <br />
 		               </td>
 		               <td class="right">
@@ -252,8 +284,13 @@ var vhref = "<?php echo "index.php?option=com_media&view=images&tmpl=component&a
 $('select[name=\'type\']').bind('change', function() {
 	if (this.value == 'select' || this.value == 'radio' || this.value == 'checkbox' || this.value == 'image') {
 		$('#option-value').show();
-	} else {
+		$('#place_holder').hide();
+	} else if(this.value == 'text') {
 		$('#option-value').hide();
+		$('#place_holder').show();
+	}else{
+		$('#option-value').hide();
+		$('#place_holder').hide();
 	}
 });
 $('select[name=\'type\']').trigger('change');

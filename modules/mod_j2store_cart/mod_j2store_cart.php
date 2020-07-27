@@ -19,6 +19,8 @@ if (!defined('F0F_INCLUDED'))
 }
 require_once( dirname(__FILE__).'/helper.php' );
 JFactory::getLanguage()->load('com_j2store', JPATH_ADMINISTRATOR);
+$layout =  $params->get('layout', 'default');
+
 $moduleclass_sfx = $params->get('moduleclass_sfx','');
 $link_type = $params->get('link_type','link');
 $currency = J2Store::currency();
@@ -64,9 +66,16 @@ $document->addScriptDeclaration($script);
 $document->addStyleSheet(JUri::root().'modules/mod_j2store_cart/css/j2store_cart.css');
 $list = modJ2StoreCartHelper::getItems();
 
-$advanced_list = modJ2StoreCartHelper::getAdavcedItems();
-$model = F0FModel::getTmpInstance('Carts','J2StoreModel');
-$checkout_url = $model->getCheckoutUrl();
+//this is required only if the layout is detail cart on homver
+if (strpos($layout, 'detailcartonhover') !== false)
+{
+	$advanced_list = modJ2StoreCartHelper::getAdavcedItems();
+	$order = modJ2StoreCartHelper::getOrder ();
+	$model = F0FModel::getTmpInstance('Carts','J2StoreModel');
+	$checkout_url = $model->getCheckoutUrl();
+}
+
+
 $custom_css = $params->get('custom_css', '');
 $document->addStyleDeclaration(strip_tags($custom_css));
-require( JModuleHelper::getLayoutPath('mod_j2store_cart', $params->get('layout', 'default')));
+require( JModuleHelper::getLayoutPath('mod_j2store_cart', $layout));

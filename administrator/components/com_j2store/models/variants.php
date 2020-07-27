@@ -43,7 +43,7 @@ class J2StoreModelVariants extends F0FModel {
 
 		//the following joins run only when the product type is Variable
 		$product_type = $this->getState('product_type');
-		if($product_type == 'variable' || $product_type == 'advancedvariable') {
+		if($product_type == 'variable' || $product_type == 'advancedvariable' || $product_type == 'variablesubscriptionproduct' || $product_type == 'flexivariable') {
 			$query->select('#__j2store_product_variant_optionvalues.product_optionvalue_ids AS variant_name')
 			->join('INNER', '#__j2store_product_variant_optionvalues ON #__j2store_product_variant_optionvalues.variant_id = #__j2store_variants.j2store_variant_id');
 		}

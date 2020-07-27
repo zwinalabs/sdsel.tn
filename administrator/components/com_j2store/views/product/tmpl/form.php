@@ -88,13 +88,31 @@ jQuery(function($) {
 					<?php echo JText::_('J2STORE_PLUGIN_SHORTCODE_HELP_TEXT');?>
 				</small>
 				<br />
-				<h4><?php echo JText::_('J2STORE_PLUGIN_SHORTCODE_ADDITIONAL')?></h4>
-				<p>
-					<?php echo JText::_('J2STORE_PLUGIN_SHORTCODE_HELP_TEXT_ADDITIONAL');?> <strong style="color:black;"> {j2store}<?php echo $this->item->j2store_product_id; ?>|upsells|crosssells{/j2store}</strong>
-				</p>
-				<p class="shortcode">price|thumbnail|mainimage|mainadditional|upsells|crosssells</p>
+
+				<span class="pull-right">
+					<button type="button" class="btn btn-small btn-warning"
+							href="javascript:void(0);"
+							onclick="jQuery('#hide-icon-<?php echo $this->item->j2store_product_id;?>').toggle('click');jQuery('#show-icon-<?php echo $this->item->j2store_product_id;?>').toggle('click');jQuery('.additional-short-code').toggle('click');jQuery('.panel-solid-success .panel-footer').toggle('click');">
+						<?php echo JText::_('J2STORE_EXPAND_CLOSE'); ?>
+						<i id="show-icon-<?php echo $this->item->j2store_product_id;?>"
+						   class="icon icon-plus"></i> <i
+							id="hide-icon-<?php echo $this->item->j2store_product_id;?>"
+							class="icon icon-minus" style="display: none;"></i>
+					</button>
+				</span>
+				<br/>
+
+
+				<div class="additional-short-code" style="display: none;">
+					<h4><?php echo JText::_('J2STORE_PLUGIN_SHORTCODE_ADDITIONAL')?></h4>
+					<p>
+						<?php echo JText::_('J2STORE_PLUGIN_SHORTCODE_HELP_TEXT_ADDITIONAL');?> <strong style="color:black;"> {j2store}<?php echo $this->item->j2store_product_id; ?>|upsells|crosssells{/j2store}</strong>
+					</p>
+					<p class="shortcode">price|thumbnail|mainimage|mainadditional|upsells|crosssells</p>
 				</div>
-				<div class="panel-footer">
+
+				</div>
+				<div class="panel-footer" style="display: none;">
 					<strong>
 					<?php echo JText::_('J2STORE_PLUGIN_SHORTCODE_FOOTER_WARNING');?>
 					</strong>

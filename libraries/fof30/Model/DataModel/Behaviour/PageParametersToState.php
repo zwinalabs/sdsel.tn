@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -9,7 +9,7 @@ namespace FOF30\Model\DataModel\Behaviour;
 
 use FOF30\Event\Observer;
 use FOF30\Model\DataModel;
-use JDatabaseQuery;
+use Joomla\Registry\Registry;
 
 defined('_JEXEC') or die;
 
@@ -29,8 +29,10 @@ class PageParametersToState extends Observer
 		}
 
 		// Get the page parameters
-		/** @var \JRegistry $params */
-		$params = \JFactory::getApplication()->getPageParameters();
+		/** @var \JApplicationSite $app */
+		$app    = \JFactory::getApplication();
+		/** @var \JRegistry|Registry $params */
+		$params = $app->getParams();
 
 		// Extract the page parameter keys
 		$asArray = $params->toArray();

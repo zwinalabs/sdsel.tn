@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -43,7 +43,7 @@ class AesCtr256 extends Base
 	 */
 	public function decode($serverKey, $data)
 	{
-		return Factory::getEncryption()->AESDecryptCtr($data, $serverKey, 256);
+		return $this->getEncryption()->AESDecryptCtr($data, $serverKey, 256);
 	}
 
 	/**
@@ -64,6 +64,6 @@ class AesCtr256 extends Base
 	 */
 	public function encode($serverKey, $data)
 	{
-		return Factory::getEncryption()->AESEncryptCtr($data, $serverKey, 256);
+		return $this->getEncryption()->AESEncryptCtr($data, $serverKey, 256);
 	}
 }

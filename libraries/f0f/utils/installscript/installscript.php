@@ -1607,6 +1607,57 @@ abstract class F0FUtilsInstallscript
 		return $status;
 	}
 
+    /**
+     * Method to remove admin menu references to a component
+     *
+     * @param   int  $id  The ID of the extension whose admin menus will be removed
+     *
+     * @return  boolean  True if successful.
+     *
+     * @since   3.1
+     */
+    protected function _removeAdminMenus($id)
+    {
+        $db = JFactory::getDbo();
+
+        /** @var  \JTableMenu  $table */
+        $table = JTable::getInstance('menu');
+
+        // Get the ids of the menu items
+        $query = $db->getQuery(true)
+            ->select('id')
+            ->from('#__menu')
+            ->where($db->quoteName('client_id') . ' = 1')
+            ->where($db->quoteName('menutype') . ' = ' . $db->q('main'))
+            ->where($db->quoteName('component_id') . ' = ' . (int) $id);
+
+        $db->setQuery($query);
+
+        $ids = $db->loadColumn();
+
+        $result = true;
+
+        // Check for error
+        if (!empty($ids))
+        {
+            // Iterate the items to delete each one.
+            foreach ($ids as $menuid)
+            {
+                if (!$table->delete((int) $menuid, false))
+                {
+                    $this->setError($table->getError());
+
+                    $result = false;
+                }
+            }
+
+            // Rebuild the whole tree
+            $table->rebuild();
+        }
+
+        return $result;
+    }
+
 	/**
 	 * @param JInstallerAdapterComponent $parent
 	 *
@@ -1616,11 +1667,21 @@ abstract class F0FUtilsInstallscript
 	 */
 	private function _createAdminMenus($parent)
 	{
-		$db = $db = F0FPlatform::getInstance()->getDbo();
+		$db = F0FPlatform::getInstance()->getDbo();
 
 		/** @var JTableMenu $table */
 		$table = JTable::getInstance('menu');
 		$option = $parent->get('element');
+
+        // Let's find the extension id
+        $query = $db->getQuery(true);
+        $query->clear()
+            ->select('e.extension_id')
+            ->from('#__extensions AS e')
+            ->where('e.type = ' . $db->quote('component'))
+            ->where('e.element = ' . $db->quote($option));
+        $db->setQuery($query);
+        $component_id = $db->loadResult();
 
 		// If a component exists with this option in the table then we don't need to add menus
 		$query = $db->getQuery(true)
@@ -1634,23 +1695,24 @@ abstract class F0FUtilsInstallscript
 
 		$db->setQuery($query);
 
-		$componentrow = $db->loadObject();
+        $componentrows = $db->loadObjectList();
 
-		// Check if menu items exist
-		if ($componentrow)
-		{
-			// @todo Return if the menu item already exists to save some time
-			//return true;
-		}
-
-		// Let's find the extension id
-		$query->clear()
-			->select('e.extension_id')
-			->from('#__extensions AS e')
-			->where('e.type = ' . $db->quote('component'))
-			->where('e.element = ' . $db->quote($option));
-		$db->setQuery($query);
-		$component_id = $db->loadResult();
+        // Check if menu items exist
+        if ($componentrows)
+        {
+            // Remove all menu items
+            foreach ($componentrows as $componentrow)
+            {
+                // Remove existing menu items if overwrite has been enabled
+                if ($option)
+                {
+                    // If something goes wrong, there's no way to rollback TODO: Search for better solution
+                    $this->_removeAdminMenus($componentrow->extension_id);
+                }
+            }
+            // @todo Return if the menu item already exists to save some time
+            //return true;
+        }
 
 		// Ok, now its time to handle the menus.  Start with the component root menu, then handle submenus.
 		$menuElement = $parent->get('manifest')->administration->menu;

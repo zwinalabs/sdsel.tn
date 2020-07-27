@@ -7,7 +7,7 @@ jQuery(function($) {
 			var loc = window.location;
 			var pathName = loc.pathname.substring(0,loc.pathname.lastIndexOf('/') + 1);
 			//let us check the url is non-seo friendly ?
-			if(loc.href.indexOf("view") > -1 && loc.href.indexOf("option") > -1 && loc.href.indexOf('catid') > -1  && loc.href.indexOf('Itemid') > -1){
+			if(loc.href.indexOf("view") > -1 && loc.href.indexOf("option") > -1 && loc.href.indexOf('Itemid') > -1){
 
 				// first remove the slash in orgin
 				var origin_slash = loc.origin.substring(loc.origin.length-1,loc.origin.length );
@@ -64,13 +64,25 @@ jQuery(function($) {
 						url = url.substring(1,url.length);
 					}
 				}
+				var item_id = loc.href.substring(loc.href.indexOf('Itemid'));
+
+				var option_url = '&option=com_j2store&view=products';
+				if(item_id){
+					option_url = option_url+"&"+item_id;
+				}
+				var index_file = loc.href.indexOf("index.php");
+				if(index_file){
+					absoulte_url = absoulte_url+"index.php";
+				}
 				url_check = url.indexOf("?") === -1 ? "?" : "&";
 				if(url_check == '?'){
 					url_amp = url.substring(0,1);
 					if(url_amp == '&'){
 						url = url.substring(1,url.length);
 					}
+
 				}
+				url = url+option_url;
 				url = url_check + url ;
 				document.location.href  = absoulte_url+url;
 
@@ -89,11 +101,21 @@ jQuery(function($) {
 
 		},
 
-		getQueryParam : function(param) {
-			var result = window.location.search.match(new RegExp("(\\?|&)"
-					+ param + "(\\[\\])?=([^&]*)"));
-			return result ? result[3] : false;
-		},
+        getQueryParam : function(param) {
+            var queryParams = window.location.search.substr(1).split('&').reduce(function (q, query) {
+                var chunks = query.split('=');
+                var key = chunks[0];
+                var value = chunks[1];
+                return (q[key] = value, q);
+            }, {});
+            var keys = Object.keys(queryParams);
+            for (var i = 0; i < keys.length; i++) {
+                if(param == keys[i].substr(0,param.length)){
+                    return true;
+                }
+            }
+            return false;
+        },
 
 		removeParameter : function(url, parameter, onlyselected) {
 			var urlparts = url.split('?');
@@ -147,7 +169,7 @@ jQuery(function($) {
 				this.categoryFilter(options);
 				
 			/** now also call the price slider **/
-				this.priceSlider(options);
+				//this.priceSlider(options);
 		
 			/** Will remove the href params query of manufacturer_ids[] * */
 			$(options.form_id).find('.manufacturer-filters a').on('click',function() {
@@ -198,7 +220,7 @@ jQuery(function($) {
 					 		url +='&pricefrom='+$(options.form_id).find("#min_price_input").attr('value');								
 					 		url +='&priceto='+$(options.form_id).find("#max_price_input").attr('value');
 					 	}						
-						
+
 						 filters.getAbsolutePath(url ,false,options);
 						}
 				document.getElementById('j2store-product-loading').style.display='none';

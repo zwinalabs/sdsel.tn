@@ -53,7 +53,7 @@ $options = $this->product->options;
           <b><?php echo JText::_($option['option_name']); ?>:</b><br />
           <?php foreach ($option['optionvalue'] as $option_value) { ?>
           	<?php $checked = ''; if($option_value['product_optionvalue_default']) $checked = 'checked="checked"'; ?>
-          <input <?php echo $checked; ?> type="radio" name="product_option[<?php echo $option['productoption_id']; ?>]"
+          <input <?php echo $checked; ?> type="radio" name="product_option[<?php echo $option['productoption_id']; ?>]" autocomplete="off"
           	 onClick="doAjaxPrice(
           	 		<?php echo $this->product->j2store_product_id?>,
           	 		'#option-<?php echo $option["productoption_id"]; ?>'

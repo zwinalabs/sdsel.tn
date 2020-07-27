@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -70,7 +71,7 @@ class AngieModelSteps extends AModel
 		$this->steps = $this->defaultSteps;
 
 		$data = $this->input->getData();
-        
+
         /** @var AngieModelDatabase $dbModel */
         $dbModel = AModel::getAnInstance('Database', 'AngieModel', array(), $this->container);
 		$this->steps['database'] = $dbModel->getDatabaseNames();
@@ -93,6 +94,12 @@ class AngieModelSteps extends AModel
             $this->steps['setup']       = $savedSteps['setup'];
             $this->steps['finalise']    = $savedSteps['finalise'];
         }
+
+        // If there's no database, let's unset the step
+		if (!$this->steps['database'])
+		{
+			unset($this->steps['database']);
+		}
 
 		// Do I have a site setup step?
 		$fileNameMain = APATH_INSTALLATION . '/angie/controllers/setup.php';
@@ -194,7 +201,9 @@ class AngieModelSteps extends AModel
 			return null;
 		}
 
-		$cursubstep = $this->container->input->getCmd('substep', null);
+		// We have to use the HTML filter, since the key could contain a forward slash
+		// e.g. virtual_folders/first_folder
+		$cursubstep = $this->container->input->getHtml('substep', null);
 
 		if(!in_array($cursubstep, $keys))
 		{
@@ -389,9 +398,16 @@ class AngieModelSteps extends AModel
 
 		foreach ($steps as $step => $substeps)
 		{
+			$substepsCount = 0;
+
+			if (is_array($substepsCount))
+			{
+				$substepsCount = count($substeps);
+			}
+
 			$element = array(
 				'name'				=> $step,
-				'substeps'			=> count($substeps),
+				'substeps'			=> $substepsCount,
 				'active'			=> false,
 				'active_substep'	=> 0,
 			);
@@ -399,9 +415,11 @@ class AngieModelSteps extends AModel
 			if ($activeStep == $step)
 			{
 				$element['active'] = true;
+
 				if (!empty($substeps))
 				{
 					$pos = array_search($activeSubstep, $substeps);
+
 					if ($pos !== false)
 					{
 						$element['active_substep'] = $pos + 1;

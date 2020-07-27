@@ -1,9 +1,8 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
- * @since     1.3
  */
 
 namespace Akeeba\Backup\Admin\Model;
@@ -84,8 +83,7 @@ class Profiles extends DataModel
 	public function getPostProcessingEnginePerProfile()
 	{
 		// Cache the current profile's ID
-		$session          = $this->container->session;
-		$currentProfileID = $session->get('profile', null, 'akeeba');
+		$currentProfileID = $this->container->platform->getSessionVar('profile', null, 'akeeba');
 
 		// Get the IDs of all profiles
 		$db    = $this->getDbo();
@@ -131,6 +129,49 @@ class Profiles extends DataModel
 		if ($id == $activeProfile)
 		{
 			throw new RuntimeException(\JText::sprintf('COM_AKEEBA_PROFILE_ERR_CANNOTDELETEACTIVE', $id), 500);
+		}
+	}
+
+	/**
+	 * Save a profile from imported configuration data. The $data array must contain the keys description (profile
+	 * description), configuration (engine configuration INI data) and filters (inclusion and inclusion filters JSON
+	 * configuration data).
+	 *
+	 * @param    array  $data  See above
+	 *
+	 * @returns  void
+	 *
+	 * @throws   RuntimeException  When an iport error occurs
+	 */
+	public function import($data)
+	{
+		// Check for data validity
+		$isValid =
+			is_array($data) &&
+			!empty($data) &&
+			array_key_exists('description', $data) &&
+			array_key_exists('configuration', $data) &&
+			array_key_exists('filters', $data);
+
+		if (!$isValid)
+		{
+			throw new RuntimeException(\JText::_('COM_AKEEBA_PROFILES_ERR_IMPORT_INVALID'));
+		}
+
+		// Unset the id, if it exists
+		if (array_key_exists('id', $data))
+		{
+			unset($data['id']);
+		}
+
+		$data['akeeba.flag.confwiz'] = 1;
+
+		// Try saving the profile
+		$result = $this->save($data);
+
+		if (!$result)
+		{
+			throw new RuntimeException(\JText::_('COM_AKEEBA_PROFILES_ERR_IMPORT_FAILED'));
 		}
 	}
 }

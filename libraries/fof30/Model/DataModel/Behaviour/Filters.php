@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -10,6 +10,7 @@ namespace FOF30\Model\DataModel\Behaviour;
 use FOF30\Event\Observer;
 use FOF30\Model\DataModel;
 use JDatabaseQuery;
+use Joomla\Registry\Registry;
 
 defined('_JEXEC') or die;
 
@@ -30,7 +31,7 @@ class Filters extends Observer
 		$db = $model->getDbo();
 
 		$fields     = $model->getTableFields();
-		$blacklist  = $model->blacklistFilters();
+		$blacklist  = $model->getBlacklistFilters();
 		$filterZero = $model->getBehaviorParam('filterZero', null);
 		$tableAlias = $model->getBehaviorParam('tableAlias', null);
 
@@ -83,11 +84,11 @@ class Filters extends Observer
 						array_key_exists('to', $filterState)
 					)) || is_object($filterState))
 			{
-				$options = new \JRegistry($filterState);
+				$options = class_exists('JRegistry') ? new \JRegistry($filterState) : new Registry($filterState);
 			}
 			else
 			{
-				$options = new \JRegistry();
+				$options = class_exists('JRegistry') ? new \JRegistry() : new Registry();
 				$options->set('value', $filterState);
 			}
 

@@ -30,11 +30,9 @@
 			/>
         <field name="min_subtotal" type="text" default="0.000" label="J2STORE_COD_MINIMUM_SUBTOTAL" description="J2STORE_COD_MINIMUM_SUBTOTAL_DESC"/>
 		<field name="max_subtotal" type="text" default="-1.00" label="J2STORE_COD_MINIMUM_SUBTOTAL" description="J2STORE_COD_MINIMUM_SUBTOTAL_DESC"/>
-		<field name="payment_status" type="list" default="4" label="j2store_default_payment_status" description="j2store_default_payment_status">
-          <option value="4">J2STORE_PENDING</option>
-          <option value="1">J2STORE_CONFIRMED</option>
-          <option value="3">J2STORE_FAILED</option>          
-        </field>
+		  <field name="payment_status" type="paymentstatus" default="4"
+				 addfieldpath="plugins/j2store/payment_cash/payment_cash/fields"
+				 label="j2store_default_payment_status" description="j2store_default_payment_status_desc"/>
         
         <field type="spacer" />
         

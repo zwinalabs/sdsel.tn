@@ -39,38 +39,38 @@ class J2StoreModelProductPrices extends F0FModel {
 		return $query;
 	}
 
-	protected function _buildQueryWhere($query)
-	{
-		$db = $this->getDbo();
-		$state = $this->getFilterValues();
-		JLoader::import('joomla.utilities.date');
+    protected function _buildQueryWhere($query)
+    {
+        $db = $this->getDbo();
+        $state = $this->getFilterValues();
+        JLoader::import('joomla.utilities.date');
 
-		$from = trim($state->filter_date);
-		if (strlen($from))
-		{
-			$nullDate	= JFactory::getDbo()->getNullDate();
-			$query->where("#__j2store_product_prices.date_from <= '".$from."'");
-			$query->where("(#__j2store_product_prices.date_to >= '".$from."' OR #__j2store_product_prices.date_to = '$nullDate' )");
-		}
-
-
-		if ($state->filter_quantity)
-		{
-			$query->where("(#__j2store_product_prices.quantity_from <= '".$state->filter_quantity."')");
-		}
-
-		if ($state->group_id)
-		{
-			$query->where('#__j2store_product_prices.customer_group_id IN ('.$state->group_id.')');
-		}
-
-		 if ($state->variant_id)
-		{
-			$query->where('#__j2store_product_prices.variant_id = '.(int)$state->variant_id);
-		}
+        $from = trim($state->filter_date);
+        if (strlen($from))
+        {
+            $nullDate	= JFactory::getDbo()->getNullDate();
+            $query->where("#__j2store_product_prices.date_from <= ".$db->q($from));
+            $query->where("(#__j2store_product_prices.date_to >= ".$db->q($from)." OR #__j2store_product_prices.date_to = ".$db->q($nullDate)." )");
+        }
 
 
-	}
+        if ($state->filter_quantity)
+        {
+            $query->where("(#__j2store_product_prices.quantity_from <= ".$db->q($state->filter_quantity).")");
+        }
+
+        if ($state->group_id)
+        {
+            $query->where('#__j2store_product_prices.customer_group_id IN ('.$state->group_id.')');
+        }
+
+        if ($state->variant_id)
+        {
+            $query->where('#__j2store_product_prices.variant_id = '.$db->q((int)$state->variant_id));
+        }
+
+
+    }
 
 	protected function _buildQueryOrder($query) {
 		$state = $this->getFilterValues();

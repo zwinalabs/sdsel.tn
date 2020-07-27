@@ -37,8 +37,58 @@ class J2StoreModelMyProfiles extends F0FModel {
 	public function _buildWhere(&$query){
 		$db = JFactory::getDbo();
 		$user = JFactory::getUser();
+        if($user->id){
+            $query->where('a.user_id='.$db->quote($user->id));
+        }else{
+            $query->where('a.email='.$db->quote($user->email))
+                ->where('a.user_id='.$db->quote($user->id));
+        }
 
-		$query->where('a.email='.$db->quote($user->email))
-			  ->where('a.user_id='.$db->quote($user->id));
+	}
+
+	function getBillingAddress($order_info,$email){
+		$address = F0FTable::getAnInstance ( 'Address', 'J2StoreTable' )->getClone ();
+		$table_array = array();
+		if(!empty( $order_info->billing_first_name )){
+			$table_array['first_name'] = $order_info->billing_first_name;
+		}
+		if(!empty( $order_info->billing_last_name )){
+			$table_array['last_name'] = $order_info->billing_last_name;
+		}
+		if(!empty( $order_info->billing_country_id )){
+			$table_array['country_id'] = $order_info->billing_country_id;
+		}
+		if(!empty( $order_info->billing_zone_id )){
+			$table_array['zone_id'] = $order_info->billing_zone_id;
+		}
+		if(!empty( $email )){
+			$table_array['email'] = $email;
+		}
+		// do email
+		$address->load ($table_array);
+		return $address;
+	}
+
+	function getShippingAddress($order_info,$email){
+		$address = F0FTable::getAnInstance ( 'Address', 'J2StoreTable' )->getClone ();
+		$table_array = array();
+		if(!empty( $order_info->billing_first_name )){
+			$table_array['first_name'] = $order_info->billing_first_name;
+		}
+		if(!empty( $order_info->billing_last_name )){
+			$table_array['last_name'] = $order_info->billing_last_name;
+		}
+		if(!empty( $order_info->billing_country_id )){
+			$table_array['country_id'] = $order_info->billing_country_id;
+		}
+		if(!empty( $order_info->billing_zone_id )){
+			$table_array['zone_id'] = $order_info->billing_zone_id;
+		}
+		if(!empty( $email )){
+			$table_array['email'] = $email;
+		}
+		// do email
+		$address->load ($table_array);
+		return $address;
 	}
 }

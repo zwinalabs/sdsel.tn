@@ -119,7 +119,9 @@ class Com_J2storeInstallerScript extends F0FUtilsInstallscript{
 							'content' 		=>      array('j2store' => 1),
 							'system' 		=> 		array(
 														'j2store' => 1,
-														'j2pagecache' => 0
+														'j2pagecache' => 0,
+
+                                                        'campaignrabbit' => 1
 													),
 							'search' 		=> 		array('j2store' => 0),
 							'finder' 		=> 		array('j2store' => 0),
@@ -129,12 +131,14 @@ class Com_J2storeInstallerScript extends F0FUtilsInstallscript{
 							   							'payment_cash' 				=>	1,
 							   							'payment_moneyorder'		=>	1,
 							   							'payment_banktransfer'		=>	1,
-														'report_products' 			=> 	1,
 							 							'payment_paymill' 			=>	1,
 							 							'payment_sagepay' 			=>	1,
 							 							'report_itemised' 			=> 	1,
 							 							'app_localization_data' 	=> 	1,
 							 							'app_diagnostics'			=> 	1,
+                                                        'app_currencyupdater'		=> 	1,
+                                                        'app_campaignrabbit'		=> 	1,
+                                                        'app_retainfulcoupon'		=> 	0
 							 						)
 						)
 					);
@@ -455,14 +459,59 @@ private function _installFOF($parent)
 
 
 		$installer = $parent->getParent();
-		$db = JFactory::getDbo();
-		//countries
-		$sql = $installer->getPath('source').'/administrator/components/com_j2store/sql/install/mysql/countries.sql';
-		$this->_executeSQLFiles($sql);
 
-		//zones
-		$sql = $installer->getPath('source').'/administrator/components/com_j2store/sql/install/mysql/zones.sql';
-		$this->_executeSQLFiles($sql);
+		$db = JFactory::getDbo();
+		//get the table list
+		$alltables = $db->getTableList();
+		//get prefix
+		$prefix = $db->getPrefix();
+		// we have to seperate try catch , because may country install fail, zone table also get affect install
+		try{
+			$country_status = false;
+			if(!in_array($prefix.'j2store_countries', $alltables)){
+				$country_status = true;
+			}else{
+				$query = $db->getQuery (true);
+				$query->select ( '*' )->from ( '#__j2store_countries' );
+				$db->setQuery ( $query );
+				$country_list = $db->loadAssocList ();
+				if(count ( $country_list ) < 1){
+					$country_status = true;
+				}
+			}
+
+			if($country_status){
+				//countries
+				$sql = $installer->getPath('source').'/administrator/components/com_j2store/sql/install/mysql/countries.sql';
+				$this->_executeSQLFiles($sql);
+			}
+		}catch (Exception $e){
+			// do nothing
+		}
+
+		try{
+			$zone_status = false;
+			if(!in_array($prefix.'j2store_zones', $alltables)){
+				$zone_status = true;
+			}else{
+				$query = $db->getQuery (true);
+				$query->select ( '*' )->from ( '#__j2store_zones' );
+				$db->setQuery ( $query );
+				$zone_list = $db->loadAssocList ();
+				if(count ( $zone_list ) < 1){
+					$zone_status = true;
+				}
+			}
+
+			if($zone_status){
+				//zones
+				$sql = $installer->getPath('source').'/administrator/components/com_j2store/sql/install/mysql/zones.sql';
+				$this->_executeSQLFiles($sql);
+			}
+		}catch (Exception $e){
+			// do nothing
+		}
+
 
 		//metrics
 		$sql = $installer->getPath('source').'/administrator/components/com_j2store/sql/install/mysql/lengths.sql';
@@ -511,4 +560,3 @@ private function _installFOF($parent)
 
 
 }
-

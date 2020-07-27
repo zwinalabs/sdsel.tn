@@ -18,6 +18,7 @@
 <field name="company" type="text"
             label="J2STORE_ADDRESS_COMPANY_NAME"
             class="input-xlarge"
+	   		required="true"
             
         />                  
 
@@ -30,7 +31,7 @@
 <field name="address_1" type="text"		
 			label="J2STORE_ADDRESS_LINE1"
 			class="input-xlarge"
-			required="true"
+
 		/>	
 <field name="address_2" type="text"
 			label="J2STORE_ADDRESS_LINE2"
@@ -39,12 +40,12 @@
 <field name="city" type="text"
 			label="J2STORE_ADDRESS_CITY"
 			class="input-xlarge"
-			required="true"
+
 		/>
 <field name="zip" type="text"
 			label="J2STORE_ADDRESS_ZIP"
 			class="input-xlarge"
-			required="true"
+
 		/>
 
 <field name="phone_1" type="text"

@@ -92,7 +92,7 @@ class J2StoreTableVariant extends F0FTable
 		if ( $product_helper->managing_stock($this) ) {
 
 			$product_helper->getQuantityRestriction($this);
-			if ( ! $product_helper->backorders_allowed($this) && $this->quantity <= $this->min_sale_qty) {
+			if ( ! $product_helper->backorders_allowed($this) && $this->quantity < $this->min_sale_qty) {
 				$status = '0';
 			}
 		}

@@ -59,6 +59,21 @@ class plgSystemJ2Store extends JPlugin {
 
 	}
 
+	/**
+     * J2store event for content plugin event
+	*/
+	function onContentPrepare($extension,&$article,&$params){
+        if (!class_exists('J2Store')) {
+            jimport('joomla.filesystem.file');
+            if(JFile::exists(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/j2store.php')) {
+                require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/j2store.php');
+            }else {
+                return;
+            }
+        }
+	    J2Store::plugin()->event('ContentPrepare',array($extension,&$article,&$params));
+    }
+
 	function onAfterRoute() {
 
 		$mainframe = JFactory::getApplication();
@@ -71,6 +86,10 @@ class plgSystemJ2Store extends JPlugin {
 
 		if($mainframe->isSite()) {
 			//$this->_addCartJS();
+            $coupon = $mainframe->input->getString('coupon','');
+            if(!empty($coupon)){
+                F0FModel::getTmpInstance ( 'Coupons', 'J2StoreModel' )->set_coupon($coupon);
+            }
 		}
 
 	}
@@ -236,6 +255,42 @@ class plgSystemJ2Store extends JPlugin {
 		);
 		$cache		= JCache::getInstance('page', $options);
 		$cache->clean();
+	}
+
+	public function onJ2StoreBeforeGetPrice($pricing,$model,$calculator){
+		$app = JFactory::getApplication ();
+		$user_id = $app->input->getInt('user_id',0);
+		$view = $app->input->get('view','');
+		$task = $app->input->get('task','');
+
+		if(!empty( $user_id ) && in_array ( $task, array('displayAdminProduct') ) && in_array ( $view, array('products') )){
+			$user = JFactory::getUser ($user_id);
+			$group_id = implode(',', JAccess::getGroupsByUser($user->id));
+			$calculator->set('group_id',$group_id);
+		}
+
+	}
+
+	/**
+	 * add setup fee
+	 * */
+	function onJ2StoreCalculateFees($order) {
+		$app = JFactory::getApplication ();
+		$option = $app->input->get('option','');
+		$view = $app->input->get('view','');
+		
+		if($app->isAdmin () && in_array ( $order->order_type, array('normal') ) && $option == 'com_j2store' && in_array ( $view, array('orders','order') ) ){
+
+			$db = JFactory::getDbo ();
+			$query = $db->getQuery (true);
+			$query->select('*')->from ( '#__j2store_orderfees' )->where ( 'order_id='.$db->q ( $order->order_id ) );
+			$db->setQuery ( $query );
+			$lists = $db->loadObjectList ();
+			foreach ($lists as $list){
+				$order->add_fee($list->name, $list->amount, $list->taxable, $list->tax_class_id);
+			}
+		}
+
 	}
 
 }

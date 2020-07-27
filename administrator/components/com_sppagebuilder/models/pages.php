@@ -6,7 +6,7 @@
  * @license http://www.gnu.org/licenses/gpl-2.0.html GNU/GPLv2 or later
 */
 //no direct accees
-defined ('_JEXEC') or die ('restricted aceess');
+defined ('_JEXEC') or die ('Restricted access');
 
 jimport('joomla.application.component.modellist');
 
@@ -20,11 +20,13 @@ class SppagebuilderModelPages extends JModelList
 			$config['filter_fields'] = array(
 				'id','a.id',
 				'title','a.title',
-				'created_user_id','a.created_user_id',
+				'checked_out', 'a.checked_out',
+				'checked_out_time', 'a.checked_out_time',
+				'created_by','a.created_by',
 				'published','a.published',
 				'catid', 'a.catid', 'category_title',
 				'access', 'a.access', 'access_level',
-				'created_time','a.created_time',
+				'created_on','a.created_on',
 				'ordering', 'a.ordering',
 				'hits', 'a.hits',
 				'language','a.language'
@@ -79,19 +81,25 @@ class SppagebuilderModelPages extends JModelList
 		$query->select(
 			$this->getState(
 				'list.select',
-				'a.id, a.title, a.alias, a.text, a.created_user_id,'.
-					'a.published, a.access, a.catid, a.ordering, a.created_time, a.created_user_id, a.language, a.hits'
+				'a.id, a.title, a.checked_out, a.checked_out_time, a.text, a.created_by,'.
+					'a.published, a.access, a.catid, a.ordering, a.created_on, a.created_by, a.language, a.hits'
 			)
 		);
 
 		$query->from('#__sppagebuilder as a');
 
+		$query->where($db->quoteName('a.extension') . ' = ' . $db->quote('com_sppagebuilder'));
+
 		$query->select('l.title AS language_title')
 			->join('LEFT', $db->quoteName('#__languages') . ' AS l ON l.lang_code = a.language');
 
+			// Join over the users for the checked out user.
+		$query->select('uc.name AS editor')
+			->join('LEFT', '#__users AS uc ON uc.id=a.checked_out');
+
 		$query->select('ua.name AS author_name')
-			->join('LEFT', '#__users AS ua ON ua.id = a.created_user_id');
-		
+			->join('LEFT', '#__users AS ua ON ua.id = a.created_by');
+
 		$query->select('ug.title AS access_title')
 			->join('LEFT','#__viewlevels AS ug ON ug.id = a.access');
 
@@ -157,10 +165,9 @@ class SppagebuilderModelPages extends JModelList
 			else
 			{
 				$search = $db->quote('%' . $db->escape($search, true) . '%');
-				$query->where('(a.title LIKE ' . $search . ' OR a.alias LIKE ' . $search . ')');
+				$query->where('(a.title LIKE ' . $search . ')');
 			}
 		}
-
 
 		// Add the list ordering clause.
 		$orderCol = $this->state->get('list.ordering', 'a.id');
@@ -186,4 +193,41 @@ class SppagebuilderModelPages extends JModelList
 
 		return $query;
 	}
+
+	public function getItems() {
+		$app = JApplication::getInstance('site');
+		$router = $app->getRouter();
+
+		$items = parent::getItems();
+		if(is_array($items) && count($items)) {
+			foreach ($items as $key => &$item) {
+				// get menu id
+				$Itemid = SppagebuilderHelper::getMenuId($item->id);
+				$item->link = 'index.php?option=com_sppagebuilder&task=page.edit&id=' . $item->id;
+				$preview_link = 'index.php?option=com_sppagebuilder&view=page&id=' . $item->id;
+
+				if ($item->language && $item->language !== '*' && JLanguageMultilang::isEnabled()) {
+					$preview_link .= '&lang=' . $item->language;
+				}
+
+				// Preview URL
+				$preview_link .= $Itemid;
+				$sefURI = str_replace('/administrator', '', $router->build($preview_link));
+				$item->preview = $sefURI;
+
+				// Frontend Editing URL
+				$front_link = 'index.php?option=com_sppagebuilder&view=form&tmpl=component&layout=edit&id=' . $item->id;
+				if ($item->language && $item->language !== '*' && JLanguageMultilang::isEnabled()) {
+					$front_link .= '&lang=' . $item->language;
+				}
+				$front_link .= $Itemid;
+
+				$sefURI = str_replace('/administrator', '', $router->build($front_link));	
+				$item->frontend_edit = $sefURI;
+			}
+		}
+
+		return $items;
+	}
+
 }

@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -76,10 +76,9 @@ class AkeebaStrapper extends RenderBase implements RenderInterface
 
 
 		// Wrap output in various classes
-		$version = new \JVersion;
-		$versionParts = explode('.', $version->RELEASE);
-		$minorVersion = str_replace('.', '', $version->RELEASE);
-		$majorVersion = array_shift($versionParts);
+		$versionParts = explode('.', JVERSION);
+		$minorVersion = $versionParts[0] . $versionParts[1];
+		$majorVersion = $versionParts[0];
 
 		$classes = array();
 
@@ -161,6 +160,8 @@ class AkeebaStrapper extends RenderBase implements RenderInterface
 	 * @param   Form  &$form  The form we are rendering
 	 *
 	 * @return  void
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	protected function loadValidationScript(Form &$form)
 	{
@@ -224,10 +225,6 @@ JS;
 	 */
 	protected function renderLinkbar_classic($view, $task)
 	{
-		// Prevent phpStorm from complaining
-		if ($view) {}
-		if ($task) {}
-
 		$platform = $this->container->platform;
 
 		if ($platform->isCli())
@@ -235,9 +232,12 @@ JS;
 			return;
 		}
 
+		$isJoomla4 = version_compare(JVERSION, '3.99999.99999', 'gt');
+		$isJoomla3 = !$isJoomla4 && version_compare(JVERSION, '3.0.0', 'ge');
+
 		// Do not render a submenu unless we are in the the admin area
-		$toolbar				 = $this->container->toolbar;
-		$renderFrontendSubmenu	 = $toolbar->getRenderFrontendSubmenu();
+		$toolbar               = $this->container->toolbar;
+		$renderFrontendSubmenu = $toolbar->getRenderFrontendSubmenu();
 
 		if (!$platform->isBackend() && !$renderFrontendSubmenu)
 		{
@@ -316,27 +316,38 @@ JS;
 				}
 				else
 				{
-					echo "<li";
+					echo "<li class=\"nav-item";
 
-					if ($link['active'])
+					if ($link['active'] && $isJoomla3)
 					{
-						echo ' class="active"';
+						echo ' active"';
 					}
 
-					echo ">";
+					echo "\">";
 
 					if ($link['icon'])
 					{
-						echo "<i class=\"icon icon-" . $link['icon'] . "\"></i>";
+						echo "<span class=\"icon icon-" . $link['icon'] . "\"></span>";
 					}
 
-					if ($link['link'])
+					if ($isJoomla3)
 					{
-						echo "<a href=\"" . $link['link'] . "\">" . $link['name'] . "</a>";
+						if ($link['link'])
+						{
+							echo "<a href=\"" . $link['link'] . "\">" . $link['name'] . "</a>";
+						}
+						else
+						{
+							echo $link['name'];
+						}
 					}
 					else
 					{
-						echo $link['name'];
+						$class = $link['active'] ? 'active' : '';
+
+						$href = $link['link'] ? $link['link'] : '#';
+
+						echo "<a href=\"$href\" class=\"nav-link $class\">{$link['name']}</a>";
 					}
 				}
 
@@ -359,10 +370,6 @@ JS;
 	 */
 	protected function renderLinkbar_joomla($view, $task)
 	{
-		// Prevent phpStorm from complaining
-		if ($view) {}
-		if ($task) {}
-
 		$platform = $this->container->platform;
 
 		// On command line don't do anything
@@ -372,8 +379,8 @@ JS;
 		}
 
 		// Do not render a submenu unless we are in the the admin area
-		$toolbar				 = $this->container->toolbar;
-		$renderFrontendSubmenu	 = $toolbar->getRenderFrontendSubmenu();
+		$toolbar               = $this->container->toolbar;
+		$renderFrontendSubmenu = $toolbar->getRenderFrontendSubmenu();
 
 		if (!$platform->isBackend() && !$renderFrontendSubmenu)
 		{
@@ -527,6 +534,8 @@ JS;
 	 * @param   DataModel  $model  The model providing our data
 	 *
 	 * @return  string    The HTML rendering of the form
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function renderFormBrowse(Form &$form, DataModel $model)
 	{
@@ -569,9 +578,6 @@ HTML;
 		$show_filters		 = $form->getAttribute('show_filters', 1);
 		$show_pagination	 = $form->getAttribute('show_pagination', 1);
 		$norows_placeholder	 = $form->getAttribute('norows_placeholder', '');
-
-		// Joomla! 3.x sidebar support
-		$form_class = '';
 
 		if ($show_filters)
 		{
@@ -622,7 +628,7 @@ JS;
 		$filter_html = '';
 		$sortFields	 = array();
 
-		if ($show_header || $show_filters)
+		if ($show_header)
 		{
 			foreach ($headerFields as $headerField)
 			{
@@ -658,43 +664,40 @@ JS;
 					$header_html .= "\t\t\t\t\t</th>" . "\n";
 				}
 
-				if ($show_filters)
+				if (!empty($filter))
 				{
-					if (!empty($filter))
+					$filter_html .= '<div class="filter-search btn-group pull-left">' . "\n";
+					$filter_html .= "\t" . '<label for="title" class="element-invisible">';
+					$filter_html .= \JText::_($headerField->label);
+					$filter_html .= "</label>\n";
+					$filter_html .= "\t$filter\n";
+					$filter_html .= "</div>\n";
+
+					if (!empty($buttons))
 					{
-						$filter_html .= '<div class="filter-search btn-group pull-left">' . "\n";
-						$filter_html .= "\t" . '<label for="title" class="element-invisible">';
-						$filter_html .= \JText::_($headerField->label);
-						$filter_html .= "</label>\n";
-						$filter_html .= "\t$filter\n";
-						$filter_html .= "</div>\n";
-
-						if (!empty($buttons))
-						{
-							$filter_html .= '<div class="btn-group pull-left hidden-phone">' . "\n";
-							$filter_html .= "\t$buttons\n";
-							$filter_html .= '</div>' . "\n";
-						}
+						$filter_html .= '<div class="btn-group pull-left hidden-phone">' . "\n";
+						$filter_html .= "\t$buttons\n";
+						$filter_html .= '</div>' . "\n";
 					}
-					elseif (!empty($options))
-					{
-						$label = $headerField->label;
+				}
+				elseif (!empty($options))
+				{
+					$label = $headerField->label;
 
-						$filterName = $headerField->filterFieldName;
-						$filterSource = $headerField->filterSource;
+					$filterName = $headerField->filterFieldName;
+					$filterSource = $headerField->filterSource;
 
-						JHtmlSidebar::addFilter(
-							'- ' . \JText::_($label) . ' -',
-							$filterName,
-							JHtml::_(
-								'select.options',
-								$options,
-								'value',
-								'text',
-								$model->getState($filterSource, ''), true
-							)
-						);
-					}
+					JHtmlSidebar::addFilter(
+						'- ' . \JText::_($label) . ' -',
+						$filterName,
+						JHtml::_(
+							'select.options',
+							$options,
+							'value',
+							'text',
+							$model->getState($filterSource, ''), true
+						)
+					);
 				}
 			}
 		}
@@ -717,7 +720,7 @@ JS;
 			$actionUrl = \JRoute::_($uri->toString());
 		}
 
-		$html .= '<form action="'.$actionUrl.'" method="post" name="adminForm" id="adminForm" ' . $form_class . '>' . "\n";
+		$html .= '<form action="' . $actionUrl . '" method="post" name="adminForm" id="adminForm">' . "\n";
 
 		// Get and output the sidebar, if present
 		$sidebar = JHtmlSidebar::render();
@@ -909,7 +912,7 @@ JS;
 		$html .= "\t" . '<input type="hidden" name="filter_order" value="' . $filter_order . '" />' . "\n";
 		$html .= "\t" . '<input type="hidden" name="filter_order_Dir" value="' . $filter_order_Dir . '" />' . "\n";
 
-		$html .= "\t" . '<input type="hidden" name="' . $this->container->session->getFormToken() . '" value="1" />' . "\n";
+		$html .= "\t" . '<input type="hidden" name="' . $this->container->platform->getToken(true) . '" value="1" />' . "\n";
 
 		// End the form
 		$html .= '</form>' . "\n";
@@ -924,6 +927,8 @@ JS;
 	 * @param   DataModel  $model  The model providing our data
 	 *
 	 * @return  string    The HTML rendering of the form
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function renderFormRead(Form &$form, DataModel $model)
 	{
@@ -939,6 +944,8 @@ JS;
 	 * @param   DataModel  $model  The model providing our data
 	 *
 	 * @return  string    The HTML rendering of the form
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function renderFormEdit(Form &$form, DataModel $model)
 	{
@@ -1028,7 +1035,7 @@ JS;
 			$html .= "\t" . '<input type="hidden" name="tmpl" value="' . $tmpl . '" />' . "\n";
 		}
 
-		$html .= "\t" . '<input type="hidden" name="' . $this->container->session->getFormToken() . '" value="1" />' . "\n";
+		$html .= "\t" . '<input type="hidden" name="' . $this->container->platform->getToken(true) . '" value="1" />' . "\n";
 
 		$html .= $this->renderFormRaw($form, $model, 'edit');
 		$html .= '</form>';
@@ -1044,6 +1051,8 @@ JS;
 	 * @param   string    $formType  The form type e.g. 'edit' or 'read'
 	 *
 	 * @return  string    The HTML rendering of the form
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function renderFormRaw(Form &$form, DataModel $model, $formType = null)
 	{
@@ -1133,6 +1142,8 @@ JS;
 	 * @param   string     $innerHtml   Render inner tab if set
 	 *
 	 * @return  string    The HTML rendering of the fieldset
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function renderFieldset(\stdClass &$fieldset, Form &$form, DataModel $model, $formType, $showHeader = true, &$innerHtml = null)
 	{
@@ -1345,6 +1356,8 @@ JS;
 	 * @param 	string		$title		The title of the label
 	 *
 	 * @return 	string		The rendered label
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function renderFieldsetLabel($field, Form &$form, $title)
 	{
@@ -1411,6 +1424,8 @@ JS;
 	 *                                   returned.
 	 *
 	 * @return  string    The HTML rendering of the form
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	function renderForm(Form &$form, DataModel $model, $formType = null, $raw = false)
 	{

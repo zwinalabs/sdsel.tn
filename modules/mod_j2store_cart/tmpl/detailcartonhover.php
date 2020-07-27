@@ -19,7 +19,7 @@ $hide = false;
 if($params->get('check_empty',0) && $list['product_count'] < 1) {
 $hide = true;
 }
-
+$title = $params->get('cart_module_title', '');
 
 ?>
 
@@ -27,7 +27,7 @@ $hide = true;
 		<div class="j2store_cart_module_<?php echo $module->id; ?>">
 	<?php endif; ?>
 	<?php if(!$hide): ?>
-	
+		<h3 class="cart-module-title"><?php echo JText::_($title); ?></h3>
 			<div class="j2store-minicart-button">
 				<div class="j2store-cart-info">
 					<div class="j2store-cart-info-link"   data-hover="dropdown" data-toggle="dropdown">
@@ -88,7 +88,7 @@ $hide = true;
 											<?php if($params->get('show_product_qty')):?>
 												<span class="cart-item-qty"> <?php echo $item->orderitem_quantity; ?> </span> x
 											<?php endif;?>
-											<?php echo $currency->format($item->orderitem_price); ?>
+											<?php echo $currency->format($order->get_formatted_lineitem_price($item, $params->get('checkout_price_display_options', 1))); ?>
 											<p class="j2store-product-name"> 
 												<strong><?php echo $item->orderitem_name;?></strong>
 											</p>
@@ -97,7 +97,7 @@ $hide = true;
 												<span class="cart-item-options">
 												<?php foreach ($item->orderitemattributes as $attribute): ?>
 													<small>
-													- <?php echo JText::_($attribute->orderitemattribute_name); ?> : <?php echo $attribute->orderitemattribute_value; ?>
+													- <?php echo JText::_($attribute->orderitemattribute_name); ?> : <?php echo JText::_($attribute->orderitemattribute_value); ?>
 													</small>
 													<br />
 												<?php endforeach;?>
@@ -111,7 +111,7 @@ $hide = true;
 						<?php if( $params->get('enable_checkout') ||  $params->get('enable_view_cart') ):?>
 							<div class="j2store-cart-nav">
 								<?php if($params->get('enable_checkout')):?>
-									<a class="btn btn-success btn-large"  href="<?php echo $checkout_url;?>">
+									<a class="btn btn-success btn-large"  href="<?php echo JRoute::_('index.php?option=com_j2store&view=checkout');?>">
 										<?php echo JText::_('J2STORE_CHECKOUT'); ?>
 									</a>
 								<?php endif;?>
@@ -123,7 +123,10 @@ $hide = true;
 								<?php endif;?>
 							</div>
 						<?php endif;?>
-					<?php endif; ?>	
+					<?php endif; ?>
+					<div class="pull-right">
+						<button type="button" class="btn btn-default" onclick="jQuery('#j2store_cart_item_<?php echo $module->id; ?>').hide('fast');" ><?php echo JText::_ ( 'J2STORE_CLOSE' )?></button>
+					</div>
 				</div>
 		</div>
 
@@ -137,6 +140,20 @@ $hide = true;
 <?php endif; ?>
 
 <script type="text/javascript">
+    (function($){
+        $('.j2store-minicart-button').on('touchstart', function (e) {
+            'use strict'; //satisfy the code inspectors
+            var link = $(this); //preselect the link
+            if (!link.hasClass('nav-hover')) {
+                jQuery('#j2store_cart_item_<?php echo $module->id; ?>').stop(true,true).slideDown('fast');
+                return true;
+            } else {
+                jQuery('#j2store_cart_item_<?php echo $module->id; ?>').hide('fast');
+                e.preventDefault();
+                return false; //extra, and to make sure the function has consistent return points
+            }
+        });
+    })(jQuery);
 
 	jQuery(document).ready(function(){
 

@@ -42,9 +42,9 @@ $col = 3;
 			Joomla.tableOrdering(order, dirn);
 		}
 </script>
-<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,600' rel='stylesheet' type='text/css'>
+<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600' rel='stylesheet' type='text/css'>
 <form action="<?php echo JRoute::_('index.php?option=com_j2store&view=apps'); ?>" method="post" name="adminForm"
-	  id="adminForm" xmlns="http://www.w3.org/1999/html">
+	  id="adminForm" xmlns="https://www.w3.org/1999/html">
 
 	<input type="hidden" name="task" value="browse" />
 	<input type="hidden" name="boxchecked" value="0" />
@@ -52,7 +52,7 @@ $col = 3;
 	<input type="hidden" name="filter_order_Dir" value="<?php echo $this->lists->order_Dir; ?>" />
 	<input type="hidden" id="token" name="<?php echo JFactory::getSession()->getFormToken();?>" value="1" />
 
-
+<div class="row-fluid">
  <?php if(!empty( $sidebar )): ?>
    <div id="j-sidebar-container" class="span2">
       <?php echo $sidebar ; ?>
@@ -221,6 +221,7 @@ $col = 3;
 		</div>
 
 	</div>
+</div>
 </div>
 </div>
 </div>

@@ -1,10 +1,8 @@
 <?php
 /**
- * @package AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
- * @license GNU General Public License version 3, or later
- *
- * @since 1.3
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   GNU General Public License version 3, or later
  */
 
 defined('KICKSTART') or die;
@@ -31,6 +29,8 @@ class AKFeatureTransfer
 		$memLimit       = '8M';
 		$baseDir        = '';
 		$disabled       = '';
+		$maxPostSize    = '2M';
+		$uploadMaxSize  = '2M';
 
 		if (function_exists('ini_get'))
 		{
@@ -38,6 +38,8 @@ class AKFeatureTransfer
 			$memLimit       = ini_get("memory_limit");
 			$baseDir        = ini_get('open_basedir');
 			$disabled       = ini_get("disable_functions");
+			$maxPostSize    = ini_get("post_max_size");
+			$uploadMaxSize  = ini_get("upload_max_filesize");
 
 			if (empty($maxExecTime))
 			{
@@ -67,6 +69,8 @@ class AKFeatureTransfer
 			'canWriteTemp'  => $this->canWriteToFiles('kicktemp'),
 			'maxExecTime'   => $maxExecTime,
 			'memLimit'      => $this->memoryToBytes($memLimit),
+			'maxPost'       => $this->memoryToBytes($maxPostSize),
+			'maxUpload'     => $this->memoryToBytes($uploadMaxSize),
 			'baseDir'       => $baseDir,
 			'disabledFuncs' => $disabled,
 		);
@@ -82,6 +86,7 @@ class AKFeatureTransfer
 		$frag      = isset($_GET['frag']) ? $_GET['frag'] : 0;
 		$fragSize  = isset($_GET['fragSize']) ? $_GET['fragSize'] : 1048576;
 		$data      = isset($_POST['data']) ? $_POST['data'] : '';
+		$dataFile  = isset($_GET['dataFile']) ? $_GET['dataFile'] : '';
 
 		// We need a file
 		if (empty($file))
@@ -134,7 +139,14 @@ class AKFeatureTransfer
 			);
 		}
 
-		// We need some data
+		// If a data file was given, read it to memory
+		if (empty($data) && !empty($dataFile))
+		{
+			// Do not remove the basename(). It makes sure we won't try to read a file outside our directory.
+			$data = @file_get_contents(__DIR__ . '/' . basename($dataFile));
+		}
+
+		// We need some data to write, yes?
 		if (empty($data))
 		{
 			return array(
@@ -223,18 +235,24 @@ class AKFeatureTransfer
 	 * Converts a human formatted size to integer representation of bytes,
 	 * e.g. 1M to 1024768
 	 *
-	 * @param   string $val The value in human readable format, e.g. "1M"
+	 * @param   string  $setting  The value in human readable format, e.g. "1M"
 	 *
 	 * @return  integer  The value in bytes
 	 */
-	private function memoryToBytes($val)
+	private function memoryToBytes($setting)
 	{
-		$val  = trim($val);
+		$val = trim($setting);
 		$last = strtolower($val{strlen($val) - 1});
+
+		if (is_numeric($last))
+		{
+			return $setting;
+		}
 
 		switch ($last)
 		{
-			// The 'G' modifier is available since PHP 5.1.0
+			case 't':
+				$val *= 1024;
 			case 'g':
 				$val *= 1024;
 			case 'm':
@@ -243,6 +261,6 @@ class AKFeatureTransfer
 				$val *= 1024;
 		}
 
-		return $val;
+		return (int) $val;
 	}
 }

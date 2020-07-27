@@ -2,7 +2,7 @@
 <form>
 <fields name="attribs" addfieldpath="/plugins/content/j2store/fields">
 		<fieldset name="j2store"
-			label="PLG_J2STORE_SLIDER_LABEL"				
+			label="J2Store Cart"
 		>
 			<field
 				name="j2store"

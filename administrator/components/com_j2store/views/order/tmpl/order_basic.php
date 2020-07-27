@@ -8,13 +8,17 @@
 defined('_JEXEC') or die;
 JHTML::_('behavior.modal');
 $version = 'old';
-if(version_compare(JVERSION,'3.5.0','ge')){
-	$document = JFactory::getDocument();
-	$document->addScript(JUri::root(true).'/media/jui/js/fielduser.min.js');
+$document = JFactory::getDocument();
+if(version_compare(JVERSION,'3.6.1','ge')){
+	$version = 'new';
+	$user_modal_url = "index.php?option=com_users&amp;view=users&amp;layout=modal&amp;tmpl=component&amp;required=0&amp;field={field-user-id}&amp;ismoo=0&amp;excluded=WyIiXQ==";
+}elseif(version_compare(JVERSION,'3.5.0','ge')){
+	$user_modal_url = "index.php?option=com_users&amp;view=users&amp;layout=modal&amp;tmpl=component&amp;required=0&amp;field={field-user-id}&amp;excluded=WyIiXQ==";
 	$version = 'new';
 }
-
-
+if($version == 'new'){
+	$document->addScript(JUri::root(true).'/media/jui/js/fielduser.min.js');
+}
 ?>
 <div class="order-general-information">
 	<div class="info-body">
@@ -58,7 +62,7 @@ if(version_compare(JVERSION,'3.5.0','ge')){
 
 					<?php elseif($version == 'new'): ?>
 
-						<div data-button-select=".button-select" data-input-name=".field-user-input-name" data-input=".field-user-input" data-modal-height="400px" data-modal-width="100%" data-modal=".modal" data-url="index.php?option=com_users&amp;view=users&amp;layout=modal&amp;tmpl=component&amp;required=0&amp;field={field-user-id}&amp;excluded=WyIiXQ==" class="field-user-wrapper">
+						<div data-button-select=".button-select" data-input-name=".field-user-input-name" data-input=".field-user-input" data-modal-height="400px" data-modal-width="100%" data-modal=".modal" data-url="<?php echo $user_modal_url;?>" class="field-user-wrapper">
 							<div class="input-append">
 								<input type="text" class="field-user-input-name " name="<?php echo $this->form_prefix.'[user_name]';?>" readonly="" placeholder="Select a User." value="<?php echo $user_name;?>" id="jform_created_by">
 								<a title="Select User" class="btn btn-primary button-select"><span class="icon-user"></span></a>
@@ -73,7 +77,7 @@ if(version_compare(JVERSION,'3.5.0','ge')){
 										<button data-dismiss="modal" class="btn">Cancel</button></div>
 								</div>
 							</div>
-							<input type="hidden" data-onchange="" class="field-user-input " value="377" name="<?php echo $this->form_prefix.'[user_id]';?>" id="jform_created_by_id">
+							<input type="hidden" data-onchange="" class="field-user-input " value="<?php echo $this->order->user_id;?>" name="<?php echo $this->form_prefix.'[user_id]';?>" id="jform_created_by_id">
 						</div>
 
 					<?php endif;?>

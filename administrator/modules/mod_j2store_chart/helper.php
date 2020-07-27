@@ -46,6 +46,9 @@ class modJ2storeChartHelper{
 			$query->where('o.order_state_id IN ('. $requested_order_status .')');
 		}
 
+		// To load only the Normal orders
+		$query->where('o.order_type = \'normal\'');
+
 		//$query->where('o.order_state_id=1');
 		//group by year in created date column.
 		$query->group('YEAR(o.created_on)');
@@ -101,12 +104,15 @@ class modJ2storeChartHelper{
 
 		//sum of order payment amount.
 		$query->select('o.order_state_id,SUM(o.order_total) AS total, DATE_FORMAT(o.created_on,"%M") AS dmonth,COUNT(*) AS total_num_orders')->from('#__j2store_orders AS o');
-		$query->where("YEAR(DATE(o.created_on)) = $year");
+		$query->where("YEAR(DATE(o.created_on)) = ".$year);
 		//$query->where('o.order_state_id=1');
 
 		if(!in_array('*' ,$order_status)){
 			$query->where('o.order_state_id IN ('. $requested_order_status .')');
 		}
+
+		// To load only the Normal orders
+		$query->where('o.order_type = \'normal\'');
 
 		//group by year in created date column.
 		$query->group('MONTH(o.created_on)');
@@ -162,12 +168,15 @@ class modJ2storeChartHelper{
 		$query = $db->getQuery(true);
 		//sum of order payment amount. DATE_FORMAT(entrydate, '%M')
 		$query->select('o.order_state_id ,SUM(o.order_total) AS total,DATE_FORMAT(o.created_on,"%d") AS dday, COUNT(*) AS total_num_orders')->from('#__j2store_orders AS o');
-		$query->where("YEAR(DATE(o.created_on)) = $year AND MONTH(DATE(o.created_on)) = $month");
+		$query->where("YEAR(DATE(o.created_on)) = ".$year." AND MONTH(DATE(o.created_on)) = ".$month);
 		//$query->where('o.order_state_id=1');
 
 		if(!in_array('*' ,$order_status)){
 			$query->where('o.order_state_id IN ('. $requested_order_status .')');
 		}
+
+		// To load only the Normal orders
+		$query->where('o.order_type = \'normal\'');
 
 		//group by year in created date column.
 		$query->group('DAY(o.created_on)');
@@ -223,6 +232,9 @@ class modJ2storeChartHelper{
 		if(!in_array('*' ,$order_status)){
 			$query->where('o.order_state_id IN ('. $requested_order_status .')');
 		}
+
+		// To load only the Normal orders
+		$query->where('o.order_type = \'normal\'');
 
 		$query->from('#__j2store_orders AS o');
 		$query->order('o.created_on DESC')->order('o.j2store_order_id DESC');

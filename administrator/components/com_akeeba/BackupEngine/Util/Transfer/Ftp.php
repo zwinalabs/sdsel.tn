@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Util\Transfer;
@@ -15,65 +14,65 @@ namespace Akeeba\Engine\Util\Transfer;
 defined('AKEEBAENGINE') or die();
 
 /**
- * FTP transfer object
+ * FTP transfer object, using PHP as the transport backend
  */
-class Ftp implements TransferInterface
+class Ftp implements TransferInterface, RemoteResourceInterface
 {
 	/**
 	 * FTP server's hostname or IP address
 	 *
 	 * @var  string
 	 */
-	private $host = 'localhost';
+	protected $host = 'localhost';
 
 	/**
 	 * FTP server's port, default: 21
 	 *
 	 * @var  integer
 	 */
-	private $port = 21;
+	protected $port = 21;
 
 	/**
 	 * Username used to authenticate to the FTP server
 	 *
 	 * @var  string
 	 */
-	private $username = '';
+	protected $username = '';
 
 	/**
 	 * Password used to authenticate to the FTP server
 	 *
 	 * @var  string
 	 */
-	private $password = '';
+	protected $password = '';
 
 	/**
 	 * FTP initial directory
 	 *
 	 * @var  string
 	 */
-	private $directory = '/';
+	protected $directory = '/';
 
 	/**
 	 * Should I use SSL to connect to the server (FTP over explicit SSL, a.k.a. FTPS)?
 	 *
 	 * @var  boolean
 	 */
-	private $ssl = false;
+	protected $ssl = false;
 
 	/**
 	 * Should I use FTP passive mode?
 	 *
 	 * @var bool
 	 */
-	private $passive = true;
+	protected $passive = true;
 
 	/**
 	 * Timeout for connecting to the FTP server, default: 10
 	 *
 	 * @var  integer
 	 */
-	private $timeout = 10;
+	protected $timeout = 10;
 
 	/**
 	 * The FTP connection handle
@@ -133,6 +132,26 @@ class Ftp implements TransferInterface
 			$this->timeout = max(1, (int) $options['timeout']);
 		}
 
+		$this->connect();
+	}
+
+	/**
+	 * Save all parameters on serialization except the connection resource
+	 *
+	 * @return  array
+	 */
+	public function __sleep()
+	{
+		return array('host', 'port', 'username', 'password', 'directory', 'ssl', 'passive', 'timeout');
+	}
+
+	/**
+	 * Reconnect to the server on unserialize
+	 *
+	 * @return  void
+	 */
+	public function __wakeup()
+	{
 		$this->connect();
 	}
 
@@ -199,7 +218,7 @@ class Ftp implements TransferInterface
 	{
 		try
 		{
-			$connector = new Ftp(array(
+			$connector = new static(array(
 				'host'			=> 'test.rebex.net',
 				'port'			=> 21,
 				'username'		=> 'demo',
@@ -265,16 +284,22 @@ class Ftp implements TransferInterface
 	 *
 	 * @param   string  $localFilename   The full path to the local file
 	 * @param   string  $remoteFilename  The full path to the remote file
+	 * @param   bool    $useExceptions   Throw an exception instead of returning "false" on connection error.
 	 *
 	 * @return  boolean  True on success
 	 */
-	public function upload($localFilename, $remoteFilename)
+	public function upload($localFilename, $remoteFilename, $useExceptions = true)
 	{
 		$handle = @fopen($localFilename, 'rb');
 
 		if ($handle === false)
 		{
-			throw new \RuntimeException("Unreadable local file $localFilename");
+			if ($useExceptions)
+			{
+				throw new \RuntimeException("Unreadable local file $localFilename");
+			}
+
+			return false;
 		}
 
 		$ret = @ftp_fput($this->connection, $remoteFilename, $handle, FTP_BINARY);
@@ -323,14 +348,22 @@ class Ftp implements TransferInterface
 	/**
 	 * Download a remote file into a local file
 	 *
-	 * @param   string  $remoteFilename
-	 * @param   string  $localFilename
+	 * @param   string  $remoteFilename  The remote file path to download from
+	 * @param   string  $localFilename   The local file path to download to
+	 * @param   bool    $useExceptions   Throw an exception instead of returning "false" on connection error.
 	 *
 	 * @return  boolean  True on success
 	 */
-	public function download($remoteFilename, $localFilename)
+	public function download($remoteFilename, $localFilename, $useExceptions = true)
 	{
-		return @ftp_get($this->connection, $localFilename, $remoteFilename, FTP_BINARY);
+		$ret = @ftp_get($this->connection, $localFilename, $remoteFilename, FTP_BINARY);
+
+		if (!$ret && $useExceptions)
+		{
+			throw new \RuntimeException("Cannot download remote file $remoteFilename through FTP.");
+		}
+
+		return $ret;
 	}
 
 	/**
@@ -396,7 +429,19 @@ class Ftp implements TransferInterface
 	 */
 	public function chmod($fileName, $permissions)
 	{
-		return (@ftp_chmod($this->connection, $permissions, $fileName) !== false);
+		if (@ftp_chmod($this->connection, $permissions, $fileName) !== false)
+		{
+			return true;
+		}
+
+		$permissionsOctal = decoct((int) $permissions);
+
+		if (@ftp_site($this->connection, "CHMOD $permissionsOctal $fileName") !== false)
+		{
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -490,6 +535,11 @@ class Ftp implements TransferInterface
 	{
 		$fileName = str_replace('\\', '/', $fileName);
 
+		if (strpos($fileName, $this->directory) === 0)
+		{
+			return $fileName;
+		}
+
 		$fileName = trim($fileName, '/');
 		$fileName = rtrim($this->directory, '/') . '/' . $fileName;
 
@@ -539,5 +589,35 @@ class Ftp implements TransferInterface
 		asort($folders);
 
 		return $folders;
+	}
+
+	/**
+	 * Return a string with the appropriate stream wrapper protocol for $path. You can use the result with all PHP
+	 * functions / classes which accept file paths such as DirectoryIterator, file_get_contents, file_put_contents,
+	 * fopen etc.
+	 *
+	 * @param   string  $path
+	 *
+	 * @return  string
+	 */
+	public function getWrapperStringFor($path)
+	{
+		$passwordEncoded = urlencode($this->password);
+		$hostname        = $this->host . ($this->port ? ":{$this->port}" : '');
+		$protocol        = $this->ssl ? "ftps" : "ftp";
+
+		return "{$protocol}://{$this->username}:{$passwordEncoded}@{$hostname}{$path}";
+	}
+
+	/**
+	 * Return the raw server listing for the requested folder.
+	 *
+	 * @param   string  $folder        The path name to list
+	 *
+	 * @return  string
+	 */
+	public function getRawList($folder)
+	{
+		return ftp_rawlist($this->connection, $folder);
 	}
 }

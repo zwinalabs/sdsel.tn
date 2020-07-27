@@ -49,7 +49,8 @@ class J2StoreModelProductOptions extends F0FModel {
 
 	function importAttributeFromProduct($product,$source_product_id, $dest_product_id) {
 		// only simple product's options can be imported
-		if($product->product_type =='simple' || $product->product_type =='configurable' ){
+		$product_helper = J2Store::product ();
+		if($product_helper->is_product_type_allowed($product->product_type,array('simple', 'configurable', 'booking'),'importAttributeFromProduct')){
 			$this->getImportedProductOptions($source_product_id,$dest_product_id);
 		}else{
 			return false;

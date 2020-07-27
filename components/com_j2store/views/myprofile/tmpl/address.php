@@ -34,8 +34,8 @@ if(empty($user->id)){
 		<div class="j2store-address-alert">
 		</div>
 		 <div class="pull-right">
-			 <a href="#" onclick="J2storeSubmitForm(this,'apply')" class="button btn btn-success"><span class="icon-apply icon-white"></span><?php echo JText::_('JSAVE'); ?></a>
-			 <a href="#" onclick="J2storeSubmitForm(this,'save')" class="button btn "><span class="icon-save"></span><?php echo JText::_('JTOOLBAR_SAVE'); ?></a>
+			 <a  onclick="J2storeSubmitForm(this,'apply')" class="button btn btn-success"><span class="icon-apply icon-white"></span><?php echo JText::_('JSAVE'); ?></a>
+			 <a  onclick="J2storeSubmitForm(this,'save')" class="button btn "><span class="icon-save"></span><?php echo JText::_('JTOOLBAR_SAVE'); ?></a>
 	  	</div>
 		<div class="pull-left">
 			<a class="btn btn-warning" href="<?php echo $back_url;?>" >
@@ -52,7 +52,7 @@ if(empty($user->id)){
 			  			->name('type')
 			  			->value($this->address->type)
 			  			->setPlaceHolders(
-			  				array('billing'=>JText::_('J2STORE_BILLING_ADDRESS'), 'shipping'=>JText::_('J2STORE_SHIPPING_ADDRESS'), 'payment'=>JText::_('J2STORE_STORE_PAYMENT_LAYOUT_LABEL'))
+			  				array('billing'=>JText::_('J2STORE_BILLING_ADDRESS'), 'shipping'=>JText::_('J2STORE_SHIPPING_ADDRESS'))
 			  			)->getHtml();
 			  ?>
 	  </div>
@@ -75,7 +75,12 @@ if(empty($user->id)){
 		<?php $onWhat='onchange'; if($oneExtraField->field_type=='radio') $onWhat='onclick';?>
 			<?php if(property_exists($this->address, $fieldName)):
 				if(($fieldName !='email')){
-			 		$html = str_replace('['.$fieldName.']',$this->fieldClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $options = '', $test = false, $allFields, $allValues = null),$html);
+                    $placeholder =  (isset($oneExtraField->field_options['placeholder']) ? $oneExtraField->field_options['placeholder'] : "");
+                    $field_options = '';
+                    if($placeholder){
+                        $field_options .= ' placeholder="'.$placeholder.'" ';
+                    }
+			 		$html = str_replace('['.$fieldName.']',$this->fieldClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $field_options, $test = false, $allFields, $allValues = null),$html);
 				}
 
 			?>
@@ -108,7 +113,12 @@ if(empty($user->id)){
 						<?php if(property_exists($this->address, $fieldName)): ?>
 							<?php
 							if(($fieldName !='email')){
-								$uhtml .= $this->fieldClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $options = '', $test = false, $allFields, $allValues = null);
+                                $placeholder =  (isset($oneExtraField->field_options['placeholder']) ? $oneExtraField->field_options['placeholder'] : "");
+                                $field_options = '';
+                                if($placeholder){
+                                    $field_options .= ' placeholder="'.$placeholder.'" ';
+                                }
+								$uhtml .= $this->fieldClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $field_options, $test = false, $allFields, $allValues = null);
 							}
 								 ?>
 						<?php endif;?>
@@ -144,6 +154,7 @@ if(empty($user->id)){
 	  })(j2store.jQuery);
   function J2storeSubmitForm(element,t_type){
 		(function($) {
+			console.log(t_type);
 			$(".j2store-error").remove();
 			var form = $("#j2storeaddressForm");
 			form.find("#task").attr('value','saveAddress');
@@ -157,6 +168,7 @@ if(empty($user->id)){
 					$('.j2error').remove();
 				},
 				success: function(json){
+					console.log(json);
 					if(json['success']){
 						if(json['success']['url']){
 							$(".j2store-error").remove();

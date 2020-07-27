@@ -54,7 +54,7 @@ $this->prefix = 'jform[order]';
 					 
 					</div>						
 				</div>
-				<?php if($this->shipping->order_id == $this->item->order_id && !empty($this->shipping->ordershipping_type)): ?>
+
 				<div class="panel panel-default">			
 				 	<div class="panel-body">
 				 	<strong><?php echo JText::_("J2STORE_SHIPPING_TRACKING_ID"); ?></strong>
@@ -65,7 +65,7 @@ $this->prefix = 'jform[order]';
 					 
 					</div>						
 				</div>
-				<?php endif; ?>	
+
 			</div>
 			
 			<div class="span8">

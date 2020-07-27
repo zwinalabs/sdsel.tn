@@ -28,7 +28,7 @@ $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-m
 						<div class="cross-sell-product-row <?php echo 'row-'.$row; ?> <?php echo $J2gridRow; ?>">
 					<?php endif;?>
 
-					<div class="<?php echo $J2gridCol.round((12 / $columns));?>">
+					<div class="<?php echo $J2gridCol.round((12 / $columns));?> crosssell-product product-<?php echo $cross_sell_product->j2store_product_id;?> <?php echo $cross_sell_product->params->get('product_css_class','');?>">
 
 						<?php
 							$thumb_image = '';
@@ -55,11 +55,13 @@ $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-m
 						$this->product = $cross_sell_product;
 						echo $this->loadAnyTemplate('site:com_j2store/product/item_price');
 						?>
+					<?php if( J2Store::product()->canShowCart($this->params) ): ?>
 						<?php
 							$this->singleton_product = $cross_sell_product;
 							$this->singleton_params = $this->params;						
 							echo $this->loadAnyTemplate('site:com_j2store/product/cart');
-						?>						
+						?>
+						<?php endif; ?>
 					</div>
 				<?php $counter++; ?>
 				<?php if (($rowcount == $columns) or ($counter == $total)) : ?>

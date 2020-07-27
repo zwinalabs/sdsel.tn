@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -31,7 +31,7 @@ class Log extends Controller
 
 		if (!empty($profile_id) && is_numeric($profile_id) && ($profile_id > 0))
 		{
-			$this->container->session->set('profile', $profile_id, 'akeeba');
+			$this->container->platform->setSessionVar('profile', $profile_id, 'akeeba');
 		}
 	}
 

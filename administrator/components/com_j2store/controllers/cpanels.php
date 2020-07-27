@@ -9,7 +9,7 @@ defined('_JEXEC') or die;
 class J2StoreControllerCpanels extends F0FController
 {
 	 public function execute($task) {
-		if(!in_array($task, array('browse' ,'getEupdates', 'notifications','getSubscription'))) {
+		if(!in_array($task, array('browse' ,'getEupdates', 'notifications','getSubscription','getDownloadIdStatus'))) {
 			$task = 'browse';
 		}
 		parent::execute($task);
@@ -65,6 +65,11 @@ class J2StoreControllerCpanels extends F0FController
 		$tables = $db->getTableList ();
 		// get prefix
 		$prefix = $db->getPrefix ();
+
+		//correct the collation
+       // if (in_array ( $prefix . 'j2store_orderdiscounts', $tables )) {
+        //    $db->setQuery ( 'ALTER TABLE #_j2store_orderdiscounts CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci' );
+        //}
 
 		// let us back up the table first
 		if (! in_array ( $prefix . 'j2store_backup_ordercoupons', $tables ) && in_array ( $prefix . 'j2store_ordercoupons', $tables )) {
@@ -280,27 +285,27 @@ class J2StoreControllerCpanels extends F0FController
 		$no_of_days_old = $j2params->get('clear_outdated_cart_data_term',90);
 
 		$db = JFactory::getDbo();
-		$query = "select count(j2store_cart_id) from #__j2store_carts c where c.cart_type='cart' AND datediff(now(), c.modified_on) > ".$db->q($no_of_days_old).";";
+		$query = "select count(j2store_cart_id) from #__j2store_carts c where c.cart_type='cart' AND datediff(now(), c.created_on) > ".$db->q($no_of_days_old).";";
 		$db->setQuery($query);
 		$old_cart_items_exists = $db->loadResult();
 
 		if ( $old_cart_items_exists ) {
-		
+
 			$delete_cartitems_qry = "delete from #__j2store_cartitems where cart_id in "
 									."(select j2store_cart_id from #__j2store_carts c where c.cart_type=".$db->q('cart')
-										." AND datediff(now(), c.modified_on) > ".$db->q($no_of_days_old)." );" ;
+										." AND datediff(now(), c.created_on) > ".$db->q($no_of_days_old)." );" ;
 			$db->setQuery($delete_cartitems_qry);
 			try {
 				$db->execute();
-			}catch (Exception $e) {	}			
+			}catch (Exception $e) {	}
 
 			$delete_carts_qry = "delete from #__j2store_carts where #__j2store_carts.cart_type=".$db->q('cart')
-								." AND datediff(now(), #__j2store_carts.modified_on) > ".$db->q($no_of_days_old)." ;" ;
+								." AND datediff(now(), #__j2store_carts.created_on) > ".$db->q($no_of_days_old)." ;" ;
 			$db->setQuery($delete_carts_qry);
 			try {
 				$db->execute();
 			}catch (Exception $e) {	}
-			
+
 		}
 		//delete from #__j2store_cartitems where cart_id in (select j2store_cart_id from #__j2store_carts c where c.cart_type='cart' AND datediff(now(), c.modified_on) > 120);
 		//delete from #__j2store_carts where #__j2store_carts.cart_type='cart' AND datediff(now(), #__j2store_carts.modified_on) > 120;
@@ -319,17 +324,16 @@ class J2StoreControllerCpanels extends F0FController
 		$app->close();
 	}
 
-	public function getSubscription(){
-		$list = array();
 
-		$app = JFactory::getApplication();
-		$eupdate_model = F0FModel::getTmpInstance('Eupdates','J2StoreModel');
+	public function getDownloadIdStatus(){
+        $app = JFactory::getApplication();
+        $download_id = $app->input->get('download_id','');
+        $eupdate_model = F0FModel::getTmpInstance('Eupdates','J2StoreModel');
+        $download_message = $eupdate_model->getDownloadIdStatus($download_id);
+        echo json_encode($download_message);
+        $app->close();
+    }
 
-		$list = $eupdate_model->getSubscriptionDetails();
-
-		echo json_encode($list);
-		$app->close();
-	}
 	//getSubscriptionDetails
 	public function notifications() {
 		$app = JFactory::getApplication();

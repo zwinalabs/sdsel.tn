@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -11,6 +11,7 @@ namespace Akeeba\Backup\Admin\View\Restore;
 defined('_JEXEC') or die();
 
 use Akeeba\Backup\Admin\Model\Restore;
+use Akeeba\Engine\Platform;
 use FOF30\View\DataView\Html as BaseView;
 use JFactory;
 use JHtml;
@@ -22,6 +23,7 @@ class Html extends BaseView
 	public $id;
 	public $ftpparams;
 	public $extractionmodes;
+	public $extension;
 
 	protected function onBeforeMain()
 	{
@@ -30,9 +32,12 @@ class Html extends BaseView
 		/** @var Restore $model */
 		$model = $this->getModel();
 
-		$this->id              = $model->getState('id');
+		$this->id              = $model->getState('id', '', 'int');
 		$this->ftpparams       = $this->getFTPParams();
 		$this->extractionmodes = $this->getExtractionModes();
+
+		$backup = Platform::getInstance()->get_statistics($this->id);
+		$this->extension       = strtolower(substr($backup['absolute_path'], -3));
 	}
 
 	protected function onBeforeStart()
@@ -69,7 +74,7 @@ class Html extends BaseView
 	 */
 	private function getFTPParams()
 	{
-		$config = JFactory::getConfig();
+		$config = $this->container->platform->getConfig();
 
 		return array(
 			'procengine' => $config->get('ftp_enable', 0) ? 'hybrid' : 'direct',
@@ -84,7 +89,6 @@ class Html extends BaseView
 
 	private function loadCommonJavascript()
 	{
-		$this->addJavascriptFile('media://com_akeeba/js/Encryption.min.js');
 		$this->addJavascriptFile('media://com_akeeba/js/Configuration.min.js');
 		$this->addJavascriptFile('media://com_akeeba/js/Restore.min.js');
 

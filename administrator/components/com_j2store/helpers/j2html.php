@@ -261,6 +261,7 @@ class J2Html {
 		}
 
 		$id = isset($options['id']) ? $options['id'] : $name;
+		$hide_class = isset( $options['no_hide'] ) ? $options['no_hide'] : 'hide';
 		$image_id =isset($options['image_id']) ? $options['image_id'] : 'img'.$id;
 		$class = isset($options['class']) ? $options['class'] : '';
 		$empty_image = JUri::root().'media/j2store/images/common/no_image-100x100.jpg';
@@ -334,11 +335,11 @@ class J2Html {
 		JFactory::getDocument()->addStyleDeclaration($style);
 		JFactory::getDocument()->addScriptDeclaration($script);
 		$version =  substr(JVERSION, 0,5);
-		if (version_compare($version, '3.5.0', 'ge')){
+		if (version_compare($version, '3.5.0', 'ge') && version_compare($version, '3.6.3', 'lt')){
 			$html ='';
 			$html ='<div class="form-inline">';
 			$html .= '<div data-preview-height="200" data-preview-width="200" data-preview-container=".field-media-preview" data-preview="false" data-button-save-selected=".button-save-selected" data-button-clear=".button-clear" data-button-cancel=".button-cancel" data-button-select=".button-select" data-input=".field-media-input" data-modal-height="400px" data-modal-width="100%" data-modal=".modal" data-url="index.php?option=com_media&amp;view=images&amp;tmpl=component&amp;asset='.$asset_id.'&amp;author='.JFactory::getUser()->id.'&amp;fieldid={field-media-id}&amp;folder=" data-basepath="'.JURI::root().'" class="field-media-wrapper">';
-			$html .= '<div class="modal hide fade j2store-media-model-popup" tabindex="-1" id="imageModal_jform_image_'.$id.'">';
+			$html .= '<div class="modal fade j2store-media-model-popup '.$hide_class.'" tabindex="-1" id="imageModal_jform_image_'.$id.'" >';
 			$html .= '<div class="modal-header">';
 			$html .= '	<button data-dismiss="modal" class="close" type="button">×</button>';
 			$html .=	'	<h3>Change Image</h3>';
@@ -357,7 +358,7 @@ class J2Html {
 			$html .='<a id="media-browse" style="display:inline;position:relative;" class="btn btn-success button-select" >';
 			$html .= JText::_('J2STORE_IMAGE_SELECT');
 			$html .='</a>';
-			$html .='<a id="media-cancel" class="btn hasTooltip btn-inverse" onclick="removeImage(this)"  href="#" title=""><i class="icon-remove"></i></a>';
+			$html .='<a id="media-cancel" class="btn hasTooltip btn-inverse" onclick="removeImage(this)"   title=""><i class="icon-remove"></i></a>';
 			$html .='</span>';
 			$html .='</div>';
 			$html .='</div>';
@@ -373,13 +374,14 @@ class J2Html {
 			$html .='<a id="media-browse" style="display:inline;position:relative;" class="modal btn btn-success" rel="{handler:\'iframe\', size: {x: 800, y: 500}}" href="index.php?option=com_media&view=images&tmpl=component&asset='.$asset_id.'&author='.JFactory::getUser()->id.'&fieldid=jform_image_'.$id.'&folder='.$folder.'" title="'.JText::_('PLG_J2STORE_EXTRAIMAGES_SELECT') .'">';
 			$html .= JText::_('J2STORE_IMAGE_SELECT');
 			$html .='</a>';
-			$html .='<a id="media-cancel" class="btn hasTooltip btn-inverse" onclick="removeImage(this)"  href="#" title=""><i class="icon-remove"></i></a>';
+			$html .='<a id="media-cancel" class="btn hasTooltip btn-inverse" onclick="removeImage(this)"   title=""><i class="icon-remove"></i></a>';
 			$html .='</span>';
 			$html .='</div>';
 			$html .='</div>';
 		}
-		
-		return $html;
+
+        J2Store::plugin ()->event( 'MediaField', array(&$html, $name ,$value ,$options) );
+        return $html;
 	}
 
 

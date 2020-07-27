@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -35,7 +35,7 @@ class Raw extends BaseView
 	{
 		/** @var Log $model */
 		$model = $this->getModel();
-		$tag   = $model->getState('tag');
+		$tag   = $model->getState('tag', '', 'string');
 
 		if (empty($tag))
 		{

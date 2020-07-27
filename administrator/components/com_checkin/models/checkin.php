@@ -3,7 +3,7 @@
  * @package     Joomla.Administrator
  * @subpackage  com_checkin
  *
- * @copyright   Copyright (C) 2005 - 2016 Open Source Matters, Inc. All rights reserved.
+ * @copyright   Copyright (C) 2005 - 2019 Open Source Matters, Inc. All rights reserved.
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
@@ -64,12 +64,12 @@ class CheckinModelCheckin extends JModelList
 	 *
 	 * @since   1.6
 	 */
-	protected function populateState($ordering = null, $direction = null)
+	protected function populateState($ordering = 'table', $direction = 'asc')
 	{
 		$this->setState('filter.search', $this->getUserStateFromRequest($this->context . '.filter.search', 'filter_search'));
 
 		// List state information.
-		parent::populateState('table', 'asc');
+		parent::populateState($ordering, $direction);
 	}
 
 	/**
@@ -94,6 +94,8 @@ class CheckinModelCheckin extends JModelList
 		// This int will hold the checked item count.
 		$results = 0;
 
+		$dispatcher = \JEventDispatcher::getInstance();
+
 		foreach ($ids as $tn)
 		{
 			// Make sure we get the right tables based on prefix.
@@ -111,15 +113,16 @@ class CheckinModelCheckin extends JModelList
 
 			$query = $db->getQuery(true)
 				->update($db->quoteName($tn))
-				->set('checked_out = 0')
-				->set('checked_out_time = ' . $db->quote($nullDate))
-				->where('checked_out > 0');
+				->set($db->quoteName('checked_out') . ' = DEFAULT')
+				->set($db->quoteName('checked_out_time') . ' = ' . $db->quote($nullDate))
+				->where($db->quoteName('checked_out') . ' > 0');
 
 			$db->setQuery($query);
 
 			if ($db->execute())
 			{
 				$results = $results + $db->getAffectedRows();
+				$dispatcher->trigger('onAfterCheckin', array($tn));
 			}
 		}
 
@@ -238,6 +241,7 @@ class CheckinModelCheckin extends JModelList
 
 			// Pagination
 			$limit = (int) $this->getState('list.limit');
+
 			if ($limit !== 0)
 			{
 				$this->items = array_slice($results, $this->getState('list.start'), $limit);

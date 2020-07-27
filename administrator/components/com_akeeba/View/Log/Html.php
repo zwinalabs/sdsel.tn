@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -70,7 +70,7 @@ class Html extends BaseView
 		$model      = $this->getModel();
 		$this->logs = $model->getLogList();
 
-		$tag = $model->getState('tag');
+		$tag = $model->getState('tag', '', 'string');
 
 		if (empty($tag))
 		{
@@ -97,11 +97,13 @@ class Html extends BaseView
 			$js  = <<<JS
 
 ;// Prevent broken 3PD Javascript from causing errors
-akeeba.jQuery(document).ready(function ($){
-    $('#showlog').click(function(){
-        $('<iframe width="99%" src="$src" height="400px"/>').appendTo('.iframe-holder');
-        $(this).hide();
-    })
+akeeba.System.documentReady(function (){
+	akeeba.System.addEventListener(document.getElementById('showlog'), 'click', function(){
+		var iFrameHolder = document.getElementById('iframe-holder');
+		iFrameHolder.style.display = 'block';
+		iFrameHolder.insertAdjacentHTML('beforeend', '<iframe width="99%" src="$src" height="400px"/>');
+		this.parentNode.style.display = 'none';
+    });
 });
 
 JS;
@@ -111,7 +113,5 @@ JS;
 
 
 		$this->getProfileIdAndName();
-
-		JHtml::_('formbehavior.chosen');
 	}
 }

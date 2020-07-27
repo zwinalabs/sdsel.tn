@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Core;
@@ -547,7 +546,7 @@ function deadOnTimeOut()
 	}
 	elseif (connection_status() >= 2)
 	{
-		Factory::getLog()->log(LogLevel::ERROR, Platform::getInstance()->translate('COM_AKEEBA_BACKUP_ERR_KETTENRAD_TIMEOUT'));
+		Factory::getLog()->log(LogLevel::ERROR, 'Akeeba Backup has timed out. Please read the documentation.');
 	}
 }
 

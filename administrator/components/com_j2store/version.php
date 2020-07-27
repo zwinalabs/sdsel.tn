@@ -9,9 +9,9 @@
 # Technical Support:  Forum - http://j2store.org/forum/index.html
 -------------------------------------------------------------------------*/
 
-// Protect from unauthorized access
+// Protect from unauthorized access yy/mm/dd
 defined('_JEXEC') or die('Restricted Access');
 
 define('J2STORE_PRO', '0');
-define('J2STORE_VERSION', '3.2.14');
-define('J2STORE_DATE', '2016-08-16');
+define('J2STORE_VERSION', '3.3.9');
+define('J2STORE_DATE', '2019-05-09');

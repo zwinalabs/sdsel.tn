@@ -100,7 +100,7 @@ class JFormFieldModal_Article extends JFormField
 			$query = $db->getQuery(true)
 				->select($db->quoteName('title'))
 				->from($db->quoteName('#__content'))
-				->where($db->quoteName('id') . ' = ' . (int) $this->value);
+				->where($db->quoteName('id') . ' = ' . $db->q((int) $this->value));
 			$db->setQuery($query);
 
 			try

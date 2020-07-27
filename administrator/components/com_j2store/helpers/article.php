@@ -81,53 +81,103 @@ class J2Article {
 		{
 			$db = JFactory::getDbo();
 			$query = $db->getQuery(true);
-			$query->select('*')->from('#__content')->where('id='.$id);
+			$query->select('*')->from('#__content')->where('id='.$db->q($id));
 			$db->setQuery($query);
 			$sets[$id] = $db->loadObject();
 		}
 		return $sets[$id];
 	}
+
+	public function loadFalangAliasById($id,$lang_id){
+		if (empty($id) || empty($lang_id)){
+			return '';
+		}
+
+		//get default language
+        $params               = JComponentHelper::getParams('com_languages');
+        $lang = $params->get('site');
+		$default_lang_id = J2StoreRouterHelper::getLanguageId($lang);
+		$db = JFactory::getDbo();
+		$query = $db->getQuery(true);
+		if($default_lang_id == $lang_id){
+			$query->select('original_text');
+		}else{
+			$query->select('value');
+		}
+		$query->from('#__falang_content')
+			->where($db->quoteName('reference_table') . ' = ' . $db->quote('content'))
+			->where($db->quoteName('reference_field') . ' = ' . $db->quote('alias'))
+			->where($db->quoteName('published') . ' = 1');
+		if($default_lang_id != $lang_id){
+			$query->where($db->quoteName('language_id') . ' = '.$db->q($lang_id));
+		}
+		$query->where($db->quoteName('reference_id') . ' = ' . $db->quote($id));
+		$db->setQuery($query);
+		$alias = $db->loadResult();
+		return $alias;
+	}
 	
-	public function getArticleByAlias($alias) {
+	public function getArticleByAlias($alias, $categories = array())
+	{
 		static $sets;
 
-		if ( !is_array( $sets ) )
+		if ( ! is_array( $sets ) )
 		{
-			$sets = array( );
+			$sets = array();
 		}
-		if ( !isset( $sets[$alias] ) )
+		if ( ! isset( $sets[ $alias ] ) )
 		{
 
 			$content_id = 0;
-			if ( $this->isFalangInstalled() ){
+			if ( $this->isFalangInstalled() )
+			{
 				$config = J2Store::config();
 				// get alternate content from falang tables
-				if ( $config->get('enable_falang_support',0) ){
-					$content_id = $this->loadFalangContentID($alias) ;
+				if ( $config->get( 'enable_falang_support', 0 ) )
+				{
+					$content_id = $this->loadFalangContentID( $alias );
 				}
 			}
 
-			$db = JFactory::getDbo();
-			$query = $db->getQuery(true);
-			$query->select('*')->from('#__content');
-			if ( $content_id > 0 ) {
-				$query->where($db->quoteName('id') . ' = ' . $db->quote($content_id));
-			}else {
-				$query->where($db->quoteName('alias') . ' = ' . $db->quote($alias));
+			$db    = JFactory::getDbo();
+			$query = $db->getQuery( true );
+			$query->select( '*' )->from( '#__content' );
+			if ( $content_id > 0 )
+			{
+				$query->where( $db->quoteName( 'id' ) . ' = ' . $db->quote( $content_id ) );
+			} else
+			{
+				$query->where( $db->quoteName( 'alias' ) . ' = ' . $db->quote( $alias ) );
 				$tag = JFactory::getLanguage()->getTag();
-				if($tag != '*' && !empty( $tag ) ){
-					$query->where($db->quoteName('language') . ' IN (' . $db->quote($tag) .','.$db->quote ( '*' ).' )');
+				if ( $tag != '*' && ! empty( $tag ) )
+				{
+					$query->where( $db->quoteName( 'language' ) . ' IN (' . $db->quote( $tag ) . ',' . $db->quote( '*' ) . ' )' );
 				}
 			}
-			$db->setQuery($query);
-			try {
-				$sets[$alias] = $db->loadObject();
-			}catch(Exception $e) {
-				$sets[$alias] = new stdClass();
+
+			if ( $categories )
+			{
+				if ( ! is_array( $categories ) )
+				{
+					$categories = (array) $categories;
+				}
+				$categories = \Joomla\Utilities\ArrayHelper::toInteger( $categories );
+				//Too early to introduce this as this would affect if store owners use multiple categories
+				//$query->where( $db->quoteName( 'catid' ) . ' IN (' . implode( ',', $categories ) . ')' );
 			}
-			
+
+			$db->setQuery( $query );
+			try
+			{
+				$sets[ $alias ] = $db->loadObject();
+			} catch ( Exception $e )
+			{
+				$sets[ $alias ] = new stdClass();
+			}
+
 		}
-		return $sets[$alias];
+
+		return $sets[ $alias ];
 	}
 
 	/**
@@ -166,15 +216,94 @@ class J2Article {
 		}
 		return $content_id;
 	}
+
+
+    public function getAssociatedArticle($id,$tag='') {
+
+        $associated_id =0;
+        require_once JPATH_SITE . '/components/com_content/helpers/route.php';
+        if(empty($tag)){
+            $tag = JFactory::getLanguage()->getTag();
+        }
+        $result = $this->getAssociations($id, 'article',$tag);
+        if(isset($result[$tag])) {
+            $associated_id = (int) $result[$tag];
+        }
+        if(isset($associated_id) && $associated_id) {
+            $id = $associated_id;
+        }
+        return $id;
+    }
+
+    /**
+     * Method to get the associations for a given item
+     *
+     * @param   integer  $id    Id of the item
+     * @param   string   $view  Name of the view
+     *
+     * @return  array   Array of associations for the item
+     *
+     * @since  3.0
+     */
+    public function getAssociations($id = 0, $view = null,$currecnt_tag = '')
+    {
+        $user   = JFactory::getUser();
+        $groups = implode(',', $user->getAuthorisedViewLevels());
+
+        if ( $view === 'article' && !empty($id) )
+        {
+            if ($id)
+            {
+                $associations = JLanguageAssociations::getAssociations('com_content', '#__content', 'com_content.item', $id);
+
+                $return = array();
+                if(empty($currecnt_tag)){
+                    $tag = JFactory::getLanguage()->getTag();
+                }
+                //$currecnt_tag = JFactory::getLanguage()->getTag();
+                foreach ($associations as $tag => $item)
+                {
+                    // no need to run other language
+                    if($currecnt_tag == $tag){
+                        $arrId   = explode(':', $item->id);
+                        $assocId = $arrId[0];
+
+                        $db    = JFactory::getDbo();
+                        $query = $db->getQuery(true)
+                            ->select($db->qn('state'))
+                            ->from($db->qn('#__content'))
+                            ->where($db->qn('id') . ' = ' . $db->q((int) ($assocId)))
+                            ->where('access IN (' . $groups . ')');
+                        $db->setQuery($query);
+
+                        $result = (int) $db->loadResult();
+
+                        if ($result > 0)
+                        {
+                            $return[$tag] = $item->id;
+                        }
+                    }
+
+                }
+
+                return $return;
+            }
+        }
+
+        return array();
+    }
+
 	
-	public function getAssociatedArticle($id) {
-	
+
+	/*public function getAssociatedArticle($id,$tag = '') {
 		$associated_id =0;
 		require_once JPATH_SITE . '/components/com_content/helpers/route.php';
 	
 		require_once(JPATH_SITE.'/components/com_content/helpers/association.php');
 		$result = ContentHelperAssociation::getAssociations($id, 'article');
-		$tag = JFactory::getLanguage()->getTag();
+		if(empty($tag)){
+            $tag = JFactory::getLanguage()->getTag();
+        }
 		if(isset($result[$tag])) {
 			$parts = JString::parse_url($result[$tag]);
 			parse_str($parts['query'], $vars);
@@ -188,7 +317,7 @@ class J2Article {
 			$id = $associated_id;
 		}
 		return $id;
-	}
+	}*/
 	
 	public function getCategoryById($id) {
 		if (! is_numeric ( $id ) || empty ( $id ))

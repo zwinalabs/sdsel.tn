@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -22,10 +22,19 @@ interface CompilerInterface
 	/**
 	 * Compile a view template into PHP and HTML
 	 *
-	 * @param   array  $path         The absolute filesystem path of the view template
-	 * @param   array  $forceParams  Any parameters to force (only for engines returning raw HTML)
+	 * @param   string  $path         The absolute filesystem path of the view template
+	 * @param   array   $forceParams  Any parameters to force (only for engines returning raw HTML)
 	 *
 	 * @return mixed
 	 */
 	public function compile($path, array $forceParams = array());
+
+	/**
+	 * Returns the file extension supported by this compiler
+	 *
+	 * @return  string
+	 *
+	 * @since   3.3.1
+	 */
+	public function getFileExtension();
 }

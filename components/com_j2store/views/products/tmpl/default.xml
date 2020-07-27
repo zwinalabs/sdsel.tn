@@ -26,19 +26,31 @@
 		
 			<field name="orderby_sec" type="list"
 				description="JGLOBAL_ARTICLE_ORDER_DESC"
-				label="JGLOBAL_ARTICLE_ORDER_LABEL"
+				label="J2STORE_ARTICLE_ORDER_LABEL"
 			>
 				<option value="">JGLOBAL_USE_GLOBAL</option>
-				<option value="front">COM_CONTENT_FEATURED_ORDER</option>
-				<option value="rdate">JGLOBAL_MOST_RECENT_FIRST</option>
-				<option value="date">JGLOBAL_OLDEST_FIRST</option>
-				<option value="alpha">JGLOBAL_TITLE_ALPHABETICAL</option>
-				<option value="ralpha">JGLOBAL_TITLE_REVERSE_ALPHABETICAL</option>
-				<option value="author">JGLOBAL_AUTHOR_ALPHABETICAL</option>
-				<option value="rauthor">JGLOBAL_AUTHOR_REVERSE_ALPHABETICAL</option>
-				<option value="hits">JGLOBAL_MOST_HITS</option>
-				<option value="rhits">JGLOBAL_LEAST_HITS</option>
-				<option value="order">JGLOBAL_ORDERING</option>
+				<option value="featured">J2STORE_FEATURED_CONTENT</option>
+				<option value="date">J2STORE_DATE_ORDERING</option>
+				<option value="title">J2STORE_TITLE_ORDERING</option>
+				<option value="author">J2STORE_AUTHOR_ORDERING</option>
+				<option value="hits">J2STORE_HITS_ORDERING</option>
+				<option value="order">J2STORE_ARTICLE_ORDERING</option>
+				<option value="cat_order">J2STORE_CATEGORY_ORDERING</option>
+			</field>
+			<field name="list_order_direction" type="list" default="ASC"
+				   description="J2STORE_ARTICLE_ORDERING_TYPE_DESC"
+				   label="J2STORE_ARTICLE_ORDERING_TYPE"
+			>
+				<option value="ASC">J2STORE_ASCENDING_ORDER</option>
+				<option value="DESC">J2STORE_DESCENDING_ORDER</option>
+			</field>
+
+			<field name="category_order_direction" type="list" default="ASC"
+				   description="J2STORE_CATEGORY_ORDERING_TYPE_DESC"
+				   label="J2STORE_CATEGORY_ORDERING_TYPE"
+			>
+				<option value="ASC">J2STORE_ASCENDING_ORDER</option>
+				<option value="DESC">J2STORE_DESCENDING_ORDER</option>
 			</field>
 
 			<field name="order_date" type="list"
@@ -109,7 +121,12 @@
 			<field name="show_subcategory_content" type="text" default="3" 
 				label="J2STORE_PRODUCT_LIST_SUBCATEGORY_LEVEL"
 				description="J2STORE_PRODUCT_LIST_SUBCATEGORY_LEVEL_DESC"/>
-				
+
+			<field name="show_feature_only" type="radio" default="0" class="btn-group"
+				   label="J2STORE_PRODUCT_SHOW_FEATURE_LABEL" >
+				<option value="0">J2STORE_ALL</option>
+				<option value="1">J2STORE_SHOW_FEATURE_ONLY</option>
+			</field>
 
 			<field name="list_show_title" type="radio" default="1" class="btn-group"
 				label="J2STORE_PRODUCT_SHOW_TITLE_LABEL" >
@@ -432,6 +449,12 @@
 			<field name="item_product_additional_image_width" type="text"
 				class="btn-group" label="J2STORE_PRODUCT_ADDITIONAL_IMAGE_WIDTH" />
 
+			<field name="item_product_upsell_image_width" type="text"
+				   class="btn-group" label="J2STORE_PRODUCT_UPSELL_IMAGE_WIDTH" />
+
+			<field name="item_product_cross_image_width" type="text"
+				   class="btn-group" label="J2STORE_PRODUCT_CROSS_IMAGE_WIDTH" />
+
 			<field name="item_enable_image_zoom" type="radio" default="1"
 				class="btn-group" label="J2STORE_PRODUCT_ENABLE_IMAGE_ZOOM_EFFECTS">
 				<option value="0">J2STORE_NO</option>
@@ -475,6 +498,9 @@
 				<option value="1">J2STORE_SHOW</option>
 			</field>
 						
+		</fieldset>
+		<fieldset name="item_canonical" label="J2STORE_PRODUCT_LIST_ITEM_VIEW_CANONICAL">
+			<field name="canonical_menu" type="j2storeproductlistmenu"  label="J2STORE_CANONICAL_MENU" />
 		</fieldset>
 	</fields>
 </metadata> 

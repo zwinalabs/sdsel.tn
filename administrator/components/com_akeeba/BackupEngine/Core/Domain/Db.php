@@ -1,11 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * The PHP-only site backup engine
+ *
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Core\Domain;
@@ -16,7 +16,6 @@ defined('AKEEBAENGINE') or die();
 use Akeeba\Engine\Base\Part;
 use Akeeba\Engine\Dump\Base as DumpBase;
 use Akeeba\Engine\Factory;
-use Akeeba\Engine\Platform;
 use Psr\Log\LogLevel;
 
 /**
@@ -269,7 +268,7 @@ class Db extends Part
 	protected function createDatabasesINI()
 	{
 		// caching databases.ini contents
-		Factory::getLog()->log(LogLevel::DEBUG, __CLASS__ . "AkeebaCUBEDomainDBBackup :: Creating databases.ini data");
+		Factory::getLog()->log(LogLevel::DEBUG, __CLASS__ . " :: Creating databases.ini data");
 
 		// Create a new string
 		$this->databases_ini = '';

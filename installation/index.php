@@ -1,23 +1,51 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer For Joomla! - Main file
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
-
-// Sanity check
-if(__DIR__ == '__DIR__')
-{
-	die('Akeeba Next Generation Installer For Joomla! requires PHP 5.3 or later');
-}
 
 // Define ourselves as a parent file
 define('_AKEEBA', 1);
-// Required by Joomla! files
+// Used by our version.php file and by ANGIE for Joomla!.
 define('_JEXEC', 1);
+
+$minPHP         = '5.4.0';
+$recommendedPHP = '7.2';
+
+// Sanity check
+if (version_compare(PHP_VERSION, $minPHP, 'lt'))
+{
+	$versionFile  = dirname(__FILE__) . '/version.php';
+	$platformFile = dirname(__FILE__) . '/platform/views/php_version.php';
+	$masterFile   = dirname(__FILE__) . '/template/flat/php_version.php';
+	$reqFile      = dirname(__FILE__) . '/framework/utils/servertechnology.php';
+
+	@include_once $reqFile;
+
+	if (file_exists($versionFile))
+	{
+		include $versionFile;
+	}
+
+	if (file_exists($platformFile) && file_exists($reqFile))
+	{
+		include $platformFile;
+	}
+	elseif (file_exists($masterFile) && file_exists($reqFile))
+	{
+		include $masterFile;
+	}
+	else
+	{
+		echo sprintf("ANGIE requires PHP version 5.4.0 or later. Your server reports that you are currently using %s. Please fix this issue and retry running this script.", PHP_VERSION);
+	}
+
+	exit(0);
+}
+
 // Required for lang strings. This is what happens when you use Joomla! core code.
 define('_QQ_', '&quot;');
 
@@ -34,13 +62,21 @@ require_once __DIR__ . '/angie/helpers/ini.php';
 
 // Load the framework autoloader
 require_once __DIR__ . '/framework/autoloader.php';
+// Load PSR-4 autoloader
+require_once __DIR__ . '/framework/Autoloader/Autoloader.php';
+
+\Angie\Autoloader\Autoloader::getInstance()->addMap('Symfony\\', array(realpath(__DIR__ . '/framework/Symfony')));
+
 require_once __DIR__ . '/defines.php';
 
 // Load Angie autoloader
 require_once __DIR__. '/angie/autoloader.php';
 
 // Required by the Joomla! CMS version file (mind. blown!)
-define('JPATH_PLATFORM', APATH_LIBRARIES);
+if (!defined('JPATH_PLATFORM'))
+{
+	define('JPATH_PLATFORM', APATH_LIBRARIES);
+}
 
 try
 {

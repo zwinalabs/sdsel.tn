@@ -9,7 +9,7 @@
 // No direct access
 defined('_JEXEC') or die;
 ?>
-<div class="j2store-single-product <?php echo $this->product->product_type; ?> detail bs2">
+<div class="j2store-single-product <?php echo $this->product->product_type; ?> detail bs2 <?php echo $this->product->params->get('product_css_class','');?>">
 	<?php if ($this->params->get('item_show_page_heading', 0)) : ?>
 		<div class="page-header">
 			<h1> <?php echo $this->escape($this->params->get('page_heading')); ?> </h1>
@@ -24,6 +24,7 @@ defined('_JEXEC') or die;
 		</div>
 	<?php endif;?>
 	<?php echo $this->loadTemplate($this->product->product_type); ?>
+	<?php echo J2Store::plugin ()->eventWithHtml ( 'AfterProductDisplay', array($this->product,$this) )?>
 	<?php echo J2Store::modules()->loadposition('j2store-single-product-bottom'); ?>
 </div>
 

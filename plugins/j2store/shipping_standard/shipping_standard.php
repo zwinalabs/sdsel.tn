@@ -153,10 +153,15 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
     			$ratemodel->setState('filter_geozones', $gz_array);
     			if ($ratesexist = $ratemodel->getList())
     			{
-    				$total = $this->getTotal($method->j2store_shippingmethod_id, $geozones, $order->getItems(), $geozones_taxes );
+    				$total = $this->getTotal($method->j2store_shippingmethod_id, $geozones, $order, $geozones_taxes );
     				if ($total)
     				{
     					$total->shipping_method_type = $method->shipping_method_type;
+						if(isset( $method->params ) && empty( $method->params )){
+							$method->params = '{}';
+						}
+						$params = new JRegistry($method->params);
+						$total->shipping_select_text = $params->get('shipping_select_text','');
     					$rates[] = $total;
     				}
     			}
@@ -173,10 +178,10 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
     		$vars[$i]['price'] = $rate->shipping_rate_price;
     		$vars[$i]['tax'] = round($rate->shipping_tax_total, 2);
     		$vars[$i]['extra'] = $rate->shipping_rate_handling;
+			$vars[$i]['select_text'] = $rate->shipping_select_text;
     		$vars[$i]['total'] = $rate->shipping_rate_price + $rate->shipping_rate_handling + round($rate->shipping_tax_total, 2);
     		$i++;
     	}
-//var_dump($vars);
     	return $vars;
 
     }
@@ -190,7 +195,7 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
      * @param unknown_type $orderItems
      * @param unknown_type $order_id
      */
-    protected function getTotal( $shipping_method_id, $geozones, $orderItems, $geozones_taxes )
+    protected function getTotal( $shipping_method_id, $geozones, $order, $geozones_taxes )
     {
     	$return = new JObject();
     	$return->j2store_shippingrate_id         = '0';
@@ -201,7 +206,7 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
 
     	$rate_exists = false;
     	$geozone_rates = array();
-
+		$orderItems = $order->getItems();
 
     	//include custom modals
     	$this->includeCustomModel('ShippingMethods');
@@ -254,7 +259,20 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
     					$total += $product->$final_price; // product total
     				}
     			}
-    			
+
+				if(isset( $shippingmethod->params ) && empty( $shippingmethod->params )){
+					$shippingmethod->params = "{}";
+				}
+				$ship_params = new JRegistry($shippingmethod->params);
+				$price_based_on = $ship_params->get('shipping_price_based_on',0);
+				if($price_based_on){
+					$discount_array = $order->getCartDiscounts();
+					$discount = $discount_array['order_discount']+$discount_array['order_discount_tax'];
+					if( $discount > 0 ){
+						$total -= $discount;
+					}
+				}
+				
     			if($order_ships) {
 	    			foreach ($geozones as $geozone)
 	    			{
@@ -397,7 +415,7 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
 		    					if ($shippingmethod->shipping_method_type == '6')
 		    					{
 		    						// the rate is a percentage of the product's price
-		    						$rate->shipping_rate_price = ($rate->shipping_rate_price/100) * $product->orderitem_final_price;
+		    						$rate->shipping_rate_price = ($rate->shipping_rate_price/100) * $product->orderitem_finalprice;
 
 		    						$geozone_rates[$geozone_id][$hash] = $rate;
 		    						$geozone_rates[$geozone_id][$hash]->shipping_method_type = $shippingmethod->shipping_method_type;
@@ -482,8 +500,6 @@ class plgJ2StoreShipping_Standard extends J2StoreShippingPlugin
 	    $return->shipping_tax_total     = $shipping_method_tax_total;
 	    $return->shipping_method_id     = $shipping_method_id;
 	    $return->shipping_method_name   = $shippingmethod->shipping_method_name;
-
-	  //  print_r($return);
     	return $return;
     }
 

@@ -256,7 +256,8 @@ class J2StoreModelOrders extends F0FModel {
 
 		$this->_buildTotalQueryWhere($query);
 		$this->_buildQueryOrderBy($query);
-	//	echo $query;
+        J2Store::plugin()->event('AfterOrderListQuery',array(&$query));
+		//echo $query;
 		return $query;
 	}
 
@@ -322,13 +323,29 @@ class J2StoreModelOrders extends F0FModel {
 				'frominvoice'		=> $this->getState('frominvoice',null,'int'),
 				'toinvoice'		=> $this->getState('toinvoice',null,'int'),
 				'orderstatus'		=> $this->getState('orderstatus',array()),
+                'token'		=> $this->getState('token',''),
+                'user_email'		=> $this->getState('user_email',''),
 		);
 	}
 
 	function _buildTotalQueryWhere(&$query){
+		$app = JFactory::getApplication();
 		$db =$this->_db;
 		jimport('joomla.utilities.date');
 		$state = $this->getFilterValues();
+
+		$loadChildOrders = $app->input->getInt('parent');
+		if($loadChildOrders){
+			$query->where(
+				$db->qn('#__j2store_orders').'.'.$db->qn('parent_id').'='.$db->q($loadChildOrders)
+			);
+		} else {
+			$query->where(
+				$db->qn('#__j2store_orders').'.'.$db->qn('order_type').'='.$db->q('normal')
+			);
+		}
+
+
 
 		if(isset($state->orderstatus) && !empty($state->orderstatus) && is_array($state->orderstatus)) {
 			if(!in_array('*' ,$state->orderstatus)){
@@ -336,9 +353,11 @@ class J2StoreModelOrders extends F0FModel {
 					implode(',',$state->orderstatus).')');
 			}
 		}
+
 		//order status
-		if($state->orderstate) {
+		if($state->orderstate ) {
 			$states_temp = explode(',', $state->orderstate);
+
 			$states = array();
 			foreach($states_temp as $s) {
 				$s = strtoupper($s);
@@ -346,7 +365,9 @@ class J2StoreModelOrders extends F0FModel {
 			//	if(!in_array($s, array(1,3,4,5))) continue;
 				$states[] = $db->q($s);
 			}
+
 			if(!empty($states)) {
+
 				$query->where(
 						$db->qn('#__j2store_orders').'.'.$db->qn('order_state_id').' IN ('.
 						implode(',',$states).')'
@@ -368,7 +389,17 @@ class J2StoreModelOrders extends F0FModel {
 					$db->qn('#__j2store_orders').'.'.$db->qn('user_id').'='.$db->q($state->user_id)
 			);
 		}
-
+		if($state->token){
+            $query->where(
+                $db->qn('#__j2store_orders').'.'.$db->qn('token').'='.$db->q($state->token)
+            );
+        }
+		if($state->user_email){
+            $query->where(
+                $db->qn('#__j2store_orders').'.'.$db->qn('user_email').'='.$db->q($state->user_email)
+            );
+        }
+        $tz = JFactory::getConfig()->get('offset');
 		//since
 		$since = trim($state->since);
 		if(empty($since) || ($since == '0000-00-00') || ($since == '0000-00-00 00:00:00')) {
@@ -378,13 +409,14 @@ class J2StoreModelOrders extends F0FModel {
 			if(!preg_match($regex, $since)) {
 				$since = '2001-01-01';
 			}
-			$jFrom = new JDate($since);
-			$since = $jFrom->toUnix();
+            $from_date = JFactory::getDate($since);
+			$since = $from_date->toUnix();
 			if($since == 0) {
 				$since = '';
 			} else {
-				$since = $jFrom->toSql();
+				$since = $from_date->toSql();
 			}
+
 			// Filter from-to dates
 			$query->where(
 					$db->qn('#__j2store_orders').'.'.$db->qn('created_on').' >= '.
@@ -401,12 +433,14 @@ class J2StoreModelOrders extends F0FModel {
 			if(!preg_match($regex, $until)) {
 				$until = '2037-01-01';
 			}
-			$jFrom = new JDate($until);
-			$until = $jFrom->toUnix();
+            $extra_date = JFactory::getDate($until);
+            $until = $extra_date->format('Y-m-d').' 23:59:59';
+            $to_date = JFactory::getDate($until);
+			$until = $to_date->toUnix();
 			if($until == 0) {
 				$until = '';
 			} else {
-				$until = $jFrom->toSql();
+				$until = $to_date->toSql();
 			}
 			$query->where(
 					$db->qn('#__j2store_orders').'.'.$db->qn('created_on').' <= '.
@@ -430,22 +464,34 @@ class J2StoreModelOrders extends F0FModel {
 
 		//from invoice number
 		if($state->frominvoice) {
-			$query->where(
-					$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' >= '.$db->q($state->frominvoice)
+		//CASE
+		//	WHEN id<800 THEN success=1
+         // ELSE 1=1
+      //END
+			$query->where('CASE WHEN '.
+					$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' = 0 THEN '.$db->qn('#__j2store_orders').'.'.$db->qn('j2store_order_id').' >= '.$db->q($state->frominvoice).
+					' ELSE ' .$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' >= '.$db->q($state->frominvoice) .' END '
 			);
 		}
 
 		//to invoice number
 		if($state->toinvoice) {
-			$query->where(
-					$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' <= '.$db->q($state->toinvoice)
+			$query->where('CASE WHEN '.
+				$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' = 0 THEN '.$db->qn('#__j2store_orders').'.'.$db->qn('j2store_order_id').' <= '.$db->q($state->toinvoice).
+				' ELSE ' .$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' <= '.$db->q($state->toinvoice) .' END '
 			);
+
+			/*$query->where(
+					$db->qn('#__j2store_orders').'.'.$db->qn('invoice_number').' <= '.$db->q($state->toinvoice)
+			);*/
 		}
 
 		if($state->search){
 			$search = '%'.trim($state->search).'%';
-			 $query->where(
+			$subquery = '( select order_id from #__j2store_orderitems where #__j2store_orderitems.orderitem_sku LIKE '.$db->q($search).' AND #__j2store_orderitems.order_id = '.$db->qn('#__j2store_orders').'.'.$db->qn('order_id').' Group by #__j2store_orderitems.order_id )';
+			$query->where('('.
 			 				$db->qn('#__j2store_orders').'.'.$db->qn('order_id').' LIKE '.$db->q($search).' OR '.
+							$db->qn('#__j2store_orders').'.'.$db->qn('order_id').' = '.$subquery.' OR '.
 			 				$db->qn('#__j2store_orders').'.'.$db->qn('j2store_order_id').' LIKE '.$db->q($search).'OR '.
 			 				$db->qn('#__j2store_orders').'.'.$db->qn('user_email').' LIKE '.$db->q($search).'OR '.
 			 				$db->qn('#__j2store_orders').'.'.$db->qn('order_state').' LIKE '.$db->q($search).'OR '.
@@ -453,6 +499,7 @@ class J2StoreModelOrders extends F0FModel {
 			 				' CONCAT ('.$db->qn('#__j2store_orderinfos').'.'.$db->qn('billing_first_name').', " ", '.$db->qn('#__j2store_orderinfos').'.'.$db->qn('billing_last_name').') LIKE '.$db->q($search).'OR '.
 			 				$db->qn('#__j2store_orderinfos').'.'.$db->qn('billing_first_name').' LIKE '.$db->q($search).'OR'.
 			 				$db->qn('#__j2store_orderinfos').'.'.$db->qn('billing_last_name').' LIKE '.$db->q($search)
+				.')'
 			 		) ;
 		}
 
@@ -518,23 +565,37 @@ class J2StoreModelOrders extends F0FModel {
 				$new_order['billing_zone_name'] = $order->billingzone_name;
 				$new_order['shipping_zone_name'] = $order->shippingzone_name;
 
-				$processed_variables = array();
+				//$new_order = array();
 
-				$processed_variables['invoice'] = $order->invoice;
-				$processed_variables['order_id'] = $order->order_id;
-				$processed_variables['created_on'] = $order->created_on;
-				$processed_variables['customer_name'] = $order->billing_first_name .' '.$order->billing_last_name;
-				$processed_variables['customer_email'] = $order->user_email;
-				$processed_variables['currency_code'] = $order->currency_code;
-				$processed_variables['order_subtotal'] = $currency->format( $order->order_subtotal, $order->currency_code, $order->currency_value, false);
-				$processed_variables['order_tax'] = $currency->format( $order->order_tax, $order->currency_code, $order->currency_value, false);
-				$processed_variables['order_shipping'] = $currency->format( $order->order_shipping, $order->currency_code, $order->currency_value, false);
-				$processed_variables['order_shipping_tax'] = $currency->format( $order->order_shipping_tax, $order->currency_code, $order->currency_value, false);
-				$processed_variables['order_surcharge'] = $currency->format( $order->order_surcharge, $order->currency_code, $order->currency_value, false);
-				$processed_variables['order_discount'] = $currency->format( $order->order_discount, $order->currency_code, $order->currency_value, false);
-				$processed_variables['order_total'] = $currency->format( $order->order_total, $order->currency_code, $order->currency_value, false);
+				$new_order['invoice'] = $order->invoice;
+				$new_order['order_id'] = $order->order_id;
+				$new_order['created_on'] = $order->created_on;
+				$new_order['customer_name'] = $order->billing_first_name .' '.$order->billing_last_name;
+				$new_order['customer_email'] = $order->user_email;
+				$new_order['currency_code'] = $order->currency_code;
 
-				$new_order = array_merge($processed_variables, $new_order);
+				$order_info = $orderTable->getOrderInformation();
+				$billing_country_table = $this->getCountryById($order_info->billing_country_id);
+				if($order_info->shipping_country_id > 0) {
+					$shipping_country_table = $this->getCountryById($order_info->shipping_country_id);
+				}else {
+					$shipping_country_table = $this->getCountryById($order_info->billing_country_id);
+				}
+
+				$new_order['billing_country_code_2'] = $billing_country_table->country_isocode_2;
+				$new_order['billing_country_code_3'] = $billing_country_table->country_isocode_3;
+				$new_order['shipping_country_code_2'] = $shipping_country_table->country_isocode_2;
+				$new_order['shipping_country_code_3'] = $shipping_country_table->country_isocode_3;
+
+				$new_order['order_subtotal'] = $currency->format( $order->order_subtotal, $order->currency_code, $order->currency_value, false);
+				$new_order['order_tax'] = $currency->format( $order->order_tax, $order->currency_code, $order->currency_value, false);
+				$new_order['order_shipping'] = $currency->format( $order->order_shipping, $order->currency_code, $order->currency_value, false);
+				$new_order['order_shipping_tax'] = $currency->format( $order->order_shipping_tax, $order->currency_code, $order->currency_value, false);
+				$new_order['order_surcharge'] = $currency->format( $order->order_surcharge, $order->currency_code, $order->currency_value, false);
+				$new_order['order_discount'] = $currency->format( $order->order_discount, $order->currency_code, $order->currency_value, false);
+				$new_order['order_total'] = $currency->format( $order->order_total, $order->currency_code, $order->currency_value, false);
+
+				//$new_order = array_merge($new_order, $new_order);
 
 				$new_order['orderstatus_name'] = JText::_($order->orderstatus_name);
 				$new_order['orderpayment_type'] = JText::_($order->orderpayment_type);
@@ -596,10 +657,15 @@ class J2StoreModelOrders extends F0FModel {
 		foreach($fields as $field) {
 			$order[$type.'_'.JString::strtolower($field->field_namekey)] = '';
 		}
+        $custom_fields = array();
+		try{
+            $registry = new JRegistry();
+            $registry->loadString(stripslashes($data_field), 'JSON');
+            $custom_fields = $registry->toObject();
+        }catch (Exception $e){
+            //do nothings
+        }
 
-		$registry = new JRegistry();
-		$registry->loadString(stripslashes($data_field), 'JSON');
-		$custom_fields = $registry->toObject();
 
 		$row = F0FTable::getAnInstance('Orderinfo','J2StoreTable');
 		if(isset($custom_fields) && count($custom_fields)) {
@@ -630,8 +696,13 @@ class J2StoreModelOrders extends F0FModel {
                             }
 
 						}elseif(J2Store::utilities()->isJson(stripslashes($field->value))) {
+                            $json_values = array();
+                            try{
+                                $json_values = json_decode(stripslashes($field->value));
+                            }catch (Exception $e){
+                                // do nothing
+                            }
 
-							$json_values = json_decode(stripslashes($field->value));
 
 							if(is_array($json_values)) {
 								$k = count($json_values ); $i = 1;
@@ -725,6 +796,7 @@ class J2StoreModelOrders extends F0FModel {
 						$old_status = $order->order_state_id;
 
 						$order->update_status(6);
+						$order->notify_customer(true);
 
 						//if status is new, then stock may not got reduced.
 						if($old_status == 4) {
@@ -736,6 +808,12 @@ class J2StoreModelOrders extends F0FModel {
 
 			}
 		}
+	}
+
+	public function getCountryById($country_id) {
+		$country = F0FTable::getInstance('Country', 'J2StoreTable')->getClone();
+		$country->load($country_id);
+		return $country;
 	}
 
 }

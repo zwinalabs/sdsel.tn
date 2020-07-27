@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -57,8 +57,8 @@ class Schedule extends Model
 		}
 
 		// Get front-end backup secret key
-		$ret->info->secret    = $this->container->params->get('frontend_secret_word', '');
-		$ret->info->feenabled = $this->container->params->get('frontend_enable', false);
+		$ret->info->secret    = Platform::getInstance()->get_platform_configuration_option('frontend_secret_word', '');
+		$ret->info->feenabled = Platform::getInstance()->get_platform_configuration_option('frontend_enable', false);
 
 		// Get root URL
 		$ret->info->root_url = rtrim($this->container->params->get('siteurl', ''), '/');

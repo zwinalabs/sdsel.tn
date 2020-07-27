@@ -71,7 +71,6 @@ class plgJ2StorePayment_moneyorder extends J2StorePaymentPlugin
 		}
 	}
 
-
     /**
      * Prepares the payment form
      * and returns HTML Form to be displayed to the user
@@ -93,9 +92,52 @@ class plgJ2StorePayment_moneyorder extends J2StorePaymentPlugin
         $vars->display_name = $this->params->get('display_name', JText::_( "PLG_J2STORE_PAYMENT_MONEYORDER"));
         $vars->onbeforepayment_text = $this->params->get('onbeforepayment', '');
         $vars->button_text = $this->params->get('button_text', 'J2STORE_PLACE_ORDER');
+		F0FTable::addIncludePath ( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
+		$order = F0FTable::getInstance ( 'Order', 'J2StoreTable' )->getClone ();
+		$order->load ( array (
+			'order_id' => $vars->order_id
+		) );
+		$vars->hash = $this->generatHash($order);
         $html = $this->_getLayout('prepayment', $vars);
         return $html;
     }
+
+	/**
+	 * Processes the payment form
+	 * and returns HTML to be displayed to the user
+	 * generally with a success/failed message
+	 *
+	 * @param $data     array       form post data
+	 * @return string   HTML to display
+	 */
+	function _postPayment($data) {
+		// Process the payment
+		$vars = new JObject ();
+
+		$app = JFactory::getApplication ();
+		$paction = $app->input->getString ( 'paction' );
+
+		switch ($paction) {
+			case 'display' :
+				$vars->onafterpayment_text = JText::_ ( $this->params->get ( 'onafterpayment', '' ) );
+				$html = $this->_getLayout ( 'postpayment', $vars );
+				$html .= $this->_displayArticle ();
+				break;
+			case 'process' :
+				JSession::checkToken() or die( 'Invalid Token' );
+				$result = $this->_process ($data);
+				$json = json_encode ( $result );
+				echo $json;
+				$app->close ();
+				break;
+			default :
+				$vars->message = JText::_ ( $this->params->get ( 'onerrorpayment', '' ) );
+				$html = $this->_getLayout ( 'message', $vars );
+				break;
+		}
+
+		return $html;
+	}
 
 	/**
 	 * Processes the payment form
@@ -106,25 +148,33 @@ class plgJ2StorePayment_moneyorder extends J2StorePaymentPlugin
 	 *        	form post data
 	 * @return string HTML to display
 	 */
-	function _postPayment($data) {
+	function _process($data) {
 		// Process the payment
 		$app = JFactory::getApplication ();
-		$vars = new JObject ();
-		$html = '';
+		$json = array();
 		$order_id = $app->input->getString( 'order_id' );
 		F0FTable::addIncludePath ( JPATH_ADMINISTRATOR . '/components/com_j2store/tables' );
 		$order = F0FTable::getInstance ( 'Order', 'J2StoreTable' )->getClone ();
 		if ($order->load ( array (
 				'order_id' => $order_id
 		) )) {
-			$bank_information = $this->params->get ( 'moneyorder_information', '' );
 
-			if (JString::strlen ( $bank_information ) > 5) {
+			if(($order->orderpayment_type != $this->_element) || !$this->validateHash($order)) {
+				$json ['error'] = $this->params->get ( 'onerrorpayment', '' );
+				return $json;
+			}
+
+			$moneyorder_information = $this->params->get ( 'moneyorder_information', '' );
+
+			if (JString::strlen ( $moneyorder_information ) > 5) {
 
 				$html = '<br />';
 				$html .= '<strong>' . JText::_ ( 'J2STORE_MONEYORDER_INSTRUCTIONS' ) . '</strong>';
 				$html .= '<br />';
-				$html .= $bank_information;
+				$html .= $moneyorder_information;
+                if($this->params->get('enable_strip_tags',0)){
+                    $html = strip_tags(preg_replace('#<br\s*/?>#i', "\n",$html));
+                }
 				$order->customer_note = $order->customer_note . $html;
 			}
 
@@ -142,21 +192,16 @@ class plgJ2StorePayment_moneyorder extends J2StorePaymentPlugin
 
 			if ($order->store ()) {
 				$order->empty_cart();
-				$vars->onafterpayment_text = $this->params->get ( 'onafterpayment', '' );
-
-				$html = $this->_getLayout ( 'postpayment', $vars );
-
-				// append the article with cash payment information
-				$html .= $this->_displayArticle ();
+				$json ['success'] = JText::_ ( $this->params->get ( 'onafterpayment', '' ) );
+				$json ['redirect'] = JRoute::_ ( 'index.php?option=com_j2store&view=checkout&task=confirmPayment&orderpayment_type=' . $this->_element . '&paction=display' );
 			} else {
-				$html = $this->params->get ( 'onerrorpayment', '' );
-				$html .= $order->getError ();
+				$json ['error'] = $order->getError ();
 			}
 		} else {
 			// order not found
-			$html = $this->params->get ( 'onerrorpayment', '' );
+			$json ['error'] = $this->params->get ( 'onerrorpayment', '' );
 		}
-		return $html;
+		return $json;
 	}
 
     /**

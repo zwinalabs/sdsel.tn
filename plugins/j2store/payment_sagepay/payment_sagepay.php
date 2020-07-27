@@ -461,13 +461,37 @@ class plgJ2StorePayment_sagepay extends J2StorePaymentPlugin
             "GiftAidPayment"            => "0",
             "ClientIPAddress"           => $_SERVER['REMOTE_ADDR']
         );
+        if(empty($sagepay_values['DeliverySurname'])){
+            $sagepay_values['DeliverySurname'] = $sage_lname;
+        }
+
+        if(empty($sagepay_values['DeliveryFirstnames'])){
+            $sagepay_values['DeliveryFirstnames'] = $sage_fname;
+        }
+
+        if(empty($sagepay_values['DeliveryAddress1'])){
+            $sagepay_values['DeliveryAddress1'] = $sage_address1;
+        }
+
+        if(empty($sagepay_values['DeliveryCity'])){
+            $sagepay_values['DeliveryCity'] = $sage_city;
+        }
+
+        if(empty($sagepay_values['DeliveryPostCode'])){
+            $sagepay_values['DeliveryPostCode'] = $sage_zip;
+        }
+
+        if(empty($sagepay_values['DeliveryCountry'])){
+            $sagepay_values['DeliveryCountry'] = $sage_country;
+        }
 
         if($sage_country == 'US') {
         	$sagepay_values["BillingState"] = $sage_state;
         }
 
-        if($shipping_country == 'US') {
-        	$sagepay_values["DeliveryState"]= substr($this->getZoneById($orderinfo->shipping_zone_id)->zone_code, 0, 2);
+        if($sagepay_values['DeliveryCountry'] == 'US') {
+            $zone_id = !empty($orderinfo->shipping_zone_id) ? $orderinfo->shipping_zone_id: $orderinfo->billing_zone_id;
+        	$sagepay_values["DeliveryState"]= substr($this->getZoneById($zone_id)->zone_code, 0, 2);
         }
 
         //add optional fields
@@ -661,19 +685,22 @@ class plgJ2StorePayment_sagepay extends J2StorePaymentPlugin
 							break;
 					}
 				}
-
 				if($order_state_id == 1) {
 					$orderpayment->payment_complete();
-				} else {
+				} elseif($order_state_id == 4) {
+					$orderpayment->update_status($order_state_id);
+				}else{
+					$msg = isset($resp['StatusDetail']) ? $resp['StatusDetail'] : JText::_($this->params->get('onerrorpayment',''));
+					$errors[] =  $msg;
 					$orderpayment->update_status($order_state_id);
 				}
+				
 				// save the order
 	            if (!$orderpayment->store())
 	            {
 	                $errors[] = $orderpayment->getError();
-	            } else {
-	            	$orderpayment->empty_cart();
 	            }
+				$orderpayment->empty_cart();
             } else {
             	$errors[] = JText::_('J2STORE_SAGEPAY_ORDER_ID_MISMATCH');
             }
@@ -681,7 +708,8 @@ class plgJ2StorePayment_sagepay extends J2StorePaymentPlugin
             if (empty($errors))
             {
         		$return['success']  = JText::_($this->params->get('onafterpayment', ''));
-        		$return['redirect'] = JRoute::_('index.php?option=com_j2store&view=checkout&task=confirmPayment&orderpayment_type='.$this->_element.'&paction=display');
+                $return_url = $this->getReturnUrl();
+	            $return ['redirect'] = JRoute::_($return_url);//JRoute::_('index.php?option=com_j2store&view=checkout&task=confirmPayment&orderpayment_type='.$this->_element.'&paction=display');
 
             } else {
             	$error = count($errors) ? implode("\n", $errors) : '';

@@ -21,7 +21,7 @@ defined ( '_JEXEC' ) or die ();?>
 		<tr>
 			<td><?php echo JText::_('J2STORE_ORDER_TRANSACTION_LOG'); ?></td>
 			<td>  <!-- Button to trigger modal -->
-   				 <a href="#myTransaction" role="button" class="btn btn-success" data-toggle="modal"><?php echo JText::_('J2STORE_VIEW');?></a>
+   				 <a href="javascript:void(0)" data-target="#myTransaction" role="button" class="btn btn-success" data-toggle="modal"><?php echo JText::_('J2STORE_VIEW');?></a>
   			</td>
 		</tr>
 		<tr>

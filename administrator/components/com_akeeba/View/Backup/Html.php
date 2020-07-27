@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -16,9 +16,8 @@ use Akeeba\Backup\Admin\Model\ControlPanel;
 use Akeeba\Backup\Admin\View\ViewTraits\ProfileIdAndName;
 use Akeeba\Backup\Admin\View\ViewTraits\ProfileList;
 use Akeeba\Engine\Factory;
-use Akeeba\Engine\Platform;
+use FOF30\Date\Date;
 use FOF30\View\DataView\Html as BaseView;
-use JDate;
 use JFactory;
 use JHtml;
 use JLoader;
@@ -196,7 +195,6 @@ class Html extends BaseView
 
 		// Preload Joomla! behaviours
 		JLoader::import('joomla.utilities.date');
-		JHtml::_('formbehavior.chosen');
 
 		// Load the models
 		/** @var  Backup $model */
@@ -212,9 +210,9 @@ class Html extends BaseView
 		$default_description = $this->getDefaultDescription();
 
 		// Load data from the model state
-		$backup_description  = $model->getState('description', $default_description);
-		$comment             = $model->getState('comment', '');
-		$returnurl           = $model->getState('returnurl');
+		$backup_description  = $model->getState('description', $default_description, 'string');
+		$comment             = $model->getState('comment', '', 'html');
+		$returnurl           = $model->getState('returnurl', '');
 
 		// Only allow non-empty, internal URLs for the redirection
 		if (empty($returnurl))
@@ -252,7 +250,7 @@ class Html extends BaseView
 		$this->useIFRAME                    = $engineConfiguration->get('akeeba.basic.useiframe', 0) == 1;
 		$this->returnURL                    = $returnurl;
 		$this->unwriteableOutput            = $unwritableOutput;
-		$this->autoStart                    = $model->getState('autostart');
+		$this->autoStart                    = $model->getState('autostart', 0, 'boolean');
 		$this->desktopNotifications         = $this->container->params->get('desktop_notifications', '0') ? 1 : 0;
 		$this->autoResume                   = $engineConfiguration->get('akeeba.advanced.autoresume', 1);
 		$this->autoResumeTimeout            = $engineConfiguration->get('akeeba.advanced.autoresume_timeout', 10);
@@ -265,11 +263,9 @@ class Html extends BaseView
 			$this->jpsPassword     = $engineConfiguration->get('engine.archiver.jps.key', '');
 		}
 
-		if (AKEEBA_PRO)
-		{
-			$this->showANGIEPassword = 1;
-			$this->ANGIEPassword     = $engineConfiguration->get('engine.installer.angie.key', '');
-		}
+		// Always show ANGIE password: we add that feature to the Core version as well
+		$this->showANGIEPassword = 1;
+		$this->ANGIEPassword     = $engineConfiguration->get('engine.installer.angie.key', '');
 
 		// Push language strings to Javascript
 		JText::script('COM_AKEEBA_BACKUP_TEXT_LASTRESPONSE');
@@ -291,9 +287,9 @@ class Html extends BaseView
 	private function getDefaultDescription()
 	{
 		$tzDefault           = $this->container->platform->getConfig()->get('offset');
-		$user                = JFactory::getUser();
+		$user                = $this->container->platform->getUser();
 		$tz                  = $user->getParam('timezone', $tzDefault);
-		$dateNow             = new JDate('now', $tz);
+		$dateNow             = new Date('now', $tz);
 		$default_description = JText::_('COM_AKEEBA_BACKUP_DEFAULT_DESCRIPTION') . ' ' .
 			$dateNow->format(JText::_('DATE_FORMAT_LC2'), true);
 

@@ -19,6 +19,7 @@ $order_link = @$this->order_link;
 $plugin_html = @$this->plugin_html;
 $app = JFactory::getApplication();
 $paction = $app->input->getString('paction');
+$after_post_html = J2Store::plugin ()->eventWithHtml ( 'AfterPostPayment', array($this) );
 ?>
 <div class="<?php echo $J2gridRow;?>">
 	<div class="<?php echo $J2gridCol;?>12">
@@ -35,5 +36,12 @@ $paction = $app->input->getString('paction');
 			</div>
 		<?php endif; ?>
 		<?php echo J2Store::modules()->loadposition('j2store-postpayment-bottom'); ?>
+		<?php
+		echo $after_post_html;
+		?>
+		<?php if(is_object($this->order) && isset($this->order->orderpayment_type) && $this->order->orderpayment_type == 'free') : ?>
+			<?php echo J2Store::modules()->loadposition('j2store-postpayment-bottom-free'); ?>
+		<?php endif; ?>
+
 	</div>
 </div>

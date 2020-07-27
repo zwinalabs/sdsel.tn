@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -12,12 +13,17 @@ class AngieDispatcher extends ADispatcher
 {
 	public function onBeforeDispatch()
 	{
-		if(!$this->checkSession())
+		if (!$this->checkSessionBlock())
+		{
+			return true;
+		}
+
+		if (!$this->checkSession())
         {
 			return false;
 		}
 
-		if(!$this->passwordProtection())
+		if (!$this->passwordProtection())
         {
 			return false;
 		}
@@ -28,6 +34,11 @@ class AngieDispatcher extends ADispatcher
 		return true;
 	}
 
+	/**
+	 * Check if the session storage is working. If not, tell the user how to make it work.
+	 *
+	 * @return  bool
+	 */
 	private function checkSession()
 	{
 		if(!$this->container->session->isStorageWorking())
@@ -39,12 +50,13 @@ class AngieDispatcher extends ADispatcher
 				$this->container->application->redirect('index.php?view=session');
 			}
 		}
+
 		return true;
 	}
 
 	/**
-	 * Check if the installer is password protected. If it is and the user has
-	 * not yet entered a password forward him to the password entry page.
+	 * Check if the installer is password protected. If it is and the user has not yet entered a password forward him to
+	 * the password entry page.
 	 *
 	 * @return  boolean
 	 */
@@ -68,15 +80,39 @@ class AngieDispatcher extends ADispatcher
 
 			if (defined('AKEEBA_PASSHASH') && !in_array($view, $allowedViews) && ($savedHash != $correctHash))
 			{
+				$this->container->session->disableSave();
 				$this->container->application->redirect('index.php?view=password');
+
 				return true;
 			}
 		}
-		elseif (!defined('AKEEBA_PASSHASH') && ($this->input->get('view', $this->defaultView) == 'password'))
+
+		if (!defined('AKEEBA_PASSHASH') && ($this->input->get('view', $this->defaultView) == 'password'))
 		{
 			return false;
 		}
 
 		return true;
+	}
+
+	/**
+	 * If the session save file is empty we have to show a warning to the user and refuse to do anything else. This
+	 * case means that ANGIE has detected another active session in the tmp directory, i.e. someone else has already
+	 * started restoring the site. Therefore we shouldn't allow the current user to continue.
+	 *
+	 * @return  bool
+	 */
+	private function checkSessionBlock()
+	{
+		if ($this->container->session->hasStorageFile())
+		{
+			return true;
+		}
+
+		$this->input->set('view', 'session');
+		$this->input->set('task', 'default');
+		$this->input->set('layout', 'blocked');
+
+		return false;
 	}
 }

@@ -28,7 +28,7 @@ class J2StoreControllerGeozones extends F0FController
 			$query = $db->getQuery(true);
 			$query->select('j2store_zone_id,zone_name');
 			$query->from('#__j2store_zones');
-			$query->where('country_id='.$country_id);
+			$query->where('country_id='.$db->q($country_id));
 			$db->setQuery((string)$query);
 			$zoneList = $db->loadObjectList();
 			$options = array();

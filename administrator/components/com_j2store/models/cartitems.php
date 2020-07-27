@@ -22,17 +22,17 @@ class J2StoreModelCartitems extends F0FModel {
 		
 		if (!empty($filter_cart))
 		{
-			$query->where('tbl.cart_id= '.(int) $filter_cart);
+			$query->where('tbl.cart_id= '.$this->_db->q((int) $filter_cart));
 		}
 		
 		if (!empty($filter_product))
 		{
-			$query->where('tbl.product_id = '.(int) $filter_product);
+			$query->where('tbl.product_id = '.$this->_db->q((int) $filter_product));
 		}
 	
 		if (!empty($filter_variant))
 		{
-			$query->where('tbl.variant_id = '.(int) $filter_variant);
+			$query->where('tbl.variant_id = '.$this->_db->q((int) $filter_variant));
 		}
 	
 		if (strlen($filter_name))
@@ -85,6 +85,7 @@ class J2StoreModelCartitems extends F0FModel {
 		$field[] = " product.visibility";
 	
 		$field[] = " productimage.thumb_image";
+		$field[] = " stock.on_hold as quantity_on_hold";
 		$field[] = " stock.quantity as available_quantity";
 	
 		$query->select('tbl.*');
@@ -105,6 +106,7 @@ class J2StoreModelCartitems extends F0FModel {
 		$this->_buildQueryFields($query);
 		$this->_buildQueryJoins($query);
 		$this->_buildQueryWhere($query);
+		J2Store::plugin()->event('CartItemsAfterBuildQuery', array(&$query, $overrideLimits));
 		return $query;
 	}
 	

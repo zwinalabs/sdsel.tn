@@ -31,7 +31,7 @@ class J2StoreTableFiltergroup extends F0FTable
 		if(count($values)){
 			//loop the productfilters to load and delete the
 			foreach($values as $pfilter){
-				$filter = F0FTable::getAnInstance('Filter','J2StoreTable');
+				$filter = F0FTable::getAnInstance('Filter','J2StoreTable')->getClone();
 				if(!$filter->delete($pfilter->j2store_filter_id)){
 					$app->enqueueMessage(JText::_('J2STORE_FILTER_GROUP_DELETE_ERROR'),'warning');
 					$status = false;

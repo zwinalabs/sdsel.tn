@@ -7,6 +7,7 @@
 
 // No direct access
 defined('_JEXEC') or die;
+
 ?>
 <div class="j2store-product-general">
 
@@ -40,10 +41,19 @@ defined('_JEXEC') or die;
 					<?php echo $this->taxprofiles;?>
 				</div>
 
+                <div class="control-group form-inline">
+                    <?php echo J2Html::label(JText::_('J2STORE_PRODUCT_MAIN_TAG'), 'main_tag', array('class'=>'control-label')); ?>
+                    <?php echo $this->tag_lists;?>
+                </div>
 
 				<div class="control-group">
 					<?php echo J2Html::label(JText::_('J2STORE_PRODUCT_CART_TEXT'), 'addtocart_text',array('class'=>'control-label')); ?>
 					<?php echo J2Html::text($this->form_prefix.'[addtocart_text]', JText::_($this->item->addtocart_text), array('class'=>'input-large ')); ?>
+				</div>
+
+				<div class="control-group">
+					<?php echo J2Html::label(JText::_('J2STORE_PRODUCT_CUSTOM_CSS_CLASS'), 'custom_css_class',array('class'=>'control-label')); ?>
+					<?php echo J2Html::text($this->form_prefix.'[params][product_css_class]', $this->item->params->get('product_css_class',''), array('class'=>'input-large ')); ?>
 				</div>
 
 </div>

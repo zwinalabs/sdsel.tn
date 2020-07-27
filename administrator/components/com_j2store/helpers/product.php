@@ -414,7 +414,7 @@ class J2Product extends JObject{
 			$query = $db->getQuery(true);
 			$query->select('pov.*');
 			$query->from('#__j2store_product_optionvalues AS pov');
-			$query->where('pov.productoption_id='.$product_option_id);
+			$query->where('pov.productoption_id='. $db->q($product_option_id));
 			//$query->where('pov.parent_optionvalue='.$parnt_optionvalue_id);
 			$query->where('( parent_optionvalue  = '. $db->q($parnt_optionvalue_id)
 					.'OR parent_optionvalue LIKE CONCAT('. $db->q($parnt_optionvalue_id.',%') .')'
@@ -454,6 +454,33 @@ class J2Product extends JObject{
 		J2Store::plugin()->event('DefaultProductOptions', array(&$default));
 		return $default;
 	}
+
+	public function validateFlexivariants($variants,$options){
+        $traits = array();
+        foreach ( $options as $option)
+        {
+
+            if ( $option['optionvalue'])
+            {
+                $attributes = array( );
+                foreach ( $option['optionvalue'] as $pkey=>$pov )
+                {
+                    $attributes[] = $pov['product_optionvalue_id'];
+                }
+                $traits[] = $attributes;
+            }
+
+        }
+
+        $csvarray = F0FModel::getTmpInstance('Products', 'J2StoreModel')->getCombinations($traits);
+
+        foreach ($variants as $variant){
+            if(!in_array($variant->variant_name,$csvarray)){
+                return false;
+            }
+        }
+        return true;
+    }
 
 	public function validateVariants($variants, $options) {
 
@@ -520,7 +547,7 @@ class J2Product extends JObject{
 		$option_price = 0;
 		$option_weight = 0;
 		$option_data = array();
-
+        $utility = J2Store::utilities();
 		foreach ($options as $product_option_id => $option_value) {
 
 			$product_option = $this->getCartProductOptions($product_option_id, $product_id);
@@ -613,7 +640,7 @@ class J2Product extends JObject{
 							'option_id'               => $product_option->option_id,
 							'optionvalue_id'         => '',
 							'name'                    => $product_option->option_name,
-							'option_value'            => $option_value,
+							'option_value'            => $utility->text_sanitize($option_value),
 							'type'                    => $product_option->type,
 							'price'                   => '',
 							'price_prefix'            => '',
@@ -634,7 +661,7 @@ class J2Product extends JObject{
 
 	}
 
-	public function displayPrice($price, $product, $params=array()) {
+	public function displayPrice($price, $product, $params=array(),$context='') {
 
 		$currency = J2Store::currency();
 		if(empty($params)) {
@@ -664,7 +691,7 @@ class J2Product extends JObject{
 		}
 
 		//allow plugins to modify the price display
-		J2Store::plugin()->event('DisplayPrice', array(&$text, $product, $price));
+		J2Store::plugin()->event('DisplayPrice', array(&$text, $product, $price,$context));
 		return $text;
 	}
 
@@ -682,7 +709,7 @@ class J2Product extends JObject{
 			$params = J2Store::config();
 		}
 
-		if(!$params instanceof J2Config) {
+		if(!$params instanceof JRegistry && !$params instanceof J2Config) {
 			$params = new JRegistry($params);
 		}
 
@@ -713,8 +740,7 @@ class J2Product extends JObject{
 				default:
 					// Quantity as Textbox
 					$text .= '<div class="product-qty">';
-					$text .= '<input type="number" name="'.$name.'" value="'. $value .'" class="'.$class.'" '
-			 				.' min="'. $min .'" step="1" />' ;
+					$text .= '<input type="number" name="'.$name.'" value="'. $value .'" class="'.$class.'" min="0" step="1" />' ;
 					$text .= '</div>';
 					break;
 			}
@@ -891,6 +917,7 @@ class J2Product extends JObject{
 		if($this->managing_stock($variant) && $this->backorders_allowed($variant) === false) {
 			//inventory is enabled for this product. So validate stock
 			$stock_status = $this->validateStock($variant, $quantity);
+
 		}
 
 		return $stock_status;
@@ -915,10 +942,16 @@ class J2Product extends JObject{
 		if (! $variant->availability) {
 			$status = false;
 		}
+		J2Store::plugin ()->event ( 'GetValidateStockQuantity',array(&$status,$variant,$qty) );
 
 		return $status;
 	}
 
+	public function get_stock_quantity($product_quantity_table){
+		$qty = $product_quantity_table->quantity;
+		J2Store::plugin ()->event ( 'GetStockQuantity',array(&$qty,$product_quantity_table) );
+		return $qty;
+	}
 
 	public function getQuantityRestriction(&$variant) {
 		$store = J2Store::storeProfile ();
@@ -978,7 +1011,7 @@ class J2Product extends JObject{
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)->select('SUM(product_qty) as total_cart_qty')
 		->from('#__j2store_cartitems')
-		->where('variant_id='.$variant_id);
+		->where('variant_id='.$db->q($variant_id));
 
 		if(!empty($cart_id)) {
 			$query->where('cart_id ='.$db->q($cart_id));
@@ -1024,7 +1057,7 @@ class J2Product extends JObject{
 		$db = JFactory::getDbo();
 		$optionvalues = array();
 		foreach($product_options as $productoption_id => $optionvalue) {
-			$optionvalues[] = $optionvalue;
+			$optionvalues[] = intval($optionvalue);
 		}
 		sort($optionvalues);
 		$values = implode(',', $optionvalues);
@@ -1046,7 +1079,11 @@ class J2Product extends JObject{
 		$productoptionvalues = explode(',' ,$csv);
 		$names = array();
 		foreach($productoptionvalues as $product_optionvalue_id) {
-			$names[] = $this->getOptionvalueName($product_optionvalue_id);
+            $optionvalue_name = $this->getOptionvalueName($product_optionvalue_id);
+            if(empty($optionvalue_name)){
+                $optionvalue_name = JText::_('J2STORE_ALL_OPTIONVALUE');
+            }
+			$names[] = $optionvalue_name;
 		}
 		return implode(',', $names);
 	}
@@ -1074,8 +1111,8 @@ class J2Product extends JObject{
 			$query = $db->getQuery(true);
 			$query->select('po.*');
 			$query->from('#__j2store_product_options AS po');
-			$query->where('po.j2store_productoption_id='.$product_option_id);
-			$query->where('po.product_id='.$product_id);
+			$query->where('po.j2store_productoption_id='.$db->q($product_option_id));
+			$query->where('po.product_id='.$db->q($product_id));
 
 			//join the options table to get the name
 			$query->select('o.option_name, o.type');
@@ -1098,14 +1135,23 @@ class J2Product extends JObject{
 			$ovsets = array( );
 		}
 		if(empty($option_value)) return $ovsets;
-		if ( !isset( $ovsets[$product_option_id][$option_value])) {
+        //sanity check
+        if(is_array($option_value)){
+            JArrayHelper::toInteger($option_value);
+            $option_value = implode(',',$option_value);
+        }else {
+            $option_value = intval($option_value);
+        }
+
+        if ( !isset( $ovsets[$product_option_id][$option_value])) {
+
 			//first get the product options
 			$db = JFactory::getDbo();
 			$query = $db->getQuery(true);
 			$query->select('pov.*');
 			$query->from('#__j2store_product_optionvalues AS pov');
-			$query->where('pov.j2store_product_optionvalue_id='.$option_value);
-			$query->where('pov.productoption_id='.$product_option_id);
+			$query->where('pov.j2store_product_optionvalue_id='.$db->q($option_value));
+			$query->where('pov.productoption_id='.$db->q($product_option_id));
 
 			//join the optionvalues table to get the name
 			$query->select('ov.j2store_optionvalue_id, ov.optionvalue_name');
@@ -1154,6 +1200,15 @@ class J2Product extends JObject{
 						$show = true;
 					}
 
+                    $user = JFactory::getUser();
+                    //access
+                    $access_groups = $user->getAuthorisedViewLevels();
+                    if(($show &&  isset($upsell_product->source->access) && !empty($upsell_product->source->access) && in_array($upsell_product->source->access,$access_groups)) || !isset($upsell_product->source->access)) {
+                        $show = true;
+                    }else{
+                        $show = false;
+                    }
+                    J2Store::plugin()->event('AfterProcessUpSellItem',array($upsell_product,&$show));
 					// Dont show if product not available. No use in showing a related product that is not available!
 					if ($show == false)
 						continue;
@@ -1206,7 +1261,15 @@ class J2Product extends JObject{
 					if ($cross_sell_product->product_type == 'variable') {
 						$show = true;
 					}
-
+                    $user = JFactory::getUser();
+                    //access
+                    $access_groups = $user->getAuthorisedViewLevels();
+                    if(($show &&  isset($cross_sell_product->source->access) && !empty($cross_sell_product->source->access) && in_array($cross_sell_product->source->access,$access_groups)) || !isset($cross_sell_product->source->access)) {
+                        $show = true;
+                    }else{
+                        $show = false;
+                    }
+                    J2Store::plugin()->event('AfterProcessCrossSellItem',array($cross_sell_product,&$show));
 					// Dont show if product not available. No use in showing a related product that is not available!
 					if ($show == false)
 						continue;
@@ -1248,4 +1311,93 @@ class J2Product extends JObject{
 		//$event = 'Display'.$product_data['type'].'Image';
 		return J2Store::plugin()->eventWithHtml('DisplayProductImage',array($product,$product_data['params'],$product_data));
 	}
+
+	public function validateVariableProduct($product){
+		if(!isset( $product->variant )  || !isset( $product->product_type )){
+		    if($product->product_type == 'flexivariable'){
+                return true;
+            }
+			return false;
+		}
+		$show = false;
+		if($product->variant->availability || $this->backorders_allowed($product->variant)) {
+			$show = true;
+		}
+
+		if(in_array ( $product->product_type, array('variable','advancedvariable','flexivariable', 'variablesubscriptionproduct') )) {
+			if(isset( $product->all_sold_out ) && $product->all_sold_out){
+				$show = false;
+			}else{
+				$show = true;
+			}
+		}
+		return $show;
+	}
+
+	public function is_product_type_allowed($product_type,$allowed_product_types,$context){
+		if(empty( $allowed_product_types ) || empty( $product_type ) ){
+			return false;
+		}
+		if(!is_array ( $allowed_product_types )){
+			$allowed_product_types = (array)$allowed_product_types;
+		}
+		$status = false;
+		if(in_array ( $product_type, $allowed_product_types )){
+			$status = true;
+		}
+
+		J2Store::plugin ()->event ( 'IsProductTypeAllowed',array($product_type,$allowed_product_types,$context,&$status) );
+		return $status;
+
+	}
+
+	public function constructTagUrl($tag_alias, $options=array()) {
+
+		$itemid = isset($options['Itemid']) ? $options['Itemid'] : '';
+
+		//does it have a parent tag
+		$parent_tag = isset($options['parent']) ? $options['parent'] : '';
+
+		$url = 'index.php?option=com_j2store';
+		$url .= '&view=producttags';
+		if(!empty($tag_alias)) $url .= '&filter_tag='.$tag_alias;
+		if(!empty($parent_tag)) $url .= '&parent_tag='.$parent_tag;
+		if(!empty($itemid)) $url .='&Itemid='.$itemid;
+
+
+		return JRoute::_($url);
+
+	}
+
+	public function constructProductUrlForTagLayout($product, $options=array()) {
+
+		$url = $this->getJ2StoreBaseUrl();
+		$url .= '&view=producttags&task=view';
+		$url .= '&id='.$product->j2store_product_id;
+
+		$url .= isset($options['Itemid']) ? '&Itemid='.$options['Itemid'] : '';
+		
+		JRoute::_($url);//'index.php?option=com_j2store&view=producttags&task=view&id='.$this->product->j2store_product_id.'&Itemid='.$this->active_menu->id
+
+	}
+
+	public function getJ2StoreBaseUrl() {
+
+		return 'index.php?option=com_j2store';
+	}
+
+	public function canShowCart($params){
+        $isregister = $params->get('isregister', 0);
+
+        $allow_display = true;
+        if($isregister && !JFactory::getUser()->id) {
+            $allow_display = false;
+        }
+        $catelog = J2Store::config ()->get('catalog_mode',0);
+        $status = false;
+        if( $catelog == 0 && $allow_display ){
+            $status = true;
+        }
+        return $status;
+    }
 }

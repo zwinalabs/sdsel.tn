@@ -135,8 +135,8 @@ class J2User
 		$instance->set('groups'     , array($defaultUserGroup));
 
 		//If autoregister is set let's register the user
-		$autoregister = isset($options['autoregister']) ? $options['autoregister'] :  $config->get('autoregister', 1);
-
+		$autoregister = isset($details['autoregister']) ? $details['autoregister'] :  $config->get('autoregister', 1);
+		J2Store::plugin ()->event ( 'BeforeRegisterUserSave', array(&$instance,&$details) );
 		if ($autoregister) {
 			if (!$instance->save()) {
 				return JError::raiseWarning('Registration fail', $instance->getError());
@@ -154,6 +154,56 @@ class J2User
 
 		return $instance;
 	}
+    /**
+     * Save joomla privacy consent
+     * */
+	function savePrivacyConsent(){
+	    $app = JFactory::getApplication();
+        $privacy_plugin = $app->input->post->get('privacyconsent',0);
+        $user = JFactory::getUser();
+        if($privacy_plugin && $user->id){
+            $db = JFactory::getDBo();
+            // Get the user's IP address
+            $ip = $_SERVER['REMOTE_ADDR'];
+
+            // Get the user agent string
+            $userAgent = $_SERVER['HTTP_USER_AGENT'];
+
+            // Create the user note
+            $userNote = (object) array(
+                'user_id' => $user->id,
+                'subject' => 'PLG_SYSTEM_PRIVACYCONSENT_SUBJECT',
+                'body'    => JText::sprintf('PLG_SYSTEM_PRIVACYCONSENT_BODY', $ip, $userAgent),
+                'created' => JFactory::getDate()->toSql(),
+            );
+
+            try
+            {
+                $db->insertObject('#__privacy_consents', $userNote);
+            }
+            catch (Exception $e)
+            {
+                // Do nothing if the save fails
+            }
+
+
+            $message = array(
+                'action'      => 'consent',
+                'id'          => $user->id,
+                'title'       => $user->name,
+                'itemlink'    => 'index.php?option=com_users&task=user.edit&id=' . $user->id,
+                'userid'      => $user->id,
+                'username'    => $user->username,
+                'accountlink' => 'index.php?option=com_users&task=user.edit&id=' . $user->id,
+            );
+
+            JModelLegacy::addIncludePath(JPATH_ADMINISTRATOR . '/components/com_actionlogs/models', 'ActionlogsModel');
+            /* @var ActionlogsModelActionlog $model */
+            $model = JModelLegacy::getInstance('Actionlog', 'ActionlogsModel');
+            $model->addLog(array($message), 'PLG_SYSTEM_PRIVACYCONSENT_CONSENT', 'plg_system_privacyconsent', $user->id);
+        }
+    }
+
 
 	/**
 	 * Returns yes/no
@@ -410,4 +460,33 @@ class J2User
 		}
 	}
 
+	/**
+	 * Method to get the Joomla user group name values
+	 * @param int $user_id joomla user id
+	 * @return array customer group names in an array of key value pairs
+	 * */
+	function getUserGroupNames($user_id = 0){
+		if ($user_id == 0 ) {
+			return array();
+		}
+
+		$user_groups = JFactory::getUser($user_id)->getAuthorisedGroups();
+		$groupNames = array();
+		if ( is_array($user_groups) && count($user_groups) > 0 ) {
+			foreach ($user_groups as $groupId ){
+				// remove public as it is global
+				if ($groupId == 1) {
+					continue;
+				}
+			    $db = JFactory::getDbo();
+			    $db->setQuery(
+			        'SELECT `title`' .
+			        ' FROM `#__usergroups`' .
+			        ' WHERE `id` = '. (int) $groupId
+			    );
+			    $groupNames[$groupId]= $db->loadResult();
+			}
+		}
+		return $groupNames;
+	}
 }

@@ -465,7 +465,7 @@ h4.product-filter-heading {
 /* price slider */
 #j2store-slider-range .ui-widget {
 	background-color: #000000;
-	opacity: 2px;
+	opacity: 2;
 	width: 150px;
 }
 
@@ -542,4 +542,8 @@ line-height: 1px;
 .emailtemplate-table-footer td
 {
 	text-align: right !important;
+}
+
+.fancybox-slide--iframe .fancybox-content {
+	height : 80% !important;
 }

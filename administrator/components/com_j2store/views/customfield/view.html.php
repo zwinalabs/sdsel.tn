@@ -40,6 +40,7 @@ class J2StoreViewCustomfields extends F0FViewHtml
 		}
 		$this->allFields = $allFields;
 		$this->field = $field;
+
 		
 		//get the field type
 		$fieldtype =  J2Store::getSelectableFields();

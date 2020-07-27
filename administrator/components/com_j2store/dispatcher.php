@@ -24,6 +24,7 @@ class J2StoreDispatcher extends F0FDispatcher
 	       	J2StoreStrapper::addCSS();
 	       	
 	       	require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/j2store.php');
+	       	J2Store::plugin()->event('BeforeDispatch');
 	       	require_once JPATH_ADMINISTRATOR.'/components/com_j2store/library/popup.php';
        		require_once JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/select.php';
        		require_once JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/j2html.php';

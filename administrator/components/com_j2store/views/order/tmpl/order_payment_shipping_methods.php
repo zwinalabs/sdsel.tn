@@ -22,8 +22,12 @@ defined('_JEXEC') or die;
 				</tr>
 				<tr>
 					<td><?php echo JText::_("J2STORE_SHIPPING_PRICE");?></td>
-					<td><input name="shipping_price" type="number" value="<?php  echo $this->shipping_amount;?>" /></td>
+					<td><input name="shipping_price" type="number" value="<?php  echo $this->shipping_price;?>" /></td>
 				</tr>
+                <tr>
+                    <td><?php echo JText::_("J2STORE_SHIPPING_PRICE_TAX");?></td>
+                    <td><input name="shipping_tax" type="number" value="<?php  echo $this->shipping_tax;?>" /></td>
+                </tr>
 				<tr>
 					<td><?php echo JText::_("J2STORE_SHIPPING_TRACKING_ID");?></td>
 					<td>

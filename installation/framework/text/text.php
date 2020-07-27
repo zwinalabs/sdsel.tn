@@ -1,11 +1,10 @@
 <?php
 /**
- * @package angifw
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer Framework
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -58,6 +57,7 @@ abstract class AText
 		if (@file_exists($filename))
 		{
 			$strings = AngieHelperIni::parse_ini_file($filename, false);
+			$strings = self::replaceQQ($strings);
 			self::$strings = array_merge(self::$strings, $strings);
 		}
 
@@ -168,5 +168,17 @@ abstract class AText
 			return call_user_func_array('sprintf', $args);
 		}
 		return '';
+	}
+
+	/**
+	 * @param $strings
+	 *
+	 * @return array
+	 */
+	protected static function replaceQQ($strings)
+	{
+		return array_map(function ($value) {
+			return str_replace('"_QQ_"', '&quot;', $value);
+		}, $strings);
 	}
 }

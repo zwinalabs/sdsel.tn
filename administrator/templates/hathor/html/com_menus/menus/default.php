@@ -3,7 +3,7 @@
  * @package     Joomla.Administrator
  * @subpackage  Template.hathor
  *
- * @copyright   Copyright (C) 2005 - 2016 Open Source Matters, Inc. All rights reserved.
+ * @copyright   Copyright (C) 2005 - 2019 Open Source Matters, Inc. All rights reserved.
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
@@ -23,7 +23,7 @@ $listDirn  = $this->escape($this->state->get('list.direction'));
 $modMenuId = (int) $this->get('ModMenuId');
 
 $script = array();
-$script[] = "jQuery(document).ready(function() {";
+$script[] = 'jQuery(document).ready(function() {';
 
 foreach ($this->items as $item) :
 	if ($user->authorise('core.edit', 'com_menus')) :
@@ -39,7 +39,7 @@ $script[] = '		setTimeout(function(){';
 $script[] = '			window.parent.location.reload();';
 $script[] = '		},1000);';
 $script[] = '	});';
-$script[] = "});";
+$script[] = '});';
 
 JFactory::getDocument()->addScriptDeclaration(implode("\n", $script));
 ?>
@@ -157,15 +157,15 @@ JFactory::getDocument()->addScriptDeclaration(implode("\n", $script));
 									'bootstrap.renderModal',
 									'module' . $module->id . 'Modal',
 									array(
-										'url' => $link,
-										'title' => JText::_('COM_MENUS_EDIT_MODULE_SETTINGS'),
+										'url'    => $link,
+										'title'  => JText::_('COM_MENUS_EDIT_MODULE_SETTINGS'),
 										'height' => '300px',
-										'width' => '800px',
-										'footer' => '<button class="btn" type="button" data-dismiss="modal" aria-hidden="true">'
-											. JText::_("JLIB_HTML_BEHAVIOR_CLOSE") . '</button>'
-											. '<button class="btn btn-success" data-dismiss="modal" aria-hidden="true" onclick="jQuery(\'#module'
+										'width'  => '800px',
+										'footer' => '<button type="button" class="btn" data-dismiss="modal">'
+											. JText::_('JLIB_HTML_BEHAVIOR_CLOSE') . '</button>'
+											. '<button type="button" class="btn btn-success" data-dismiss="modal" onclick="jQuery(\'#module'
 											. $module->id . 'Modal iframe\').contents().find(\'#saveBtn\').click();">'
-											. JText::_("JSAVE") . '</button>'
+											. JText::_('JSAVE') . '</button>',
 									)
 								); ?>
 						<?php endif; ?>
@@ -177,13 +177,13 @@ JFactory::getDocument()->addScriptDeclaration(implode("\n", $script));
 							'bootstrap.renderModal',
 							'moduleModal',
 							array(
-								'url' => $link,
-								'title' => JText::_('COM_MENUS_EDIT_MODULE_SETTINGS'),
+								'url'    => $link,
+								'title'  => JText::_('COM_MENUS_EDIT_MODULE_SETTINGS'),
 								'height' => '500px',
-								'width' => '800px',
-								'footer' => '<button class="btn" type="button" data-dismiss="modal" aria-hidden="true">'
-									. JText::_("JLIB_HTML_BEHAVIOR_CLOSE") . '</button>'
-								)
+								'width'  => '800px',
+								'footer' => '<button type="button" class="btn" data-dismiss="modal">'
+									. JText::_('JLIB_HTML_BEHAVIOR_CLOSE') . '</button>',
+							)
 						); ?>
 					<?php endif; ?>
 				</td>

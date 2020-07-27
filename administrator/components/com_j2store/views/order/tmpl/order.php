@@ -6,7 +6,19 @@
  */
 // No direct access to this file
 defined('_JEXEC') or die;
-//JFactory::getDocument()->addScript(JUri::root(true).'/media/j2store/js/j2store.js');
+
+JHtml::_('jquery.framework');
+JHtml::_('bootstrap.framework');
+$document = JFactory::getDocument();
+//unset the timepicker script
+unset($document->_scripts['/media/j2store/js/jquery-ui-timepicker-addon.js']);
+unset($document->_scripts['/media/j2store/js/j2store_admin.js']);
+
+//now load them in order
+$document->addScript(JURI::root(true).'/media/j2store/js/j2store.namespace.js');
+$document->addScript(JURI::root ( true ) . '/media/j2store/js/jquery-ui.min.js' );
+$document->addScript(JURI::root ( true ) . '/media/j2store/js/jquery-ui-timepicker-addon.js' );
+$document->addScript(JURI::root ( true ) . '/media/j2store/js/j2store_admin.js' );
 $ajax_base_url = JRoute::_('index.php');
 ?>
 	<?php if(J2Store::isPro() != 1): ?>
@@ -92,7 +104,7 @@ $ajax_base_url = JRoute::_('index.php');
 				<?php echo JText::_('J2STORE_SAVE_AND_NEXT');?>
 			</a>
 			<button class="btn btn-success " id="saveAndNext" >	<?php echo JText::_('J2STORE_SAVE_AND_NEXT');?>	</button>
-			<?php elseif((!isset($this->orderinfo->j2store_orderinfo_id) || empty($this->orderinfo->j2store_orderinfo_id) || empty($this->orderinfo->billing_country_id) || empty($this->orderinfo->billing_zone_id))&& $keys[$next_ordinal] =='shipping'):?>
+			<?php elseif((!isset($this->orderinfo->j2store_orderinfo_id) || empty($this->orderinfo->j2store_orderinfo_id) || empty($this->orderinfo->billing_country_id) /*|| empty($this->orderinfo->billing_zone_id)*/)&& $keys[$next_ordinal] =='shipping'):?>
 			<a class="btn btn-success hide" id="nextlayout" href="javascript:void(0);" onClick="nextlayout('<?php echo $keys[$next_ordinal];?>')" data-layout="<?php echo $keys[$next_ordinal];?>">
 				<?php echo JText::_('J2STORE_SAVE_AND_NEXT');?>
 			</a>
@@ -184,9 +196,20 @@ function nextlayout(layout){
 					}
 				});
 			}else{
-				$('#task').attr('value','saveAdminOrder');
-				$('#next_layout').attr('value',layout );
-				$('#adminForm').submit();
+				var current_layout = $('#layout').val();
+				if(current_layout=='summary'){
+					var c=confirm("<?php echo JText::_('J2STORE_ORDER_EDIT_SUMMARY_SAVE_CONFIRM');?>");
+					if (c){
+						$('#task').attr('value','saveAdminOrder');
+						$('#next_layout').attr('value',layout );
+						$('#adminForm').submit();
+					}
+				}else{
+					$('#task').attr('value','saveAdminOrder');
+					$('#next_layout').attr('value',layout );
+					$('#adminForm').submit();
+				}
+				//
 			}
 	})(j2store.jQuery);
 

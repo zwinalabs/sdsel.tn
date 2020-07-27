@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -20,8 +21,12 @@ class AngieViewRunscripts extends AView
 
         if (!defined('_JDEFINES'))
         {
-            define('JPATH_BASE', APATH_SITE);
-            require_once JPATH_BASE . '/includes/defines.php';
+	        if(!defined('JPATH_BASE'))
+	        {
+		        define('JPATH_BASE', APATH_SITE);
+	        }
+
+	        require_once JPATH_BASE . '/includes/defines.php';
         }
 
         // Load the rest of the framework include files
@@ -42,7 +47,7 @@ class AngieViewRunscripts extends AView
         }
 
 	    // Manually require the configuration file
-	    JFactory::getConfig(JPATH_CONFIGURATION.'/configuration.php');
+	    $this->container->platform->getConfig(JPATH_CONFIGURATION.'/configuration.php');
 
         // Load the JApplicationCli class
         JLoader::import('joomla.application.web');

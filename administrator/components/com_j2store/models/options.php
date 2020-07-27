@@ -20,6 +20,18 @@ class J2StoreModelOptions extends F0FModel {
 	{
 		$record->optionvalues = $this->getOptionValues($record->j2store_option_id);
 	}
+
+	public function chkDuplicateOptionUniqueName($option_unique_name){
+        $ovTable = F0FTable::getInstance ( 'Option', 'J2StoreTable' )->getClone();
+        $ovTable->load(array(
+            'option_unique_name' => $option_unique_name
+        ));
+        if($ovTable->j2store_option_id){
+            $option_unique_name .='_1';
+            $option_unique_name = $this->chkDuplicateOptionUniqueName($option_unique_name);
+        }
+        return $option_unique_name;
+    }
 	
 	public function onBeforeSave(&$data, &$table){
 		$app = JFactory::getApplication();
@@ -28,6 +40,10 @@ class J2StoreModelOptions extends F0FModel {
 		}else{
 			$data['option_params'] ='';
 		}
+
+		if(!isset($data['j2store_option_id']) || empty($data['j2store_option_id'])){
+            $data['option_unique_name'] = $this->chkDuplicateOptionUniqueName($data['option_unique_name']);
+        }
 		return true;
 	}
 
@@ -89,7 +105,8 @@ class J2StoreModelOptions extends F0FModel {
 		$query = $db->getQuery(true);
 		$query->select('j2store_option_id, option_unique_name, option_name');
 		$query->from('#__j2store_options');
-		$query->where('LOWER(option_unique_name) LIKE '.$db->Quote( '%'.$db->escape( $q, true ).'%', false ));
+		$query->where('('.'LOWER(option_unique_name) LIKE '.$db->Quote( '%'.$db->escape( $q, true ).'%', false ).' OR '.' LOWER(option_name) LIKE '.$db->Quote( '%'.$db->escape( $q, true ).'%', false ).')');
+
 		//based on the product type
 		if(isset($product_type) && $product_type =='variable'){
 			$query->where("type IN ('select' , 'radio' ,'checkbox')");
@@ -128,7 +145,7 @@ class J2StoreModelOptions extends F0FModel {
 				
 				$interval = $now->diff($date);
 				//	print_r($interval);
-				$val = (int) $interval->format('%R%a',true);
+				$val = (int) $interval->format('%R%a');
 				//echo $interval->format('%R%a');				
 				if($val < 0) {
 					$errors['error']['option'][$option->j2store_productoption_id] = JText::_('J2STORE_DATE_VALIDATION_ERROR_PAST_DATE');

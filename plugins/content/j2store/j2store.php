@@ -23,7 +23,7 @@ class plgContentJ2Store extends JPlugin
 	public function __construct(& $subject, $config)
 	{
 		parent::__construct($subject, $config);
-		$this->loadLanguage('com_j2store', JPATH_ADMINISTRATOR);
+		JFactory::getLanguage ()->load ('com_j2store', JPATH_ADMINISTRATOR);
 	}
 
 	public function onContentPrepare($context, $article, $params, $page = 0)
@@ -32,7 +32,25 @@ class plgContentJ2Store extends JPlugin
 		if(JFactory::getApplication()->isAdmin()) {
 			return false;
 		}
-		if(strpos($context, 'productlist') !== false) return;
+
+		// no need to run blog category and other category view
+        if(strpos($context, 'categories') !== false){
+            return false;
+        }
+		if(strpos($context, 'productlist') !== false){
+			$shortcode_matches = $this->parseShortCodes($article);
+
+			if(isset($shortcode_matches[0]) && count($shortcode_matches[0])) {
+
+				foreach ( $shortcode_matches as $single_match ) {
+					$article->text = str_replace($single_match[0], '', $article->text);
+				}
+			}
+
+			return;
+		}
+
+
 
 			if($this->_cleaned == false) {
 				$cache = JFactory::getCache();
@@ -46,6 +64,9 @@ class plgContentJ2Store extends JPlugin
 
 			if(strpos($context, 'com_content') !== false) {
 				if($placement == 'default' || $placement == 'both') {
+                    if(!$this->checkPublishDate($article)){
+                        return;
+                    }
 					$this->defaultPosition($context, $article, $params, $page);
 				}
 			}
@@ -170,6 +191,12 @@ class plgContentJ2Store extends JPlugin
 					$product = F0FTable::getAnInstance('Product', 'J2StoreTable')->getClone();
 
 					if($product->get_product_by_id($values[0])) {
+                        $product_article = $this->getArticle($product->product_source_id);
+                        if(!$this->checkPublishDate($product_article)){
+                            $article->text = str_replace($newmatch[0], $html, $article->text);
+                            return;
+                        }
+
 						if($placement == 'tag' || $placement == 'both') {
 							// this is special. Because this is controlled by the placement switch
 							if(in_array('cart', $values)) {
@@ -238,35 +265,54 @@ class plgContentJ2Store extends JPlugin
 
 	function onContentPrepareForm($form, $data)
 	{
+		$app = JFactory::getApplication();
 
-		if(!defined('F0F_INCLUDED')) {
-			require_once JPATH_LIBRARIES.'/f0f/include.php';
+		if ( $app->isSite() && $this->params->get( 'allow_frontend_product_edit', 0 ) == 0 )
+		{
+			return true;
 		}
 
-		if (!($form instanceof JForm))
+		$contentParams   = JComponentHelper::getParams( 'com_content' );
+		$message_display = $contentParams->get( 'show_article_options', 0 );
+
+		if ( ! defined( 'F0F_INCLUDED' ) )
 		{
-			$this->_subject->setError('JERROR_NOT_A_FORM');
+			require_once JPATH_LIBRARIES . '/f0f/include.php';
+		}
+
+		if ( ! ( $form instanceof JForm ) )
+		{
+			$this->_subject->setError( 'JERROR_NOT_A_FORM' );
+
 			return false;
 		}
-		J2Store::plugin()->event('BeforeContentPrepareForm', array($form, $data));
+		J2Store::plugin()->event( 'BeforeContentPrepareForm', array( $form, $data ) );
 		// Check we are manipulating a valid form.
 		$formName = $form->getName();
 
-		if (!in_array($formName, array('com_content.article'))) {
+		if ( ! in_array( $formName, array( 'com_content.article' ) ) )
+		{
 			return true;
 		}
 		// Add the form path and fields to the form.
-		JForm::addFormPath(dirname(__FILE__).'/forms');
-		JForm::addFieldPath(dirname(__FILE__).'/fields');
-		$form->loadFile('j2store', false);
-		$app = JFactory::getApplication();
-		if($app->isSite()){
-			$article_id = $app->input->getInt('a_id');
-			//if($article_id){
-				$this->appendJ2StoreFieldset();
-			//}
+		JForm::addFormPath( dirname( __FILE__ ) . '/forms' );
+		JForm::addFieldPath( dirname( __FILE__ ) . '/fields' );
+		$form->loadFile( 'j2store', false );
+
+		if ( $app->isSite() )
+		{
+			$article_id = $app->input->getInt( 'a_id' );
+            if (version_compare(JVERSION, '3.8.0', 'lt')) {
+                // need to enable joomla old version. Just in case
+                $this->appendJ2StoreFieldset();
+            }
 		}
-		J2Store::plugin()->event('AfterContentPrepareForm', array($form, $data));
+		J2Store::plugin()->event( 'AfterContentPrepareForm', array( $form, $data ) );
+		if ( ! $message_display )
+		{
+			$app->enqueueMessage( JText::_( 'J2STORE_TAB_NOT_DISPLY_IN_CONTENT' ), 'waring' );
+		}
+
 		return true;
 	}
 
@@ -311,12 +357,19 @@ class plgContentJ2Store extends JPlugin
 	}
 
 	function onContentBeforeDisplay($option, $item, $params) {
+        if(!$this->checkPublishDate($item)){
+            return;
+        }
 		return $this->getProductImages('beforecontent', $option, $item, $params);
 	}
 
 	function onContentAfterDisplay($option, $item, $params) {
 		if (strpos ( $option, 'com_content' ) === false)
 			return;
+
+        if(!$this->checkPublishDate($item)){
+            return;
+        }
 		//if it is a j2store product list, then we do not want to process further.
 		if($option == 'com_content.category.productlist') return;
 
@@ -369,6 +422,43 @@ class plgContentJ2Store extends JPlugin
 		return $return;
 	}
 
+	/**
+	 * Before save content method
+	 * Method is called right before the content is saved
+	 *
+	 * @param	string		The context of the content passed to the plugin (added in 1.6)
+	 * @param	object		A JTableContent object
+	 * @param	bool		If the content is just about to be created
+	 *
+	 */
+	function onContentBeforeSave($context, $data, $isNew)
+	{
+		// Check we are manipulating a valid form.
+		$context_array = array ('com_content.article');
+		
+		if(JFactory::getApplication()->isSite()){
+			$context_array = array ('com_content.form');
+		}
+
+		if (!in_array($context,$context_array)) {
+			return true;
+		}
+
+		$app = JFactory::getApplication();
+
+		// store in another inp variable
+		$app->input->set('j2store_all_attribs',$data->attribs,'RAW');
+		
+		// get the J2Store data from attribs 
+		$all_attribs = json_decode($data->attribs);
+		if (isset($all_attribs->j2store)) {
+			unset( $all_attribs->j2store );	
+		}			
+		// reset attribs array
+		$data->attribs = json_encode ( $all_attribs );
+
+		return true;
+	}
 
 
 	/**
@@ -380,7 +470,6 @@ class plgContentJ2Store extends JPlugin
 	 * @param	bool		If the content is just about to be created
 	 *
 	 */
-
 	function onContentAfterSave($context, $data, $isNew)
 	{
 		// Check we are manipulating a valid form.
@@ -413,15 +502,16 @@ class plgContentJ2Store extends JPlugin
 
 
 			//only save when treated as a product
-			$attribs = json_decode($data->attribs);
+			$all_attribs = $app->input->get('j2store_all_attribs', '','RAW');
+			$attribs = json_decode($all_attribs);
 			if(isset($attribs->j2store->enabled) && ($attribs->j2store->enabled == 1 || $alreadyExists)
 				&& isset($attribs->j2store->product_type) && !empty($attribs->j2store->product_type)) {
 				// convert the joomla article attributes from json to object
 				//check if it is a save as copy
 				if($task == 'save2copy') {
-					if($attribs->j2store->product_type == 'variable'){
-						return true;
-					}
+                    if(in_array($attribs->j2store->product_type, array('variable','advancedvariable','flexivariable','variablesubscriptionproduct'))){
+                        return true;
+                    }
 					//we are copying the data. So reset the product id and the variant id
 					$attribs->j2store->j2store_product_id = null;
 					$attribs->j2store->j2store_variant_id = null;
@@ -511,11 +601,47 @@ class plgContentJ2Store extends JPlugin
 		$db = JFactory::getDbo();
 		$query->select('#__content.title as product_name,#__content.catid');
 		$query->join('LEFT OUTER', '#__content AS #__content ON #__j2store_products.product_source_id=#__content.id AND #__j2store_products.product_source='.$db->q('com_content'));
-
+		$query->where('CASE WHEN #__j2store_products.product_source = '.$db->q('com_content') .' THEN
+						#__content.state !='.$db->q(-2).'
+  					ELSE
+						#__j2store_products.enabled = '.$db->q(1).'
+					END
+				 	');
 		$search = $model->getState('search','','string');
 		if(!empty($search )) {
-			$query->where( $db->qn('#__content').'.'.$db->qn('title').' LIKE '.$db->q('%'.$search.'%') );
+			$query->where('CASE WHEN #__j2store_products.product_source = '.$db->q('com_content') .' THEN	
+			( #__content.title LIKE '.$db->q('%'.$search.'%').' OR '.$db->qn('#__j2store_products').'.'.$db->qn('j2store_product_id').' LIKE '.$db->q('%'.$search.'%').'OR '.
+                $db->qn('#__j2store_products').'.'.$db->qn('product_source').' LIKE '.$db->q('%'.$search.'%').'OR '.
+                $db->qn('#__j2store_variants').'.'.$db->qn('sku').' LIKE '.$db->q('%'.$search.'%').'OR '.
+                $db->qn('#__j2store_variants').'.'.$db->qn('upc').' LIKE '.$db->q('%'.$search.'%').'OR '.
+                $db->qn('#__j2store_variants').'.'.$db->qn('price').' LIKE '.$db->q('%'.$search.'%').'OR '.
+                $db->qn('#__j2store_products').'.'.$db->qn('product_type').' LIKE '.$db->q('%'.$search.'%').' ) ELSE
+				#__j2store_products.enabled = '.$db->q(1).'
+				END');
 		}
+
+	}
+
+	public function onJ2StoreAfterProductListWhereQuery(&$model){
+	    $query = '';
+	    $db = JFactory::getDbo();
+        $search = $model->getState('search','','string');
+        if(!empty($search)){
+            $query = "#__content.title LIKE ".$db->q('%'.$search.'%');
+        }
+        return $query;
+    }
+
+	public function onJ2StoreAfterStockProductListQuery(&$query,&$model){
+		$db = JFactory::getDbo();
+		$query->select('#__content.title as product_name,#__content.catid');
+		$query->join('LEFT OUTER', '#__content AS #__content ON #__j2store_products.product_source_id=#__content.id AND #__j2store_products.product_source='.$db->q('com_content'));
+		$query->where('CASE WHEN #__j2store_products.product_source = '.$db->q('com_content') .' THEN
+						#__content.state !='.$db->q(-2).'
+  					ELSE
+						#__j2store_products.enabled = '.$db->q(1).'
+					END
+				 	');
 	}
 
 	private function getArticle($content_id) {
@@ -572,4 +698,37 @@ class plgContentJ2Store extends JPlugin
 			}
 		}
 	}
+
+	function onJ2StoreAfterShippingTroubleListQuery(&$query,&$model){
+		$db = JFactory::getDbo ();
+		$query->join('LEFT', '#__content ON (#__j2store_products.product_source_id =#__content.id AND #__j2store_products.product_source ='.$db->q('com_content').')');
+		$query->where('CASE WHEN #__j2store_products.product_source = '.$db->q('com_content') .' THEN
+						#__content.state !='.$db->q(-2).'
+  					ELSE
+						#__j2store_products.enabled = '.$db->q(1).'
+					END
+				 	');
+	}
+
+	function checkPublishDate($article){
+	    $check_publish_date = $this->params->get('check_publish_date',0);
+	    if(!$check_publish_date){
+	        return true;
+        }
+
+        $date = JFactory::getDate('now');
+        $db = JFactory::getDBo();
+        // Define null and now dates
+        $nullDate = $db->getNullDate();
+        //default to the sql formatted date
+        $nowDate = $date->toSql();
+        $status = false;
+        if(isset($article->publish_up) && isset($article->publish_down) &&
+            ((($article->publish_up == $nullDate) || ($article->publish_up <= $nowDate)) &&
+                (($article->publish_down == $nullDate) || ($article->publish_down >= $nowDate)))){
+
+            $status = true;
+        }
+        return $status;
+    }
 }

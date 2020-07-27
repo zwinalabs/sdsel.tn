@@ -194,14 +194,18 @@ $order_status = $params->get('order_status',array('*'));
 			?>
 			</td>
 		</tr>
-
+		<?php
+		$tz = JFactory::getConfig()->get('offset');
+		$previous = JFactory::getDate ('now -7 days',$tz)->format ( 'Y-m-d' );
+		$today = JFactory::getDate ('now',$tz)->format ( 'Y-m-d' );
+		?>
 		<tr>
 			<td><?php echo JText::_('J2STORE_TOTAL_CONFIRMED_ORDERS_LAST7DAYS'); ?></td>
 			<td>
 			<?php
 				echo F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
-									->since( gmdate('Y-m-d', time()-7*24*3600) )
-									->until( gmdate('Y-m-d') )
+									->since( $previous )
+									->until( $today.' 23:59:59' )
 									->orderstatus($order_status)
 									->nozero(1)
 									->getOrdersTotal();
@@ -211,8 +215,8 @@ $order_status = $params->get('order_status',array('*'));
 			<?php
 			echo $currency->format(
 				F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
-									->since( gmdate('Y-m-d', time()-7*24*3600) )
-									->until( gmdate('Y-m-d') )
+									->since( $previous )
+									->until( $today.' 23:59:59' )
 									->orderstatus($order_status)
 									->nozero(1)
 									->moneysum(1)
@@ -227,16 +231,12 @@ $order_status = $params->get('order_status',array('*'));
 			<td><?php echo JText::_('J2STORE_TOTAL_CONFIRMED_ORDERS_YESTERDAY'); ?></td>
 			<td>
 			<?php
-			$date = new DateTime();
-			$date->setDate(gmdate('Y'), gmdate('m'), gmdate('d'));
-			$date->modify("-1 day");
-			$yesterday = $date->format("Y-m-d");
-			$date->modify("+1 day")
+			$yesterday = JFactory::getDate ('now -1 days',$tz)->format ( 'Y-m-d' );
 			?>
 			<?php
 				echo F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
 									->since( $yesterday )
-									->until( $date->format("Y-m-d") )
+									->until( $yesterday.' 23:59:59' )
 									->orderstatus($order_status)
 									->nozero(1)
 									->getOrdersTotal();
@@ -247,7 +247,7 @@ $order_status = $params->get('order_status',array('*'));
 			echo $currency->format(
 				F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
 									->since( $yesterday )
-									->until( $date->format("Y-m-d") )
+									->until( $yesterday.' 23:59:59' )
 									->orderstatus($order_status)
 									->nozero(1)
 									->moneysum(1)
@@ -262,13 +262,12 @@ $order_status = $params->get('order_status',array('*'));
 			<td><strong><?php echo JText::_('J2STORE_TOTAL_CONFIRMED_ORDERS_TODAY'); ?></strong></td>
 			<td><strong>
 			<?php
-			$expiry = clone $date;
-			$expiry->modify('+1 day');
+				$tommorow = JFactory::getDate ('now +1 days',$tz)->format ( 'Y-m-d' );
 			?>
 			<?php
 				echo F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
-									->since( $date->format("Y-m-d") )
-									->until( $expiry->format("Y-m-d") )
+									->since( $today )
+									->until( $today.' 23:59:59' )
 									->orderstatus($order_status)
 									->nozero(1)
 									->getOrdersTotal();
@@ -280,8 +279,8 @@ $order_status = $params->get('order_status',array('*'));
 			<?php
 			echo $currency->format(
 				F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
-									->since( $date->format("Y-m-d") )
-									->until( $expiry->format("Y-m-d") )
+									->since( $today )
+									->until( $today.' 23:59:59' )
 									->orderstatus($order_status)
 									->nozero(1)
 									->moneysum(1)

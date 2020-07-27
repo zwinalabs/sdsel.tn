@@ -19,9 +19,9 @@ defined('_JEXEC') or die;
 						?>
 						<?php echo $this->orderinfo->shipping_address_2 ? "<br/>".$this->orderinfo->shipping_address_2: "<br/>";
 						echo $this->orderinfo->shipping_city.'<br/>';
-						echo $this->orderinfo->shipping_zone_name ? $this->orderinfo->shipping_zone_name.'<br/>' : "";
+						echo $this->orderinfo->shipping_zone_name ? JText::_($this->orderinfo->shipping_zone_name).'<br/>' : "";
 						echo $this->orderinfo->shipping_zip."<br/>";
-						echo $this->orderinfo->shipping_country_name."<br/>";
+						echo JText::_($this->orderinfo->shipping_country_name)."<br/>";
 						echo JText::_('J2STORE_TELEPHONE') .': ';
 						echo $this->orderinfo->shipping_phone_1;
 						echo $this->orderinfo->shipping_phone_2 ? "<br/>".$this->orderinfo->shipping_phone_2 : "<br/> ";

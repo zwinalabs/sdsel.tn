@@ -53,6 +53,7 @@ class J2StoreTableTaxprofile extends F0FTable
 		$items = $model->taxprofile_id($oid)->getList();
 		if(isset($items) && count($items)){
 			$status =false;
+			JFactory::getApplication()->enqueueMessage(JText::_('J2STORE_TAXPROFILE_ASSOCIATED_WITH_PRODUCTS'),'warning');
 		}
 		return $status;
 	}

@@ -68,27 +68,28 @@ function listItemTask(id,isDefault){
 
 }
 
-function deleteVariant(variant_id)
-(function($){
-	var delete_variant = {
-		option: 'com_j2store',
-		view : 'products',
-		task : 'deletevariant',
-		variant_id : variant_id
-	};
-	$.ajax({
-		url  : '<?php echo JRoute::_('index.php');?>',
-		data : delete_variant
-		beforeSend:function(){
-			$("#deleteVariant-"+variant_id).attr('value','<?php echo JText::_('J2STORE_DELETING')?>');
-		},
-		success:function(json){
-			if(json){
-				$("#deleteVariant-"+variant_id).attr('value','<?php echo JText::_('J2STORE_DELETE')?>');
-				$("#product-variant-"+variant_id).remove();
-			}
-	}
-	});
-})(j2store.jQuery);
+function deleteVariant(variant_id){
+    (function($){
+        var delete_variant = {
+            option: 'com_j2store',
+            view : 'products',
+            task : 'deletevariant',
+            variant_id : variant_id
+        };
+        $.ajax({
+            url  : '<?php echo JRoute::_('index.php');?>',
+            data : delete_variant
+            beforeSend:function(){
+                $("#deleteVariant-"+variant_id).attr('value','<?php echo JText::_('J2STORE_DELETING')?>');
+            },
+            success:function(json){
+                if(json){
+                    $("#deleteVariant-"+variant_id).attr('value','<?php echo JText::_('J2STORE_DELETE')?>');
+                    $("#product-variant-"+variant_id).remove();
+                }
+            }
+        });
+    })(j2store.jQuery);
+}
 
 </script>

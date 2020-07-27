@@ -306,4 +306,52 @@ class J2StorePluginBase extends JPlugin
 		$zone->load($zone_id);
 		return $zone;
 	}
+
+    /**
+     * Load table object
+     */
+    public function getTable($table_name,$table_condition = array()){
+        F0FTable::addIncludePath(JPATH_ADMINISTRATOR.'/components/com_j2store/tables');
+        $table_name = ucfirst($table_name);
+        $table_object = F0FTable::getInstance($table_name, 'J2StoreTable')->getClone();
+        if($table_condition){
+            $table_object->load($table_condition);
+        }
+        return $table_object;
+    }
+
+    /**
+     * Clean text
+     */
+    public function clean_title($text){
+        $text =  str_replace ( '"','' ,  $text);
+        $text =  str_replace ( "'",'' ,  $text);
+        return $text;
+    }
+
+    /**
+     * Gets admins data
+     *
+     * @return array|boolean
+     * @access protected
+     */
+    function _getAdmins()
+    {
+        $db = JFactory::getDBO();
+        $query = $db->getQuery(true);
+        $query->select('u.name, u.email');
+        $query->from('#__users AS u');
+        $query->join('LEFT', '#__user_usergroup_map AS ug ON u.id=ug.user_id');
+        $query->where('u.sendEmail = 1');
+        $query->where('ug.group_id = 8');
+
+        $db->setQuery($query);
+        $admins = $db->loadObjectList();
+        if ($error = $db->getErrorMsg()) {
+            JError::raiseError(500, $error);
+            return false;
+        }
+
+        return $admins;
+    }
 }

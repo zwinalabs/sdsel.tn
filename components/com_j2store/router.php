@@ -31,28 +31,37 @@ class J2StoreRouter extends JComponentRouterBase {
 	public function build(&$query) {
 		$segments = array ();
 		// If there is only the option and Itemid, let Joomla! decide on the naming scheme
-		if (isset ( $query ['option'] ) && isset ( $query ['Itemid'] ) && ! isset ( $query ['view'] ) && ! isset ( $query ['task'] ) && ! isset ( $query ['layout'] ) && ! isset ( $query ['id'] )) {
+		if (isset ( $query ['option'] ) && isset ( $query ['Itemid'] ) && ! isset ( $query ['view'] ) && ! isset ( $query ['task'] ) && ! isset ( $query ['layout'] ) && ! isset ( $query ['id'] ) && ! isset ( $query ['filter_tag'] )) {
 			return $segments;
 		}
-
 		$menus = JMenu::getInstance ( 'site' );
-
 		$view = J2StoreRouterHelper::getAndPop ( $query, 'view', 'carts' );
 		$task = J2StoreRouterHelper::getAndPop ( $query, 'task' );
 		$layout = J2StoreRouterHelper::getAndPop ( $query, 'layout' );
 		$id = J2StoreRouterHelper::getAndPop ( $query, 'id' );
 		$Itemid = J2StoreRouterHelper::getAndPop ( $query, 'Itemid' );
 		$catid = J2StoreRouterHelper::getAndPop ( $query, 'catid' );
+		$tag = J2StoreRouterHelper::getAndPop ( $query, 'tag' );
+		$filter_tag = J2StoreRouterHelper::getAndPop ( $query, 'filter_tag' );
+		$parent_tag = J2StoreRouterHelper::getAndPop ( $query, 'parent_tag' );
 		$j2storesource = J2StoreRouterHelper::getAndPop ( $query, 'j2storesource' );
+        $lang = J2StoreRouterHelper::getAndPop ( $query, 'lang' );
+        if(empty($lang)){
+            $langu = JFactory::getLanguage();
+            $lang = $langu->getTag();
+        }
 		// $orderpayment_type = J2StoreRouterHelper::getAndPop($query, 'orderpayment_type');
 		// $paction = J2StoreRouterHelper::getAndPop($query, 'paction');
 		$qoptions = array (
-				'option' => 'com_j2store',
-				'view' => $view,
-				'task' => $task,
-				'id' => $id
+			'option' => 'com_j2store',
+			'view' => $view,
+			'task' => $task,
+			'filter_tag' => $filter_tag,
+			'parent_tag' => $parent_tag,
+			'tag' => $tag,
+			'id' => $id,
+            'lang' => $lang
 		);
-
 		switch ($view) {
 			case 'carts' :
 			case 'cart' :
@@ -67,7 +76,7 @@ class J2StoreRouter extends JComponentRouterBase {
 				}
 
 				if (empty ( $Itemid )) {
-					$menu = J2StoreRouterHelper::findMenu ( $qoptions );
+					$menu = J2StoreRouterHelper::findMenuCarts ( $qoptions );
 					$mView = isset ( $menu->query ['view'] ) ? $menu->query ['view'] : 'carts';
 					$mTask = isset ( $menu->query ['task'] ) ? $menu->query ['task'] : '';
 					$Itemid = empty ( $menu ) ? null : $menu->id;
@@ -81,8 +90,8 @@ class J2StoreRouter extends JComponentRouterBase {
 					}
 				} else {
 
-				// sometimes we need task
-				//	$segments [] = 'carts';
+					// sometimes we need task
+					//	$segments [] = 'carts';
 					if (isset ( $mTask ) && ! empty ( $mTask )) {
 						$segments [] = $mTask;
 					} elseif (isset ( $task )) {
@@ -108,7 +117,7 @@ class J2StoreRouter extends JComponentRouterBase {
 				}
 
 				if (empty ( $Itemid )) {
-					$menu = J2StoreRouterHelper::findMenu ( $qoptions );
+					$menu = J2StoreRouterHelper::findCheckoutMenu ( $qoptions );
 					$mView = isset ( $menu->query ['view'] ) ? $menu->query ['view'] : 'checkout';
 					$mTask = isset ( $menu->query ['task'] ) ? $menu->query ['task'] : '';
 					$Itemid = empty ( $menu ) ? null : $menu->id;
@@ -119,7 +128,7 @@ class J2StoreRouter extends JComponentRouterBase {
 					$segments [] = 'checkout';
 					if (isset ( $task )) {
 						$segments [] = $task;
-					}					
+					}
 					// if(isset($orderpayment_type)) {
 					// $segments[] = $orderpayment_type;
 					// }
@@ -135,7 +144,7 @@ class J2StoreRouter extends JComponentRouterBase {
 						{
 							$segments [] = $mTask;
 							$is_task_set = true;
-						}						
+						}
 					}
 					if ($is_task_set==false && isset($task))
 					{
@@ -144,7 +153,7 @@ class J2StoreRouter extends JComponentRouterBase {
 							$segments [] = $task;
 							$is_task_set = true;
 						}
-						
+
 					}
 					// add the order payment type
 					/*
@@ -169,7 +178,7 @@ class J2StoreRouter extends JComponentRouterBase {
 				}
 
 				if (empty ( $Itemid )) {
-					$menu = J2StoreRouterHelper::findMenu ( $qoptions );
+                    $menu = J2StoreRouterHelper::findMenuMyprofile ( $qoptions );
 					$mView = isset ( $menu->query ['view'] ) ? $menu->query ['view'] : 'myprofile';
 					$mTask = isset ( $menu->query ['task'] ) ? $menu->query ['task'] : '';
 					$Itemid = empty ( $menu ) ? null : $menu->id;
@@ -210,6 +219,13 @@ class J2StoreRouter extends JComponentRouterBase {
 						$Itemid = null;
 				}
 
+                if($Itemid){
+                    $menu = J2StoreRouterHelper::findProductMenu ( $qoptions );
+                    if(is_object($menu) && $menu->id != $Itemid){
+                        $Itemid = null;
+                    }
+                }
+
 				if (empty ( $Itemid )) {
 					// special find. Needed because we will be using order links under checkout view
 					$menu = J2StoreRouterHelper::findProductMenu ( $qoptions );
@@ -222,38 +238,116 @@ class J2StoreRouter extends JComponentRouterBase {
 				if (empty ( $Itemid )) {
 					// No menu found, let's add a segment based on the layout
 					$segments [] = 'products';
-					
+
 					if (isset ( $id )) {
 						if (strpos ( $id, ':' ) === false) {
-							$segments [] = J2StoreRouterHelper::getItemAlias ( $id );
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $id , $lang );
 						}
 					} elseif (isset ( $mId )) {
 						if (strpos ( $mId, ':' ) === false) {
-							$segments [] = J2StoreRouterHelper::getItemAlias ( $mId );
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $mId , $lang);
 						}
 					}
 
-					$other_tasks = array('compare','wishlist');
+					$other_tasks = array('compare','wishlist', 'removeproductprice', 'deleteProductOptionvalues');
 					if ( isset ( $task ) && in_array($task, $other_tasks) ) {
 						$segments [] =  $task ;
 					}
 
 				} else {
 					// Joomla! will let the menu item naming work its magic
-				
 
 					if (isset ( $mId )) {
 						if (strpos ( $mId, ':' ) === false) {
-							$segments [] = J2StoreRouterHelper::getItemAlias ( $mId );
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $mId , $lang);
 						}
 					} elseif (isset ( $id )) {
 						if (strpos ( $id, ':' ) === false) {
-							$segments [] = J2StoreRouterHelper::getItemAlias ( $id );
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $id , $lang);
 						}
 					}
 
 					$query ['Itemid'] = $Itemid;
 				}
+				break;
+			case 'producttags':
+				$other_tasks = array('compare','wishlist');
+				if ( isset ( $task ) && in_array($task, $other_tasks) ) {
+					$Itemid = null;
+				}
+				// Is it a browser menu?
+				if ($Itemid) {
+					$menu = $menus->getItem ( $Itemid );
+					$mView = isset ( $menu->query ['view'] ) ? $menu->query ['view'] : 'producttags';
+					$mTask = isset ( $menu->query ['task'] ) ? $menu->query ['task'] : $task;
+
+					//we might not have task here. We will however have a tag
+					$mTag = isset($menu->query['tag']) ? $menu->query ['tag'] : $tag;
+					$mId = isset ( $menu->query ['id'] ) ? $menu->query ['id'] : $id;
+
+					// No, we have to find another root
+					if (($mView != 'producttags'))
+						$Itemid = null;
+				}
+
+				if (empty ( $Itemid )) {
+
+					//Find the correct menu.
+					$menu = J2StoreRouterHelper::findProductTagsMenu( $qoptions );
+					$mView = isset ( $menu->query ['view'] ) ? $menu->query ['view'] : 'producttags';
+					$mTask = isset ( $menu->query ['task'] ) ? $menu->query ['task'] : $task;
+					$mTag = isset($menu->query['tag']) ? $menu->query ['tag'] : $tag;
+					$mId = isset ( $menu->query ['id'] ) ? $menu->query ['id'] : $id;
+					$Itemid = isset ( $menu->id ) ? $menu->id : null;
+				}
+
+				if (empty ( $Itemid )) {
+					// No menu found, let's add a segment based on the layout
+					$segments [] = 'producttags';
+					if(!empty( $filter_tag )){
+						$segments [] = $filter_tag;
+					}
+					if (isset ( $id )) {
+						if (strpos ( $id, ':' ) === false) {
+							if(count ( $segments ) == 1){
+								$segments [] = 	J2StoreRouterHelper::getTagAliasByItem ( $id );
+							}
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $id, $lang );
+						}
+					} elseif (isset ( $mId )) {
+						if (strpos ( $mId, ':' ) === false) {
+
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $mId , $lang);
+						}
+					}
+
+					$other_tasks = array('compare','wishlist', 'removeproductprice', 'deleteProductOptionvalues');
+					if ( isset ( $task ) && in_array($task, $other_tasks) ) {
+						$segments [] =  $task ;
+					}
+
+				} else {
+					
+					if (isset ( $mId )) {
+
+						//we have an id. That indicates a product detail view. Set the task to view
+						if (strpos ( $mId, ':' ) === false) {
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $mId , $lang);
+						}
+					} elseif (isset ( $id )) {
+						if (strpos ( $id, ':' ) === false) {
+							if(count ( $segments ) == 1){
+								$segments [] = 	J2StoreRouterHelper::getTagAliasByItem ( $id );
+							}
+							$segments [] = J2StoreRouterHelper::getItemAlias ( $id , $lang);
+
+						}
+					}
+					$query ['Itemid'] = $Itemid;
+				}
+
+
+
 				break;
 		}
 
@@ -264,9 +358,8 @@ class J2StoreRouter extends JComponentRouterBase {
 	 * @param array $segments
 	 * @return array
 	 * @throws Exception
-     */
+	 */
 	public function parse(&$segments) {
-		//var_dump($segments);
 		$query = array ();
 		$menus = JMenu::getInstance ( 'site' );
 		$menu = $menus->getActive ();
@@ -300,27 +393,44 @@ class J2StoreRouter extends JComponentRouterBase {
 
 			if ($segments [0] == 'products') {
 				$vars ['view'] = $segments [0];
-				$other_tasks = array('compare','wishlist');
+				$other_tasks = array('compare','wishlist', 'removeproductprice', 'deleteProductOptionvalues');
 				if ( isset ( $segments [1] ) && in_array($segments [1], $other_tasks) ) {
 					$vars['task'] = $segments [1];
 				}elseif (isset ( $segments [1] ) && $segments[1] != 'view' ) {
 					$vars ['task'] = 'view';
-					$vars ['id'] = $segments [1];
+					// fixed for mod_j2products showed in home page
+					$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [1]);
 				}elseif(isset($segments[1]) && $segments[1] == 'view') {
 					// old routing pattern detected. Send the customer to the correct page
 					$vars ['task'] = 'view';
 					if(isset($segments[2])) {
-						$vars ['id'] = $segments [2];
+						// fixed for mod_j2products showed in home page
+						$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [2]);
 					}
 				}
-				
-				
+
+
+			}
+
+			if ($segments [0] == 'producttags') {
+				$vars ['view'] = $segments [0];
+
+				$vars ['task'] = 'browse';
+
+				if(isset($segments[1])) {
+					$vars['tag'] = $segments[1];
+				}
+
+				if(isset($segments[2])) {
+					$vars['filter_tag'] = $segments[2];
+				}
+
+
 			}
 		} else {
 			if (count ( $segments )) {
 
 				$mView = $menu->query ['view'];
-
 				if (isset ( $mView ) && ($mView == 'cart' || $mView == 'carts')) {
 					$vars ['view'] = $mView;
 					if (isset ( $segments [0] )) {
@@ -365,16 +475,16 @@ class J2StoreRouter extends JComponentRouterBase {
 						$vars['task'] = $segments [0];
 					}elseif (isset ( $segments [0] ) && $segments[0] != 'view' ) {
 						$vars ['task'] = 'view';
-						$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [0]);
-						
+						$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [0], $menu->query['catid']);
+
 					}elseif(isset($segments[0]) && $segments[0] == 'view') {
 						//old routing pattern. Re-route correct
 						$vars['task'] = 'view';
 						if (isset ( $segments [1] )) {
-							$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [1]);
+							$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [1], $menu->query['catid']);
 						}
 					}
-					
+
 				} elseif ($segments [0] == 'products') {
 					$vars ['view'] = $segments [0];
 					$other_tasks = array('compare','wishlist');
@@ -383,12 +493,23 @@ class J2StoreRouter extends JComponentRouterBase {
 					}elseif (isset ( $segments [1] ) && $segments[1] != 'view') {
 						// this will be the id of the product or the alias
 						$vars ['task'] = 'view';
-						$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [2]);
+						$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments [2], $menu->query['catid']);
 					}elseif (isset ( $segments [1] ) && $segments[1] == 'view') {
 						$vars ['task'] = 'view';
 						if (isset ( $segments [2] )) {
-							$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments[2]);
+							$vars ['id'] = J2StoreRouterHelper::getArticleByAlias($segments[2], $menu->query['catid']);
 						}
+					}
+				}
+
+				if (isset ( $mView ) && $mView == 'producttags') {
+					$vars ['view'] = 'producttags';
+
+					if(isset($segments[0])) {
+						$vars['task'] = 'view';
+						//we also have an id
+						$vars['id'] = J2StoreRouterHelper::getArticleByAlias($segments [0]);
+						$vars['tag'] = $menu->query['tag'];
 					}
 				}
 			}

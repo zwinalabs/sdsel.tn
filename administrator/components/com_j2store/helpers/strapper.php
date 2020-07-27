@@ -12,7 +12,19 @@
 defined('_JEXEC') or die('Restricted access');
 require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/j2store.php');
 class J2StoreStrapper {
+    public static $instance = null;
+    public function __construct($properties=null) {
 
+    }
+    public static function getInstance(array $config = array())
+    {
+        if (!self::$instance)
+        {
+            self::$instance = new self($config);
+        }
+
+        return self::$instance;
+    }
 	public static function addJS() {
 		$app = JFactory::getApplication();
 		$params = J2Store::config();
@@ -59,8 +71,10 @@ class J2StoreStrapper {
 			$document->addScript(JUri::root(true).'/media/j2store/js/jquery.zoom.js');
 			self::loadTimepickerScript($document);
 			$document->addScript(JURI::root(true).'/media/j2store/js/j2store.js');
+            $document->addScript(JURI::root(true).'/media/j2store/js/bootstrap-modal-conflit.js');
+            $document->addScript(JURI::root(true).'/media/j2store/js/jquery.fancybox.min.js');
 		}
-
+		J2Store::plugin ()->event ( 'AfterAddJS' );
 	}
 
 	public static function addCSS() {
@@ -111,7 +125,7 @@ class J2StoreStrapper {
 		if ($app->isAdmin ()) {
 			$document->addStyleSheet ( JURI::root ( true ) . '/media/j2store/css/j2store_admin.css' );
 		} else {
-			$document->addStyleSheet ( JUri::root () . 'media/j2store/css/font-awesome.min.css' );
+		    J2Store::strapper()->addFontAwesome();
 			// Add related CSS to the <head>
 			if ($document->getType () == 'html' && $j2storeparams->get ( 'j2store_enable_css' )) {
 
@@ -126,7 +140,10 @@ class J2StoreStrapper {
 			} else {
 				$document->addStyleSheet ( JURI::root ( true ) . '/media/j2store/css/j2store.css' );
 			}
+
+            $document->addStyleSheet ( JURI::root ( true ) . '/media/j2store/css/jquery.fancybox.min.css' );
 		}
+		J2Store::plugin ()->event ( 'AfterAddCSS' );
 	}
 
 	public static function getDefaultTemplate() {
@@ -184,35 +201,42 @@ class J2StoreStrapper {
 		$element_datetime = $prefix.'_datetime';
 
 		$timepicker_script ="
-		if(typeof(j2store) == 'undefined') {
-		var j2store = {};
-	}
+			if(typeof(j2store) == 'undefined') {
+				var j2store = {};
+			}
 
 	if(typeof(jQuery) != 'undefined') {
-	jQuery.noConflict();
+		jQuery.noConflict();
 	}
 
 	if(typeof(j2store.jQuery) == 'undefined') {
-	j2store.jQuery = jQuery.noConflict();
+		j2store.jQuery = jQuery.noConflict();
 	}
 
 	if(typeof(j2store.jQuery) != 'undefined') {
 
-	(function($) {
-	$(document).ready(function(){
-	//date, time, datetime
+		(function($) {
+			$(document).ready(function(){
+				//date, time, datetime
 
-		$('.$element_date').datepicker({dateFormat: '$date_format'});
-				$('.$element_datetime').datetimepicker({
-						dateFormat: '$date_format',
-						timeFormat: '$time_format',
-						$localisation
-	});
+				if( $('.$element_date').length ){
+					$('.$element_date').datepicker({dateFormat: '$date_format'});
+				}
 
-		$('.$element_time').timepicker({timeFormat: '$time_format', $localisation});
+				if($('.$element_datetime').length){
+					$('.$element_datetime').datetimepicker({
+							dateFormat: '$date_format',
+							timeFormat: '$time_format',
+							$localisation
+					});
+				}
 
-	});
-	})(j2store.jQuery);
+				if($('.$element_time').length){
+					$('.$element_time').timepicker({timeFormat: '$time_format', $localisation});
+				}
+
+			});
+		})(j2store.jQuery);
 	}
 	";
 
@@ -344,7 +368,7 @@ class J2StoreStrapper {
 		return $datepicker_script;
 	}
 
-	static public function sizeFormat($filesize)
+    public static function sizeFormat($filesize)
 	{
 		if($filesize > 1073741824) {
 			return number_format($filesize / 1073741824, 2)." Gb";
@@ -356,4 +380,13 @@ class J2StoreStrapper {
 			return $filesize." bytes";
 		}
 	}
+
+	public function addFontAwesome(){
+        $config = J2Store::config();
+        $document = JFactory::getDocument();
+        $font_awesome_ui = $config->get('load_fontawesome_ui',1);
+        if($font_awesome_ui){
+            $document->addStyleSheet ( JUri::root () . 'media/j2store/css/font-awesome.min.css' );
+        }
+    }
 }

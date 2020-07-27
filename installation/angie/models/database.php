@@ -1,8 +1,9 @@
 <?php
 /**
- * @package   angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author    Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
@@ -10,7 +11,6 @@ defined('_AKEEBA') or die();
 
 class AngieModelDatabase extends AModel
 {
-
 	/**
 	 * The databases.ini contents
 	 *
@@ -28,10 +28,12 @@ class AngieModelDatabase extends AModel
 	{
 		if (empty($this->dbini))
 		{
-			$this->dbini = $this->container->session->get('databases.dbini', null);
+			$this->dbini = $this->container->session->get('databases.dbini', array());
+
 			if (empty($this->dbini))
 			{
 				$filename = APATH_INSTALLATION . '/sql/databases.ini';
+
 				if (file_exists($filename))
 				{
 					$this->dbini = AngieHelperIni::parse_ini_file($filename, true);
@@ -42,11 +44,18 @@ class AngieModelDatabase extends AModel
 					// Add the custom options
 					$temp    = array();
 					$siteSQL = null;
+
 					foreach ($this->dbini as $key => $data)
 					{
 						if (!array_key_exists('dbtech', $data))
 						{
 							$data['dbtech'] = null;
+						}
+
+						// Skip section that have the db tech set to none (flat-file CMS)
+						if (strtolower($data['dbtech']) == 'none')
+						{
+							continue;
 						}
 
 						if (!array_key_exists('existing', $data))
@@ -99,6 +108,16 @@ class AngieModelDatabase extends AModel
 							$data['throttle'] = 250;
 						}
 
+						if (!array_key_exists('break_on_failed_create', $data))
+						{
+							$data['break_on_failed_create'] = true;
+						}
+
+						if (!array_key_exists('break_on_failed_insert', $data))
+						{
+							$data['break_on_failed_insert'] = true;
+						}
+
 						// If we are using SQLite, let's replace any token we found inside the dbname index
 						if ($data['dbtype'] == 'sqlite')
 						{
@@ -115,7 +134,11 @@ class AngieModelDatabase extends AModel
 						}
 					}
 
-					$temp = array_merge(array('site.sql' => $siteSQL), $temp);
+					// Add the site db definition only if it was defined
+					if ($siteSQL)
+					{
+						$temp = array_merge(array('site.sql' => $siteSQL), $temp);
+					}
 
 					$this->dbini = $temp;
 				}
@@ -181,5 +204,24 @@ class AngieModelDatabase extends AModel
 		$this->dbini[ $key ] = (array) $data;
 
 		$this->saveDatabasesIni();
+	}
+
+	/**
+	 * Detects if we have a flag file for large columns; if so it returns its contents (longest query we will have to run)
+	 *
+	 * @return  int
+	 */
+	public function largeTablesDetected()
+	{
+		$file = APATH_INSTALLATION.'/large_tables_detected';
+
+		if (!file_exists($file))
+		{
+			return 0;
+		}
+
+		$bytes  = (int) file_get_contents($file);
+
+		return $bytes;
 	}
 }

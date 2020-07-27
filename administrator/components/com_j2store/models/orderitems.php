@@ -31,7 +31,9 @@ class J2StoreModelOrderItems extends F0FModel {
 				} */
 			
 				// removing the product from the cart if it's not available
-				if ($cartitem->available_quantity == 0) {
+				$stock_status = ($cartitem->available_quantity == 0) ? true :false;
+				J2Store::plugin ()->event('ValidateStockOnSetOrderItems', array(&$stock_status, $cartitem));
+				if ($stock_status) {
 					F0FModel::getTmpInstance('Cartitems', 'J2StoreModel')->setIds(array($cartitem->j2store_cartitem_id))->delete();
 					continue;
 				}
@@ -102,8 +104,20 @@ class J2StoreModelOrderItems extends F0FModel {
 	public function getOrderItemParams(&$orderItem, $cartitem) {
 
 		$array = array();
-		$array['thumb_image'] = isset($cartitem->thumb_image) ? $cartitem->thumb_image : '';
+        $thumb_image = isset($cartitem->thumb_image) ? $cartitem->thumb_image : '';
+		if(isset($cartitem->product_type) && in_array($cartitem->product_type,array('variable'))){
+            if(!empty($cartitem->main_image) && !empty($cartitem->main_image)){
+                $thumb_image = $cartitem->main_image;
+            }
+        }
+		$array['thumb_image'] = $thumb_image;
 		$array['shipping'] = $cartitem->shipping;
+		$product_helper = J2Store::product();
+		
+        if($product_helper->managing_stock($cartitem) && $product_helper->backorders_allowed($cartitem) &&
+            isset($cartitem->available_quantity) && isset($cartitem->product_qty) && $cartitem->product_qty > $cartitem->available_quantity){
+            $array['back_order_item'] = 'J2STORE_BACK_ORDER_ITEM';
+        }
 
 		$registry = new JRegistry;
 		$registry->loadArray($array);
@@ -116,7 +130,7 @@ class J2StoreModelOrderItems extends F0FModel {
 		if(isset($cartitem->options) && is_array($cartitem->options)) {
 
 			$orderitemattributes = array();
-
+            $utility = J2Store::utilities();
 			foreach ($cartitem->options as $option) {
 				unset($orderitemattribute);
 				$orderitemattribute = F0FTable::getAnInstance('OrderItemAttribute', 'J2StoreTable')->getClone();
@@ -128,7 +142,7 @@ class J2StoreModelOrderItems extends F0FModel {
 				//product option name. Dont confuse this with the option value name
 
 				$orderitemattribute->orderitemattribute_name = $option['name'];
-				$orderitemattribute->orderitemattribute_value = $option['option_value'];
+				$orderitemattribute->orderitemattribute_value = $utility->text_sanitize($option['option_value']);
 				//option price
 				$orderitemattribute->orderitemattribute_price = $option['price'];
 

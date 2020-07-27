@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -26,7 +27,7 @@ if(!empty($prevStep['step']))
 	$url = 'index.php?view=' . $prevStep['step']
 		. (!empty($prevStep['substep']) ? '&substep=' . $prevStep['substep'] : '');
 	$document->appendButton(
-		'GENERIC_BTN_PREV', $url, '', 'arrow-left', 'btnPrev'
+		'GENERIC_BTN_PREV', $url, 'grey', 'arrow-left-c', 'btnPrev'
 	);
 }
 
@@ -40,12 +41,12 @@ if($stepsModel->getActiveStep() == 'database')
 		$url = 'index.php?view=' . $nextStep['step']
 			. (!empty($nextStep['substep']) ? '&substep=' . $nextStep['substep'] : '');
 		$document->appendButton(
-			'GENERIC_BTN_SKIP', $url, 'warning', 'white forward', 'btnSkip'
+			'GENERIC_BTN_SKIP', $url, 'orange', 'arrow-right-c', 'btnSkip'
 		);
 	}
 	$key = $stepsModel->getActiveSubstep();
 	$document->appendButton(
-		'GENERIC_BTN_NEXT', 'javascript:databaseRunRestoration(\''.$key.'\'); return false;', 'primary', 'white arrow-right', 'btnNext'
+		'GENERIC_BTN_NEXT', 'javascript:databaseRunRestoration(\''.$key.'\'); return false;', 'teal', 'arrow-right-c', 'btnNext'
 	);
 }
 elseif($stepsModel->getActiveStep() == 'offsitedirs')
@@ -58,13 +59,13 @@ elseif($stepsModel->getActiveStep() == 'offsitedirs')
         $url = 'index.php?view=' . $nextStep['step']
             . (!empty($nextStep['substep']) ? '&substep=' . $nextStep['substep'] : '');
         $document->appendButton(
-            'GENERIC_BTN_SKIP', $url, 'warning', 'white forward', 'btnSkip'
+            'GENERIC_BTN_SKIP', $url, 'orange', 'arrow-right-c', 'btnSkip'
         );
     }
 
     $key = $stepsModel->getActiveSubstep();
     $document->appendButton(
-        'GENERIC_BTN_NEXT', 'javascript:offsitedirsRunRestoration(\''.$key.'\'); return false;', 'primary', 'white arrow-right', 'btnNext'
+        'GENERIC_BTN_NEXT', 'javascript:offsitedirsRunRestoration(\''.$key.'\'); return false;', 'teal', 'arrow-right-c', 'btnNext'
     );
 }
 elseif($stepsModel->getActiveStep() == 'setup')
@@ -80,12 +81,12 @@ elseif($stepsModel->getActiveStep() == 'setup')
             $url = 'index.php?view=' . $nextStep['step']
                 . (!empty($nextStep['substep']) ? '&substep=' . $nextStep['substep'] : '');
             $document->appendButton(
-                'GENERIC_BTN_SKIP', $url, 'warning', 'white forward', 'btnSkip'
+                'GENERIC_BTN_SKIP', $url, 'orange', 'arrow-right-c', 'btnSkip'
             );
         }
 
         $document->appendButton(
-            'GENERIC_BTN_NEXT', 'javascript:setupRunRestoration(\''.$key.'\'); return false;', 'primary multisite', 'white arrow-right', 'btnNext'
+            'GENERIC_BTN_NEXT', 'javascript:setupRunRestoration(\''.$key.'\'); return false;', 'teal multisite', 'arrow-right-c', 'btnNext'
         );
     }
     else
@@ -95,7 +96,7 @@ elseif($stepsModel->getActiveStep() == 'setup')
             $url = 'index.php?view=' . $nextStep['step']
                 . (!empty($nextStep['substep']) ? '&substep=' . $nextStep['substep'] : '');
             $document->appendButton(
-                'GENERIC_BTN_NEXT', $url, 'primary', 'white arrow-right', 'btnNext'
+                'GENERIC_BTN_NEXT', $url, 'teal', 'arrow-right-c', 'btnNext'
             );
         }
     }
@@ -109,7 +110,7 @@ else
 		$url = 'index.php?view=' . $nextStep['step']
 			. (!empty($nextStep['substep']) ? '&substep=' . $nextStep['substep'] : '');
 		$document->appendButton(
-			'GENERIC_BTN_NEXT', $url, 'primary', 'white arrow-right', 'btnNext'
+			'GENERIC_BTN_NEXT', $url, 'teal', 'arrow-right-c', 'btnNext'
 		);
 	}
 }

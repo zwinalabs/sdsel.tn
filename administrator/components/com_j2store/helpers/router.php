@@ -106,7 +106,9 @@ class J2StoreRouterHelper
 		}
 
 		$lang = JFactory::getLanguage();
-		if($lang->getTag() == $menu->language) {
+        $langu = (isset($qoptions['lang']) && $qoptions['lang']) ? $qoptions['lang'] : $lang->getTag();
+
+		if($langu == $menu->language) {
 			return true;
 		}if($menu->language == '*') {
 			return true;
@@ -141,7 +143,7 @@ class J2StoreRouterHelper
 		$menu_id = null;
 		foreach($menus->getMenu() as $item)
 		{
-			if(isset($item->query['view']) && $item->query['view']=='orders') {
+			if(isset($item->query['option']) && $item->query['option'] == 'com_j2store' && isset($item->query['view']) && $item->query['view']=='orders') {
 				if(self::checkMenuOrders($item, $qoptions)) {
 					$menu_id =$item->id;
 				}
@@ -151,11 +153,30 @@ class J2StoreRouterHelper
 		return $menu_id;
 	}
 
+    static public function findMenuMyprofile($qoptions) {
+
+        $menus = JMenu::getInstance('site');
+        $menu_id = null;
+        $menu = null;
+        foreach($menus->getMenu() as $item)
+        {
+            if(isset($item->query['option']) && $item->query['option'] == 'com_j2store' && isset($item->query['view']) && $item->query['view']=='myprofile') {
+                if(self::checkMenuOrders($item, $qoptions)) {
+                    $menu =$item;
+                    break;
+                }
+            }
+
+        }
+        return $menu;
+    }
+
 
 	public static function checkMenuOrders($menu, $qoptions) {
 		//echo 'ram';
 		$lang = JFactory::getLanguage();
-		if($lang->getTag() == $menu->language) {
+        $langu = (isset($qoptions['lang']) && $qoptions['lang']) ? $qoptions['lang'] : $lang->getTag();
+		if($langu == $menu->language) {
 			return true;
 		}if($menu->language == '*') {
 			return true;
@@ -164,6 +185,54 @@ class J2StoreRouterHelper
 		}
 	}
 
+	static public function findCheckoutMenu($qoptions){
+        $menus = JMenu::getInstance('site');
+        $menu_id = null;
+        $menu = null;
+        foreach($menus->getMenu() as $item)
+        {
+            if(isset($item->query['option']) && $item->query['option'] == 'com_j2store' && isset($item->query['view']) && in_array($item->query['view'],array('checkouts','checkout'))) {
+                unset( $qoptions['task'] );
+                if(self::checkCartMenu($item, $qoptions)) {
+                    $menu = $item;
+                    break;
+                }
+            }
+
+        }
+        return $menu;
+    }
+
+	static public function findMenuCarts($qoptions) {
+
+		$menus =JMenu::getInstance('site');
+		$menu_id = null;
+		$menu = null;
+		foreach($menus->getMenu() as $item)
+		{
+			if(isset($item->query['option']) && $item->query['option'] == 'com_j2store' && isset($item->query['view']) && $item->query['view']=='carts') {
+				unset( $qoptions['task'] );
+				if(self::checkCartMenu($item, $qoptions)) {
+					$menu = $item;
+					break;
+				}
+			}
+
+		}
+		return $menu;
+	}
+
+    public static function checkCartMenu($menu,$qoptions) {
+
+        if(isset($qoptions['lang']) && $qoptions['lang'] == $menu->language){
+            return true;
+        }elseif($menu->language == '*') {
+            return true;
+        } else {
+            return false;
+        }
+    }
+	
 	public static function findProductMenu($qoptions) {
 
 		$menus =JMenu::getInstance('site');
@@ -171,12 +240,32 @@ class J2StoreRouterHelper
 		$other_tasks = array('compare','wishlist');
 		foreach($menus->getMenu() as $item)
 		{
-			if(isset($item->query['view']) && $item->query['view']=='products') {
+			if(isset($item->query['option']) && $item->query['option'] == 'com_j2store' && isset($item->query['view']) && in_array ( $item->query['view'], array('products') )) {
 				if (isset($item->query['task']) && !empty($item->query['task']) && in_array($item->query['task'] , $other_tasks) && ($item->query['task'] == $qoptions['task']) ){
 					$menu =$item;
 					break;
 				}
 				if(self::checkMenuProducts($item, $qoptions)) {
+					$menu =$item;
+					//break on first found menu
+					break;
+				}
+			}
+
+		}
+        J2Store::plugin()->event('AfterFindProductMenu',array($menus,&$menu));
+		return $menu;
+
+	}
+
+	public static function findProductTagsMenu($qoptions) {
+
+		$menus =JMenu::getInstance('site');
+		$menu = null;
+		foreach($menus->getMenu() as $item)
+		{
+			if(isset($item->query['option']) && $item->query['option'] == 'com_j2store' && isset($item->query['view']) && in_array ( $item->query['view'], array('producttags') )) {
+				if(self::checkMenuProductTags($item, $qoptions)) {
 					$menu =$item;
 					//break on first found menu
 					break;
@@ -190,21 +279,28 @@ class J2StoreRouterHelper
 
 	public static function checkMenuProducts($menu, $qoptions) {
 		$lang = JFactory::getLanguage();
+
 		//first check the category
 		if(isset($qoptions['id'])) {
-			$cat_id = self::getProductCategory($qoptions['id']);
-			$categories = array();
-			if(isset($menu->query['catid'])) {			
-				$categories = $menu->query['catid'];			
-			}			
-			if(in_array($cat_id, $categories)) {
-				//seems we have a match
-				if($lang->getTag() == $menu->language) {
-					return true;
-				}if($menu->language == '*') {
-					return true;
-				} else {
-					return false;
+			if($qoptions['view'] == 'products'){
+                $langu = (isset($qoptions['lang']) && $qoptions['lang']) ? $qoptions['lang'] : $lang->getTag();
+				$cat_id = self::getProductCategory($qoptions['id'],$langu);
+				$categories = array();
+				if(isset($menu->query['catid'])) {
+					$categories = $menu->query['catid'];
+				}
+
+				if(in_array($cat_id, $categories)) {
+                    if(isset($qoptions['lang']) && $qoptions['lang'] == $menu->language){
+                        return true;
+                    }else/*if($lang->getTag() == $menu->language) {
+                        //seems we have a match
+						return true;
+					}*/if($menu->language == '*') {
+						return true;
+					} else {
+						return false;
+					}
 				}
 			}
 		}
@@ -212,32 +308,104 @@ class J2StoreRouterHelper
 
 	}
 
-	public static function getProductCategory($id) {
+	public static function checkMenuProductTags($menu, $qoptions) {
+		    $lang = JFactory::getLanguage();
+			//get tag alias
+			if($qoptions['view'] == 'producttags'){
 
-		//first load the product to get the id.
-		$product = F0FTable::getAnInstance('Product', 'J2StoreTable');
+				//do we have a parent tag.
+				//$parent_tag = isset($qoptions['parent_tag']) ? $qoptions['parent_tag'] : '';
+                $langu = (isset($qoptions['lang']) && $qoptions['lang']) ? $qoptions['lang'] : $lang->getTag();
+				//if(!empty($parent_tag)) {
+					//we have a parent tag. That means there is a menu associated to it
+					if(isset($menu->query['tag'])) {
+						$tag = $menu->query['tag'];
+					}
+					if(!empty($tag)) {// && $tag == $parent_tag
 
-		if($product->load($id)) {
-			if($product->product_source == 'com_content') {
-				$article = J2Store::article()->getArticle($product->product_source_id);
-				return $article->catid;
-			} else {
-				return '';
+                        if($langu == $menu->language){
+							return true;
+						}elseif($menu->language == '*') {
+							return true;
+						} else {
+							return false;
+						}
+
+					}
+				//}
 			}
-		} else {
-			return '';
-		}
+
+		return false;
+
 	}
 
+	public static function getProductTags($id){
+		$db = JFactory::getDbo ();
+		$query = $db->getQuery (true);
+		$query->select('tag_id')->from ( '#__contentitem_tag_map' )
+			->where ( 'core_content_id ='.$db->q ( $id ) )
+			->where ( 'type_alias ='.$db->q ( 'com_content.article' ) );
+		$db->setQuery ( $query );
+		return $db->loadObjectList ();
+	}
 
-	public static function getItemAlias($id) {
+    public static function getProductCategory($id,$lang='') {
+
+        //first load the product to get the id.
+        $product = F0FTable::getAnInstance('Product', 'J2StoreTable')->getClone();
+
+        if($product->load($id)) {
+            if($product->product_source == 'com_content') {
+                $product->product_source_id = J2Store::article()->getAssociatedArticle($product->product_source_id,$lang);
+                $article = J2Store::article()->getArticle($product->product_source_id);
+
+                return $article->catid;
+            } else {
+                return '';
+            }
+        } else {
+            return '';
+        }
+    }
+
+	public static function getLanguageId($tag){
+		$db = JFactory::getDbo ();
+		$query = $db->getQuery (true);
+		$query->select('lang_id')->from ( '#__languages' )->where ( 'lang_code ='.$db->q ( $tag ) );
+		$db->setQuery ( $query );
+		return $db->loadResult ();
+	}
+
+	public static function getItemAlias($id , $lang = '') {
 		//first load the product to get the id.
-		$product = F0FTable::getAnInstance('Product', 'J2StoreTable');
+		$product = F0FTable::getAnInstance('Product', 'J2StoreTable')->getClone();
 
 		if($product->load($id)) {
 			if($product->product_source == 'com_content') {
-				$article = J2Store::article()->getArticle($product->product_source_id);
-				return $article->alias;
+				$article_helper = J2Store::article();
+				$article = $article_helper->getArticle($product->product_source_id);
+				$content_alias = $article->alias;
+				if(!empty( $lang )){
+                    $multilang = JLanguageMultilang::isEnabled();
+				    if($multilang){
+                        $article_id = $article_helper->getAssociatedArticle($product->product_source_id,$lang);
+                        $article = $article_helper->getArticle($article_id);
+                        $content_alias = $article->alias;
+                    }
+                    if ( $article_helper->isFalangInstalled() ){
+						$config = J2Store::config();
+						// get alternate content from falang tables
+						if ( $config->get('enable_falang_support',0) ){
+							$lang_id = self::getLanguageId($lang);
+							$falan_alias = $article_helper->loadFalangAliasById($product->product_source_id,$lang_id) ;
+							if(!empty( $falan_alias )){
+								$content_alias = $falan_alias;
+							}
+
+						}
+					}
+				}
+				return $content_alias;
 			}else {
 				return '';
 			}
@@ -251,7 +419,7 @@ class J2StoreRouterHelper
 	 * @param $segment mixed Either ID or a string containing the ID
 	 * @return mixed Product ID or false on finding none
      */
-	public static function getArticleByAlias($segment) {
+	public static function getArticleByAlias($segment, $categories = array()) {
 		$explode_results = explode(':', $segment);
 		$article = new stdClass();
 		if(isset($explode_results[0]) && is_numeric($explode_results[0])) {
@@ -265,7 +433,7 @@ class J2StoreRouterHelper
 			}
 		}
 		//new router. Load article by alias
-		$article = J2Store::article()->getArticleByAlias($segment);
+		$article = J2Store::article()->getArticleByAlias($segment, $categories);
 
 		if(isset($article->id)) {
 			$product = F0FTable::getAnInstance('Product', 'J2StoreTable');
@@ -278,6 +446,43 @@ class J2StoreRouterHelper
 		}else {
 			return false;
 		}
+	}
+
+	public static function getTagAliasByItem($id){
+		$product = F0FTable::getAnInstance('Product', 'J2StoreTable');
+
+		if($product->load($id)) {
+			if($product->product_source == 'com_content') {
+				$db = JFactory::getDbo ();
+				$query = $db->getQuery (true);
+				$query->select ( 'tag.alias' )->from('#__contentitem_tag_map AS c_tag')
+					->join ( 'LEFT', '#__tags AS tag ON c_tag.tag_id = tag.id'  )
+					->where ( 'c_tag.content_item_id ='.$db->q($product->product_source_id) );
+				//$article = J2Store::article()->getArticle($product->product_source_id);
+				$db->setQuery ( $query );
+				return $db->loadResult ();
+			}else {
+				return '';
+			}
+		}else {
+			return '';
+		}
+	}
+
+	public static function getFilterTagAlias($tag_id){
+		$db = JFactory::getDbo ();
+		$query = $db->getQuery (true);
+		$query->select ( 'alias' )->from ( '#__tags' )->where ( 'id ='.$db->q($tag_id) );
+		$db->setQuery ( $query );
+		return $db->loadResult ();
+	}
+
+	public static function getTagByAlias($alias){
+		$db = JFactory::getDbo ();
+		$query = $db->getQuery (true);
+		$query->select ( 'id' )->from ( '#__tags' )->where ( 'alias ='.$db->q($alias) );
+		$db->setQuery ( $query );
+		return $db->loadResult ();
 	}
 
 }

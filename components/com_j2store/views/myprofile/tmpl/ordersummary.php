@@ -28,6 +28,7 @@ $currency = J2Store::currency();
 					$registry->loadString($item->orderitem_params);
 					$item->params = $registry;
 					$thumb_image = $item->params->get('thumb_image', '');
+                    $back_order_text = $item->params->get('back_order_item', '');
 				?>
 				<tr>
 					<td>
@@ -38,41 +39,8 @@ $currency = J2Store::currency();
 								<?php endif;?>
 							</span>
 						<?php endif; ?>
-						<span class="cart-product-name">
-							<?php echo $item->orderitem_name; ?>  
-						</span>
-						<br />
-						<?php if(isset($item->orderitemattributes)): ?>
-							<span class="cart-item-options">
-							<?php foreach ($item->orderitemattributes as $attribute):
-								if($attribute->orderitemattribute_type == 'file') {
-									unset($table);
-									$table = F0FTable::getInstance('Upload', 'J2StoreTable')->getClone();
-									if($table->load(array('mangled_name'=>$attribute->orderitemattribute_value))) {
-										$attribute_value = $table->original_name;
-									}
-								}else {
-									$attribute_value = JText::_($attribute->orderitemattribute_value);
-								}
-							?>
-								<small>
-								- <?php echo JText::_($attribute->orderitemattribute_name); ?> : <?php echo $attribute_value; ?>
-								</small>
 
-								<!--link to download for files-->
-             				   <?php if(JFactory::getApplication()->isAdmin() && $attribute->orderitemattribute_type=='file' && JFactory::getApplication()->input->getString('task')!='printOrder'):?>
-
-             					  <a target="_blank" class="btn btn-primary"
-             					  href="<?php echo JRoute::_('index.php?option=com_j2store&view=orders&task=download&ftoken='.$attribute->orderitemattribute_value);?>"
-             					  >
-             					  <i class="icon icon-download"></i>
-             					   <?php echo JText::_('J2STORE_DOWNLOAD');?>
-             					   </a>
-             				   	<?php endif;?>
-             				   	<br />
-							<?php endforeach;?>
-							</span>
-						<?php endif; ?>
+						<?php echo $this->order->get_formatted_lineitem_name($item);?>
 
 						<?php if($this->params->get('show_price_field', 1)): ?>
 
@@ -92,6 +60,11 @@ $currency = J2Store::currency();
 							</span>
 
 						<?php endif; ?>
+                        <?php if($back_order_text):?>
+                            <br />
+                            <span class="label label-inverse"><?php echo JText::_($back_order_text);?></span>
+                        <?php endif;?>
+						<?php echo J2Store::plugin()->eventWithHtml('AfterDisplayLineItemTitleInOrder', array($item, $this->order, $this->params));?>
 					</td>
 					<td><?php echo $item->orderitem_quantity; ?></td>
 					<td class="cart-line-subtotal">
@@ -112,3 +85,4 @@ $currency = J2Store::currency();
 				<?php endif; ?>
 			</tfoot>	
 		</table>
+

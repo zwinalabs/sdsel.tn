@@ -15,6 +15,15 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 $J2gridRow = ($this->params->get('bootstrap_version', 2) == 2) ? 'row-fluid' : 'row';
 $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
 ?>
+<script type="text/javascript">
+	<!--
+	function j2storeGetPaymentForm(element, container) {
+		var url = '<?php echo JRoute::_('index.php'); ?>';
+		var data = 'option=com_j2store&view=checkout&task=getPaymentForm&tmpl=component&payment_element='+ element;
+		j2storeDoTask(url, container, document.adminForm, '', data);
+	}
+	//-->
+</script>
 <?php echo J2Store::plugin()->eventWithHtml('BeforeDisplayShippingPayment',array($this->order)); ?>
 <!-- SHIPPING METHOD -->
 <?php if($this->showShipping):?>
@@ -98,7 +107,12 @@ $allFields = $this->fields;
 	$onWhat='onchange'; if($oneExtraField->field_type=='radio') $onWhat='onclick';
 	//echo $this->fieldsClass->display($oneExtraField,@$this->address->$fieldName,$fieldName,false);
 	if(property_exists($this->address, $fieldName)) {
-		$html = str_replace('['.$fieldName.']',$this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $options = '', $test = false, $allFields, $allValues = null),$html);
+        $placeholder =  (isset($oneExtraField->field_options['placeholder']) ? $oneExtraField->field_options['placeholder'] : "");
+        $field_options = '';
+        if($placeholder){
+            $field_options .= ' placeholder="'.$placeholder.'" ';
+        }
+		$html = str_replace('['.$fieldName.']',$this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $field_options, $test = false, $allFields, $allValues = null),$html);
 	}
 	?>
 <?php endforeach; ?>
@@ -115,7 +129,9 @@ foreach($this->fields as $fieldName => $oneExtraField) {
 //now we have unprocessed fields. remove any other square brackets found.
 preg_match_all("^\[(.*?)\]^",$html,$removeFields, PREG_PATTERN_ORDER);
 foreach($removeFields[1] as $fieldName) {
-	$html = str_replace('['.$fieldName.']', '', $html);
+    if(!empty($fieldName)){
+        $html = str_replace('['.$fieldName.']', '', $html);
+    }
 }
 
 ?>
@@ -132,7 +148,12 @@ foreach($removeFields[1] as $fieldName) {
 				$onWhat='onchange'; if($oneExtraField->field_type=='radio') $onWhat='onclick';
 				//echo $this->fieldsClass->display($oneExtraField,@$this->address->$fieldName,$fieldName,false);
 				if(property_exists($this->address, $fieldName)) {
-					$uhtml .= $this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $options = '', $test = false, $allFields, $allValues = null);
+                    $placeholder =  (isset($oneExtraField->field_options['placeholder']) ? $oneExtraField->field_options['placeholder'] : "");
+                    $field_options = '';
+                    if($placeholder){
+                        $field_options .= ' placeholder="'.$placeholder.'" ';
+                    }
+					$uhtml .= $this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $field_options, $test = false, $allFields, $allValues = null);
 					$uhtml .='<br />';
 				}
 				?>
@@ -163,7 +184,10 @@ foreach($removeFields[1] as $fieldName) {
 				<?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS_AGREE_TO'); ?>
 
 				<?php if(!empty($tos)): ?>
-					<a href="#j2store-tos-modal" class="link" data-toggle="modal"><?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS'); ?></a>
+                    <a data-fancybox data-src="#j2store-tos-modal" href="javascript:;" >
+                        <?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS'); ?>
+                    </a>
+
 				<?php else: ?>
 					<?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS'); ?>
 				<?php endif; ?>
@@ -176,11 +200,20 @@ foreach($removeFields[1] as $fieldName) {
 			<?php echo JText::_('J2STORE_TERMS_AND_CONDITION_PRETEXT'); ?>
 
 			<?php if(!empty($tos)): ?>
-				<a href="#j2store-tos-modal" class="link" data-toggle="modal"><?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS'); ?></a>
+                <a data-fancybox data-src="#j2store-tos-modal" href="javascript:;" >
+                    <?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS'); ?>
+                </a>
 			<?php else: ?>
 				<?php echo JText::_('J2STORE_TERMS_AND_CONDITIONS'); ?>
 			<?php endif; ?>
 		<?php endif;?>
+        <?php if(!empty($tos)): ?>
+            <div id="j2store-tos-modal"  style="display:none;">
+                <?php if(is_numeric($tos)): ?>
+                    <p><?php echo J2Store::article()->display($tos); ?></p>
+                <?php endif;?>
+            </div>
+        <?php endif;?>
 	</div>
 <?php endif; ?>
 
@@ -198,31 +231,3 @@ foreach($removeFields[1] as $fieldName) {
        value="shipping_payment_method_validate" />
 <input type="hidden" name="option" value="com_j2store" />
 <input type="hidden" name="view" value="checkout" />
-<div class="j2store-modal">
-	<div id="j2store-tos-modal" class="modal" tabindex="-1" role="dialog" aria-labelledby="j2store-tos-modal-label" aria-hidden="true" style="display:none;">
-		<div class="modal-header">
-			<button type="button" class="close" data-dismiss="modal"
-			        aria-hidden="true">&times;</button>
-		</div>
-		<div class="modal-body">
-			<?php if(is_numeric($tos)): ?>
-				<p><?php echo J2Store::article()->display($tos); ?></p>
-			<?php endif;?>
-		</div>
-		<div class="modal-footer">
-			<button type="button" class="btn btn-danger" data-dismiss="modal"
-			        aria-hidden="true"><?php echo JText::_('J2STORE_CLOSE'); ?></button>
-
-		</div>
-	</div>
-</div>
-
-<script type="text/javascript">
-	<!--
-	function j2storeGetPaymentForm(element, container) {
-		var url = '<?php echo JRoute::_('index.php'); ?>';
-		var data = 'option=com_j2store&view=checkout&task=getPaymentForm&tmpl=component&payment_element='+ element;
-		j2storeDoTask(url, container, document.adminForm, '', data);
-	}
-	//-->
-</script>

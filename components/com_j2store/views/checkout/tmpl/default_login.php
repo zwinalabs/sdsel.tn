@@ -48,7 +48,7 @@ $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-m
         <p><?php echo JText::_('J2STORE_CHECKOUT_REGISTER_ACCOUNT_HELP_TEXT'); ?></p>
       <?php endif; ?>
 
-      <input type="button" value="<?php echo JText::_('J2STORE_CHECKOUT_CONTINUE'); ?>" id="button-account" class="button btn btn-primary" />
+        <button type="button" id="button-account" class="button btn btn-primary" ><?php echo JText::_('J2STORE_CHECKOUT_CONTINUE'); ?></button>
       <br />
     </div>
   <?php endif; ?>
@@ -62,7 +62,7 @@ $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-m
     <b><?php echo JText::_('J2STORE_CHECKOUT_PASSWORD'); ?></b><br />
     <input type="password" name="password" value="" onkeypress="return loginKeyPress(event);" />
     <br />
-    <input type="button" value="<?php echo JText::_('J2STORE_CHECKOUT_LOGIN'); ?>" id="button-login" class="button btn btn-primary" /><br />
+    <button type="button" id="button-login" class="button btn btn-primary" ><?php echo JText::_('J2STORE_CHECKOUT_LOGIN'); ?></button><br />
     <input type="hidden" name="task" value="login_validate" />
     <input type="hidden" name="option" value="com_j2store" />
     <input type="hidden" name="view" value="checkout" />

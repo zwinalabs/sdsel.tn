@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Platform;
@@ -14,10 +13,11 @@ namespace Akeeba\Engine\Platform;
 // Protection against direct access
 defined('AKEEBAENGINE') or die();
 
-use Akeeba\Engine\Base\Object;
+use Akeeba\Engine\Base\BaseObject;
+use Akeeba\Engine\Driver\QueryException;
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform\Exception\DecryptionException;
-use Akeeba\Engine\Util\ParseIni;
+use Akeeba\Engine\Util\ProfileMigration;
 use Psr\Log\LogLevel;
 
 abstract class Base implements PlatformInterface
@@ -79,16 +79,50 @@ abstract class Base implements PlatformInterface
 
 		// Get an INI format registry dump
 		$registry     = Factory::getConfiguration();
-		$dump_profile = $registry->exportAsINI();
+		$dump_profile = $registry->exportAsJSON();
 
 		// Encrypt the registry dump if required
 		$secureSettings = Factory::getSecureSettings();
 		$dump_profile   = $secureSettings->encryptSettings($dump_profile);
 
-		$sql = $db->getQuery(true)
-		          ->update($db->qn($this->tableNameProfiles))
-		          ->set($db->qn('configuration') . ' = ' . $db->q($dump_profile))
-		          ->where($db->qn('id') . ' = ' . $db->q($profile_id));
+		// Does the record already exist?
+		$sql    = $db->getQuery(true)
+			->select('COUNT(*)')
+			->from($db->qn($this->tableNameProfiles))
+			->where($db->qn('id') . ' = ' . $db->q($profile_id));
+
+		try
+		{
+			$count  = $db->setQuery($sql)->loadResult();
+			$exists = ($count > 0);
+		}
+		catch (\Exception $e)
+		{
+			$exists = true;
+		}
+
+		if ($exists)
+		{
+			$sql = $db->getQuery(true)
+				->update($db->qn($this->tableNameProfiles))
+				->set($db->qn('configuration') . ' = ' . $db->q($dump_profile))
+				->where($db->qn('id') . ' = ' . $db->q($profile_id));
+		}
+		else
+		{
+			$sql = $db->getQuery(true)
+				->insert($db->qn($this->tableNameProfiles))
+				->columns(array($db->qn('id'), $db->qn('description'), $db->qn('configuration'),
+					$db->qn('filters'), $db->qn('quickicon')))
+				->values(
+					$db->q(1) . ', ' .
+					$db->q("Default backup profile") . ', ' .
+					$db->q($dump_profile)  . ', ' .
+					$db->q('')  . ', ' .
+					$db->q(1)
+				);
+		}
+
 		$db->setQuery($sql);
 
 		try
@@ -101,20 +135,17 @@ abstract class Base implements PlatformInterface
 		}
 
 		return ($result == true);
-
-		return true;
 	}
 
 	/**
 	 * Loads the current configuration off the database table
 	 *
-	 * @param   int  $profile_id  The profile where to read the configuration from, defaults to current profile
+	 * @param   int  $profile_id The profile where to read the configuration from, defaults to current profile
+	 * @param   bool $reset      Should I reset the Configuration object before loading the profile? Default: true.
 	 *
 	 * @return  bool  True if everything was read properly
-	 *
-	 * @throws  DecryptionException  When the settings cannot be decrypted
 	 */
-	public function load_configuration($profile_id = null)
+	public function load_configuration($profile_id = null, $reset = true)
 	{
 		// Load the database class
 		$db = Factory::getDatabase($this->get_platform_database_options());
@@ -127,7 +158,11 @@ abstract class Base implements PlatformInterface
 
 		// Initialize the registry
 		$registry = Factory::getConfiguration();
-		$registry->reset();
+
+		if ($reset)
+		{
+			$registry->reset();
+		}
 
 		// Is the database connected?
 		if (!$db->connected())
@@ -135,21 +170,42 @@ abstract class Base implements PlatformInterface
 			return false;
 		}
 
-		// Load the INI format local configuration dump off the database
-		$sql = $db->getQuery(true)
-		          ->select($db->qn('configuration'))
-		          ->from($db->qn($this->tableNameProfiles))
-		          ->where($db->qn('id') . ' = ' . $db->q($profile_id));
+		try
+		{
+			// Load the INI format local configuration dump off the database
+			$sql = $db->getQuery(true)
+				->select($db->qn('configuration'))
+				->from($db->qn($this->tableNameProfiles))
+				->where($db->qn('id') . ' = ' . $db->q($profile_id));
 
-		$db->setQuery($sql);
-		$databaseData = $db->loadResult();
+			$databaseData = $db->setQuery($sql)->loadResult();
+		}
+		catch (\Exception $e)
+		{
+			$databaseData = null;
+		}
+
+		/**
+		 * If the profile is not the default and we can't load anything let's switch back to the default profile.
+		 *
+		 * You will end up here when you have opened the application in two different browsers and Browser A is used to
+		 * delete the active profile you were using with Browser B. If we were not to load the default profile Browser B
+		 * would try to save the default configuration data to the deleted profile. However, since the profile does not
+		 * exist in the database any more the load_configuration at the end of the following if-block would trigger the
+		 * same code path, recursively, infinitely until you reached the maximum nesting level in PHP, run out of memory
+		 * or hit the execution time limit.
+		 */
+		if ((empty($databaseData) || is_null($databaseData)) && ($profile_id != 1))
+		{
+			return $this->load_configuration(1);
+		}
 
 		if (empty($databaseData) || is_null($databaseData))
 		{
 			// No configuration was saved yet - store the defaults
 			$saved = $this->save_configuration($profile_id);
 
-			// If this is the case we probably don't have the necesary table. Throw an exception.
+			// If this is the case we probably don't have the necessary table. Throw an exception.
 			if (!$saved)
 			{
 				throw new \RuntimeException("Could not save data to backup profile #$profile_id", 500);
@@ -158,39 +214,88 @@ abstract class Base implements PlatformInterface
 			return $this->load_configuration($profile_id);
 		}
 
-		// Configuration found. Convert to array format.
-		if (function_exists('get_magic_quotes_runtime'))
-		{
-			if (@get_magic_quotes_runtime())
-			{
-				$databaseData = stripslashes($databaseData);
-			}
-		}
-
 		// Decrypt the data if required
 		$secureSettings = Factory::getSecureSettings();
 		$noData         = empty($databaseData);
-		$databaseData   = $secureSettings->decryptSettings($databaseData);
-		$dataArray      = ParseIni::parse_ini_file($databaseData, true, true);
-		$parsedData     = array();
+		$signature      = ($noData || (strlen($databaseData) < 12)) ? '' : substr($databaseData, 0, 12);
+		$parsedData     = [];
 
-		// Did the decryption fail and we were asked to throw an exception?
-		if ($this->decryptionException && !$noData)
+		/**
+		 * Special case: profile data is encrypted but encryption is set to false. This means that the user has just
+		 * asked for the encryption to be disabled. We have to NOT load the settings so that the application has the
+		 * chance to decode the data and write the decoded data back to the database.
+		 */
+
+		if (!$secureSettings->supportsEncryption() && in_array($signature, ['###AES128###', '###CTR128###']))
 		{
-			// No decrypted data
-			if (empty($databaseData))
+			$dataArray = ['volatile' => ['fake_decrypt_flag' => 1]];
+		}
+		else
+		{
+			$databaseData        = $secureSettings->decryptSettings($databaseData);
+			$isMigrationRequired = false; // Do I have to migrate the data from INI to JSON
+			$corruptedINI        = false; // Is the INI data corrupted?
+
+			// Handle legacy, INI-encoded data
+			if (ProfileMigration::looksLikeIni($databaseData))
 			{
-				throw new DecryptionException;
+				$isMigrationRequired = true;
+				$corruptedINI        = strpos($databaseData, '[akeeba]') === false;
+				$databaseData        = ProfileMigration::convertINItoJSON($databaseData);
 			}
 
-			// Corrupt data
-			if (!strstr($databaseData, '[akeeba]'))
+			// Detect corrupt JSON data
+			$corruptedJSON = strpos($databaseData, '"akeeba"') === false;
+
+			// Did the decryption fail and we were asked to throw an exception?
+			if ($this->decryptionException && !$noData)
 			{
-				throw new DecryptionException;
+				// The decryption failed, it returned empty data
+				if (!$isMigrationRequired && empty($databaseData))
+				{
+					throw new DecryptionException(
+						$this->translate('COM_AKEEBA_CONFIG_ERR_DECRYPTION') .
+						"\nAdditional info: Empty data after decryption."
+					);
+				}
+
+				// We tried to migrate but the INI data is corrupt
+				if ($isMigrationRequired && $corruptedINI)
+				{
+					throw new DecryptionException(
+						$this->translate('COM_AKEEBA_CONFIG_ERR_DECRYPTION') .
+						"\nAdditional info: old format INI data was corrupt and could not be migrated to JSON."
+					);
+				}
+
+				// We tried to migrate but the resulting JSON data is corrupt
+				if ($isMigrationRequired && $corruptedJSON)
+				{
+					throw new DecryptionException(
+						$this->translate('COM_AKEEBA_CONFIG_ERR_DECRYPTION') .
+						"\nAdditional info: JSON data was corrupt after migrating it from INI data."
+					);
+				}
+
+				// We decrypted something but it does not look like JSON. Wrong encryption key?
+				if ($corruptedJSON)
+				{
+					throw new DecryptionException(
+						$this->translate('COM_AKEEBA_CONFIG_ERR_DECRYPTION') .
+						"\nAdditional info: configuration JSON data was corrupt after decryption."
+					);
+				}
 			}
+
+			$dataArray = json_decode($databaseData, true);
 		}
 
 		unset($databaseData);
+
+		if (!is_array($dataArray))
+		{
+			$dataArray = [];
+		}
 
 		foreach ($dataArray as $section => $row)
 		{
@@ -198,6 +303,8 @@ abstract class Base implements PlatformInterface
 			{
 				continue;
 			}
+
+			$row = $this->arrayToRegistryDefinitions($row);
 
 			if (is_array($row) && !empty($row))
 			{
@@ -232,6 +339,42 @@ abstract class Base implements PlatformInterface
 
 		$registry->setProtectedKeys($protected_keys);
 		$registry->activeProfile = $profile_id;
+
+		return true;
+	}
+
+	/**
+	 * Flattens a hierarchical array to a set of registry keys.
+	 *
+	 * For example
+	 * [ 'foo' => [ 'bar' => [ 'baz' => 1, 'bat' => 2 ] ] ]
+	 * becomes
+	 * [ 'foo.bar.baz' => 1, 'foo.bar.bat' => 2 ]
+	 *
+	 * @param   array   $array   The array to flatten
+	 * @param   string  $prefix  The prefix to use (leave blank; it's used in recursive calls)
+	 *
+	 * @return  array  An array with flattened keys
+	 *
+	 * @since   6.4.1
+	 */
+	protected function arrayToRegistryDefinitions(array $array, $prefix = '')
+	{
+		$keys = [];
+
+		foreach ($array as $k => $v)
+		{
+			if (is_array($v))
+			{
+				$keys = array_merge($keys, $this->arrayToRegistryDefinitions($v, $prefix . $k . "."));
+
+				continue;
+			}
+
+			$keys[$prefix . $k] = $v;
+		}
+
+		return $keys;
 	}
 
 	public function get_stock_directories()
@@ -271,7 +414,9 @@ abstract class Base implements PlatformInterface
 
 	public function get_local_timestamp($format)
 	{
-		return '';
+		$dateNow = new \DateTime('now', new \DateTimeZone('UTC'));
+
+		return $dateNow->format($format);
 	}
 
 	public function get_host()
@@ -292,9 +437,9 @@ abstract class Base implements PlatformInterface
 	/**
 	 * Creates or updates the statistics record of the current backup attempt
 	 *
-	 * @param int                        $id     Backup record ID, use null for new record
-	 * @param array                      $data   The data to store
-	 * @param \Akeeba\Engine\Base\Object $caller The calling object
+	 * @param int                            $id     Backup record ID, use null for new record
+	 * @param array                          $data   The data to store
+	 * @param \Akeeba\Engine\Base\BaseObject $caller The calling object
 	 *
 	 * @return int|null|bool The new record id, or null if this doesn't apply, or false if it failed
 	 */
@@ -347,7 +492,7 @@ abstract class Base implements PlatformInterface
 			}
 			catch (\Exception $exc)
 			{
-				if (is_object($caller) && ($caller instanceof Object))
+				if (is_object($caller) && ($caller instanceof BaseObject))
 				{
 					$caller->setError($exc->getMessage());
 				}
@@ -381,7 +526,7 @@ abstract class Base implements PlatformInterface
 			}
 			catch (\Exception $exc)
 			{
-				if (is_object($caller) && ($caller instanceof Object))
+				if (is_object($caller) && ($caller instanceof BaseObject))
 				{
 					$caller->setError($exc->getMessage());
 				}
@@ -596,7 +741,7 @@ abstract class Base implements PlatformInterface
 	 *
 	 * @param   string $tag
 	 *
-	 * @throws  \Akeeba\Engine\Driver\QueryException
+	 * @throws  QueryException
 	 *
 	 * @return  array   Array list of associative arrays
 	 */
@@ -629,7 +774,7 @@ abstract class Base implements PlatformInterface
 	 *                             tags EXCEPT those listed will be included.     *
 	 * @param   string $ordering
 	 *
-	 * @throws  \Akeeba\Engine\Driver\QueryException
+	 * @throws  QueryException
 	 *
 	 * @return  array A list of ID's for records w/ "valid"-looking backup files
 	 */
@@ -812,7 +957,7 @@ abstract class Base implements PlatformInterface
 	{
 		// Load the filter data from the database
 		$profile_id = $this->get_active_profile();
-		$db = Factory::getDatabase($this->get_platform_database_options());
+		$db         = Factory::getDatabase($this->get_platform_database_options());
 
 		// Load the INI format local configuration dump off the database
 		$sql = $db->getQuery(true)
@@ -824,22 +969,22 @@ abstract class Base implements PlatformInterface
 
 		if (is_null($all_filter_data) || empty($all_filter_data))
 		{
-			$all_filter_data = array();
+			$all_filter_data = [];
+
+			return $all_filter_data;
 		}
-		else
+
+		if (ProfileMigration::looksLikeSerialized($all_filter_data))
 		{
-			if (function_exists('get_magic_quotes_runtime'))
-			{
-				if (@get_magic_quotes_runtime())
-				{
-					$all_filter_data = stripslashes($all_filter_data);
-				}
-			}
-			$all_filter_data = @unserialize($all_filter_data);
-			if (empty($all_filter_data))
-			{
-				$all_filter_data = array();
-			} // Catch unserialization errors
+			$all_filter_data = ProfileMigration::convertSerializedToJSON($all_filter_data);
+		}
+
+		$all_filter_data = json_decode($all_filter_data, true);
+
+		// Catch unserialization errors
+		if (empty($all_filter_data))
+		{
+			$all_filter_data = [];
 		}
 
 		return $all_filter_data;
@@ -855,17 +1000,18 @@ abstract class Base implements PlatformInterface
 	public function save_filters(&$filter_data)
 	{
 		$profile_id = $this->get_active_profile();
-		$db = Factory::getDatabase($this->get_platform_database_options());
+		$db         = Factory::getDatabase($this->get_platform_database_options());
+
+		$encodedFilterData = json_encode($filter_data, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_FORCE_OBJECT | JSON_PRETTY_PRINT);
 
 		$sql = $db->getQuery(true)
 			->update($db->qn($this->tableNameProfiles))
-			->set($db->qn('filters') . '=' . $db->q(serialize($filter_data)))
+			->set($db->qn('filters') . '=' . $db->q($encodedFilterData))
 			->where($db->qn('id') . ' = ' . $db->q($profile_id));
-		$db->setQuery($sql);
 
 		try
 		{
-			$db->query();
+			$db->setQuery($sql)->query();
 		}
 		catch (\Exception $exc)
 		{

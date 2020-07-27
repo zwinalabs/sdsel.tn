@@ -12,6 +12,7 @@
 defined( '_JEXEC' ) or die( 'Restricted access' );
 $doc = JFactory::getDocument();
 $doc->addStyleSheet(JUri::root().'media/j2store/css/font-awesome.min.css');
+$doc->addStyleDeclaration('ul.nav.j2store-admin-menu > li ul { overflow: visible; }');
 $icons = array (
 		'dashboard' => 'fa fa-th-large',
 		'COM_J2STORE_MAINMENU_CATALOG' => 'fa fa-tags',
@@ -134,7 +135,7 @@ $menus = array (
 
 
 ?>
-<ul id="menu" class="nav">
+<ul id="menu" class="nav j2store-admin-menu">
 	<li class="dropdown" >
 		<a class="dropdown-toggle" data-toggle="dropdown" href="#"><?php echo JText::_('COM_J2STORE');?><span class="caret"></span></a>
 			<ul aria-labelledby="dropdownMenu" role="menu" class="dropdown-menu">
@@ -171,7 +172,7 @@ $menus = array (
 							<a href="javascript:void(0);">
 						<?php endif;?>
 						<i class="<?php echo isset($value['icon']) ? $value['icon'] : '';?>"></i>
-                  			<span class="submenu-title"><?php echo $value['name'];?></span>
+							<span class="submenu-title"><?php echo JText::_('COM_J2STORE_MAINMENU_'.$value['name']);?></span>
 						</a>
 					</li>
                 <?php endif; ?>

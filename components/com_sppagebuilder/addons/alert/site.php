@@ -2,57 +2,56 @@
 /**
  * @package SP Page Builder
  * @author JoomShaper http://www.joomshaper.com
- * @copyright Copyright (c) 2010 - 2016 JoomShaper
+ * @copyright Copyright (c) 2010 - 2018 JoomShaper
  * @license http://www.gnu.org/licenses/gpl-2.0.html GNU/GPLv2 or later
 */
 //no direct accees
-defined ('_JEXEC') or die ('restricted aceess');
+defined ('_JEXEC') or die ('Restricted access');
 
-AddonParser::addAddon('sp_alert','sp_alert_addon');
+class SppagebuilderAddonAlert extends SppagebuilderAddons{
 
-function sp_alert_addon($atts){
+	public function render() {
+		$settings = $this->addon->settings;
+		
+		$class = (isset($settings->class) && $settings->class) ? $settings->class : '';
+		$type = (isset($settings->alrt_type) && $settings->alrt_type) ? ' sppb-alert-' . $settings->alrt_type : '';
+		$title = (isset($settings->title) && $settings->title) ? $settings->title : '';
+		$heading_selector = (isset($settings->heading_selector) && $settings->heading_selector) ? $settings->heading_selector : '';
+		$close = (isset($settings->close) && $settings->close) ? $settings->close : 0;
+		$text = (isset($settings->text) && $settings->text) ? $settings->text : '';
 
-	extract(spAddonAtts(array(
-		"title" 				=> '',
-		"heading_selector" 		=> 'h3',
-		"title_fontsize" 		=> '',
-		"title_fontweight" 		=> '',
-		"title_text_color" 		=> '',
-		"title_margin_top" 		=> '',
-		"title_margin_bottom" 	=> '',	
-		"close" 				=> 'yes',
-		"type" 					=> 'info',
-		"text"					=>'',
-		"class"					=>'',
-		), $atts));
+		if($text) {
+			
+			$output  = '<div class="sppb-addon sppb-addon-alert ' . $class .'">';
+			$output .= (!empty($title)) ? '<' . $heading_selector . ' class="sppb-addon-title">' . $title .'</' . $heading_selector . '>' : '';
+			$output .= '<div class="sppb-addon-content">';
+			$output .= '<div class="sppb-alert' . $type . ' sppb-fade in">';
+			$output .= ( $close ) ? '<button type="button" class="sppb-close" data-dismiss="sppb-alert" aria-label="alert dismiss"><span aria-hidden="true">&times;</span></button>' : '';
+			$output .= $text;
+			$output .= '</div>';
+			$output .= '</div>';
+			$output .= '</div>';
 
-	$output  = '<div class="sppb-addon sppb-addon-alert ' . $class . '">';
+			return $output;
+		}
 
-	if($title) {
-
-		$title_style = '';
-		if($title_margin_top !='') $title_style .= 'margin-top:' . (int) $title_margin_top . 'px;';
-		if($title_margin_bottom !='') $title_style .= 'margin-bottom:' . (int) $title_margin_bottom . 'px;';
-		if($title_text_color) $title_style .= 'color:' . $title_text_color  . ';';
-		if($title_fontsize) $title_style .= 'font-size:'.$title_fontsize.'px;line-height:'.$title_fontsize.'px;';
-		if($title_fontweight) $title_style .= 'font-weight:'.$title_fontweight.';';
-
-		$output .= '<'.$heading_selector.' class="sppb-addon-title" style="' . $title_style . '">' . $title . '</'.$heading_selector.'>';
+		return;
 	}
 
-	$output .= '<div class="sppb-addon-content">';
-	$output .= '<div class="sppb-alert sppb-alert-' . $type . ' sppb-fade in" role="alert">';
-
-	if($close=='yes') {
-		$output .= '<button type="button" class="close" data-dismiss="sppb-alert"><span aria-hidden="true">&times;</span></button>';
+	 public static function getTemplate()
+	{
+		$output = '
+		<div class="sppb-addon sppb-addon-alert {{ data.class }}">
+			<# if( !_.isEmpty( data.title ) ){ #><{{ data.heading_selector }} class="sppb-addon-title sp-inline-editable-element" data-id={{data.id}} data-fieldName="title" contenteditable="true">{{{ data.title }}}</{{ data.heading_selector }}><# } #>
+			<div class="sppb-addon-content">
+				<div class="sppb-alert sppb-alert-{{ data.alrt_type }} sppb-fade in">
+					<# if( data.close ){ #>
+						<button type="button" class="sppb-close"><span aria-hidden="true">&times;</span></button>
+					<# } #>
+					<div id="addon-text-{{data.id}}" class="sp-editable-content" data-id={{data.id}} data-fieldName="text">{{{ data.text }}}</div>
+				</div>
+			</div>
+		</div>';
+		return $output;
 	}
-
-	$output .= $text;
-	
-	$output .= '</div>';
-	$output .= '</div>';
-	$output .= '</div>';
-
-	return $output;
-
 }

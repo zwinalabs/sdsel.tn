@@ -1,24 +1,25 @@
 <?php
 
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 defined('_AKEEBA') or die();
 
 class AngieModelJoomlaSetup extends AngieModelBaseSetup
 {
-    public function getStateVariables()
-    {
-	    // I have to extend the parent method to include FTP params, too
-	    $params = (array) parent::getStateVariables();
+	public function getStateVariables()
+	{
+		// I have to extend the parent method to include FTP params, too
+		$params = (array) parent::getStateVariables();
 
-	    $params = array_merge($params, $this->getFTPParamsVars());
+		$params = array_merge($params, $this->getFTPParamsVars());
 
-	    return (object) $params;
-    }
+		return (object) $params;
+	}
 
 	/**
 	 * Gets the basic site parameters
@@ -41,7 +42,7 @@ class AngieModelJoomlaSetup extends AngieModelBaseSetup
 			$defaultLogPath = APATH_ROOT . '/log';
 		}
 
-		$defaultSSL     = 2;
+		$defaultSSL = 2;
 
 		if (!isset($_SERVER['HTTPS']) || $_SERVER['HTTPS'] != 'on')
 		{
@@ -100,118 +101,118 @@ class AngieModelJoomlaSetup extends AngieModelBaseSetup
 	 *
 	 * @return  array
 	 */
-    private function getFTPParamsVars()
-    {
-	    $ret = array(
-		    'ftpenable' => $this->getState('enableftp', $this->configModel->get('ftp_enable', 0)),
-		    'ftphost'   => $this->getState('ftphost', $this->configModel->get('ftp_host', '')),
-		    'ftpport'   => $this->getState('ftpport', $this->configModel->get('ftp_port', 21)),
-		    'ftpuser'   => $this->getState('ftpuser', $this->configModel->get('ftp_user', '')),
-		    'ftppass'   => $this->getState('ftppass', $this->configModel->get('ftp_pass', '')),
-		    'ftpdir'    => $this->getState('ftpdir', $this->configModel->get('ftp_root', '')),
-	    );
+	private function getFTPParamsVars()
+	{
+		$ret = array(
+			'ftpenable' => $this->getState('enableftp', $this->configModel->get('ftp_enable', 0)),
+			'ftphost'   => $this->getState('ftphost', $this->configModel->get('ftp_host', '')),
+			'ftpport'   => $this->getState('ftpport', $this->configModel->get('ftp_port', 21)),
+			'ftpuser'   => $this->getState('ftpuser', $this->configModel->get('ftp_user', '')),
+			'ftppass'   => $this->getState('ftppass', $this->configModel->get('ftp_pass', '')),
+			'ftpdir'    => $this->getState('ftpdir', $this->configModel->get('ftp_root', '')),
+		);
 
-	    return $ret;
-    }
+		return $ret;
+	}
 
-    protected function getSuperUsersVars()
-    {
-	    $ret = array();
+	protected function getSuperUsersVars()
+	{
+		$ret = array();
 
-	    // Connect to the database
-	    try
-	    {
-		    $db = $this->getDatabase();
-	    }
-	    catch (Exception $exc)
-	    {
-		    return $ret;
-	    }
+		// Connect to the database
+		try
+		{
+			$db = $this->getDatabase();
+		}
+		catch (Exception $exc)
+		{
+			return $ret;
+		}
 
-	    // Find the Super User groups
-	    try
-	    {
-		    $query = $db->getQuery(true)
-		                ->select($db->qn('rules'))
-		                ->from($db->qn('#__assets'))
-		                ->where($db->qn('parent_id') . ' = ' . $db->q(0));
-		    $db->setQuery($query, 0, 1);
-		    $rulesJSON = $db->loadResult();
-		    $rules     = json_decode($rulesJSON, true);
+		// Find the Super User groups
+		try
+		{
+			$query = $db->getQuery(true)
+			            ->select($db->qn('rules'))
+			            ->from($db->qn('#__assets'))
+			            ->where($db->qn('parent_id') . ' = ' . $db->q(0));
+			$db->setQuery($query, 0, 1);
+			$rulesJSON = $db->loadResult();
+			$rules     = json_decode($rulesJSON, true);
 
-		    $rawGroups = $rules['core.admin'];
-		    $groups    = array();
+			$rawGroups = $rules['core.admin'];
+			$groups    = array();
 
-		    if (empty($rawGroups))
-		    {
-			    return $ret;
-		    }
+			if (empty($rawGroups))
+			{
+				return $ret;
+			}
 
-		    foreach ($rawGroups as $g => $enabled)
-		    {
-			    if ($enabled)
-			    {
-				    $groups[] = $db->q($g);
-			    }
-		    }
+			foreach ($rawGroups as $g => $enabled)
+			{
+				if ($enabled)
+				{
+					$groups[] = $db->q($g);
+				}
+			}
 
-		    if (empty($groups))
-		    {
-			    return $ret;
-		    }
-	    }
-	    catch (Exception $exc)
-	    {
-		    return $ret;
-	    }
+			if (empty($groups))
+			{
+				return $ret;
+			}
+		}
+		catch (Exception $exc)
+		{
+			return $ret;
+		}
 
-	    // Get the user IDs of users belonging to the SA groups
-	    try
-	    {
-		    $query = $db->getQuery(true)
-		                ->select($db->qn('user_id'))
-		                ->from($db->qn('#__user_usergroup_map'))
-		                ->where($db->qn('group_id') . ' IN(' . implode(',', $groups) . ')');
-		    $db->setQuery($query);
-		    $rawUserIDs = $db->loadColumn(0);
+		// Get the user IDs of users belonging to the SA groups
+		try
+		{
+			$query = $db->getQuery(true)
+			            ->select($db->qn('user_id'))
+			            ->from($db->qn('#__user_usergroup_map'))
+			            ->where($db->qn('group_id') . ' IN(' . implode(',', $groups) . ')');
+			$db->setQuery($query);
+			$rawUserIDs = $db->loadColumn(0);
 
-		    if (empty($rawUserIDs))
-		    {
-			    return $ret;
-		    }
+			if (empty($rawUserIDs))
+			{
+				return $ret;
+			}
 
-		    $userIDs = array();
+			$userIDs = array();
 
-		    foreach ($rawUserIDs as $id)
-		    {
-			    $userIDs[] = $db->q($id);
-		    }
-	    }
-	    catch (Exception $exc)
-	    {
-		    return $ret;
-	    }
+			foreach ($rawUserIDs as $id)
+			{
+				$userIDs[] = $db->q($id);
+			}
+		}
+		catch (Exception $exc)
+		{
+			return $ret;
+		}
 
-	    // Get the user information for the Super Administrator users
-	    try
-	    {
-		    $query = $db->getQuery(true)
-		                ->select(array(
-			                $db->qn('id'),
-			                $db->qn('username'),
-			                $db->qn('email'),
-		                ))->from($db->qn('#__users'))
-		                ->where($db->qn('id') . ' IN(' . implode(',', $userIDs) . ')');
-		    $db->setQuery($query);
-		    $ret['superusers'] = $db->loadObjectList(0);
-	    }
-	    catch (Exception $exc)
-	    {
-		    return $ret;
-	    }
+		// Get the user information for the Super Administrator users
+		try
+		{
+			$query = $db->getQuery(true)
+			            ->select(array(
+				            $db->qn('id'),
+				            $db->qn('username'),
+				            $db->qn('email'),
+			            ))->from($db->qn('#__users'))
+			            ->where($db->qn('id') . ' IN(' . implode(',', $userIDs) . ')');
+			$db->setQuery($query);
+			$ret['superusers'] = $db->loadObjectList(0);
+		}
+		catch (Exception $exc)
+		{
+			return $ret;
+		}
 
-	    return $ret;
-    }
+		return $ret;
+	}
 
 	/**
 	 * Apply the settings to the configuration.php file and the database
@@ -220,6 +221,9 @@ class AngieModelJoomlaSetup extends AngieModelBaseSetup
 	{
 		// Apply the Super Administrator changes
 		$this->applySuperAdminChanges();
+
+		// Apply server config changes
+		$this->applyServerconfigchanges();
 
 		// Get the state variables and update the global configuration
 		$stateVars = $this->getStateVariables();
@@ -260,11 +264,10 @@ class AngieModelJoomlaSetup extends AngieModelBaseSetup
 		$oldsecret = $this->configModel->get('secret', '');
 		$newsecret = $this->genRandomPassword(32);
 
-		// -- Override the secret key
-		$this->configModel->set('secret', $newsecret);
-
+		// -- Replace Two Factor Authentication first
 		$this->updateEncryptedData($oldsecret, $newsecret);
-
+		// -- Now replace the secret key
+		$this->configModel->set('secret', $newsecret);
 		$this->configModel->saveToSession();
 
 		// Get the configuration.php file and try to save it
@@ -304,108 +307,128 @@ class AngieModelJoomlaSetup extends AngieModelBaseSetup
 		return true;
 	}
 
-    /**
-     * This method will update the data encrypted with the old secret key, encrypting it again using
-     * the new secret key
-     *
-     * @param   string  $oldsecret  Old secret key
-     * @param   string  $newsecret  New secret key
-     *
-     * @return  void
-     */
-    private function updateEncryptedData($oldsecret, $newsecret)
-    {
-        $this->updateTFA($oldsecret, $newsecret);
-    }
+	/**
+	 * This method will update the data encrypted with the old secret key, encrypting it again using
+	 * the new secret key
+	 *
+	 * @param   string $oldsecret Old secret key
+	 * @param   string $newsecret New secret key
+	 *
+	 * @return  void
+	 */
+	private function updateEncryptedData($oldsecret, $newsecret)
+	{
+		$this->updateTFA($oldsecret, $newsecret);
+	}
 
-    private function updateTFA($oldsecret, $newsecret)
-    {
-	    $this->container->session->set('tfa_warning', false);
+	private function updateTFA($oldsecret, $newsecret)
+	{
+		$this->container->session->set('tfa_warning', false);
 
-	    // There is no TFA in Joomla < 3.2
-	    $jversion = $this->container->session->get('jversion');
+		// There is no TFA in Joomla < 3.2
+		$jversion = $this->container->session->get('jversion');
 
-	    if (version_compare($jversion, '3.2', 'lt'))
-	    {
-		    return;
-	    }
+		if (version_compare($jversion, '3.2', 'lt'))
+		{
+			return;
+		}
 
-	    $db = $this->getDatabase();
+		$db = $this->getDatabase();
 
-	    $query = $db->getQuery(true)
-	                ->select('COUNT(extension_id)')
-	                ->from($db->qn('#__extensions'))
-	                ->where($db->qn('type') . ' = ' . $db->q('plugin'))
-	                ->where($db->qn('folder') . ' = ' . $db->q('twofactorauth'))
-	                ->where($db->qn('enabled') . ' = ' . $db->q('1'));
-	    $count = $db->setQuery($query)->loadResult();
+		$query = $db->getQuery(true)
+		            ->select('COUNT(extension_id)')
+		            ->from($db->qn('#__extensions'))
+		            ->where($db->qn('type') . ' = ' . $db->q('plugin'))
+		            ->where($db->qn('folder') . ' = ' . $db->q('twofactorauth'))
+		            ->where($db->qn('enabled') . ' = ' . $db->q('1'));
+		$count = $db->setQuery($query)->loadResult();
 
-	    // No enabled plugin, there is no point in continuing
-	    if (!$count)
-	    {
-		    return;
-	    }
+		// No enabled plugin, there is no point in continuing
+		if (!$count)
+		{
+			return;
+		}
 
-	    $query = $db->getQuery(true)
-	                ->select('*')
-	                ->from($db->qn('#__users'))
-	                ->where($db->qn('otpKey') . ' != ' . $db->q(''))
-	                ->where($db->qn('otep') . ' != ' . $db->q(''));
+		$query = $db->getQuery(true)
+		            ->select('*')
+		            ->from($db->qn('#__users'))
+		            ->where($db->qn('otpKey') . ' != ' . $db->q(''))
+		            ->where($db->qn('otep') . ' != ' . $db->q(''));
 
-	    $users = $db->setQuery($query)->loadObjectList();
+		$users = $db->setQuery($query)->loadObjectList();
 
-	    // There are no users with TFA configured, let's stop here
-	    if (!$users)
-	    {
-		    return;
-	    }
+		// There are no users with TFA configured, let's stop here
+		if (!$users)
+		{
+			return;
+		}
 
-	    // Otherwise I'll get a blank page
-	    if (!defined('FOF_INCLUDED'))
-	    {
-		    define('FOF_INCLUDED', 1);
-	    }
+		// Otherwise I'll get a blank page
+		if (!defined('FOF_INCLUDED'))
+		{
+			define('FOF_INCLUDED', 1);
+		}
 
-	    include_once APATH_LIBRARIES . '/fof/encrypt/aes.php';
+		// I only included specific files, not the entire library, to minimise exposure to autoloader issues.
+		$filesToInclude = array(
+			'utils/phpfunc/phpfunc.php',
+			'encrypt/randvalinterface.php',
+			'encrypt/randval.php',
+			'encrypt/aes/interface.php',
+			'encrypt/aes/abstract.php',
+			'encrypt/aes/mcrypt.php',
+			'encrypt/aes/openssl.php',
+			'encrypt/aes.php',
+		);
 
-	    // Does this host support AES?
-	    if (!FOFEncryptAes::isSupported())
-	    {
-		    // If not, set a flag, so we will display a big, fat warning in the finalize screen
-		    $this->container->session->set('tfa_warning', true);
+		// Joomla! 3.6.2 and earlier doesn't have all these files (and I don't need them) so I am checking if they
+		// exist before trying to include them.
+		foreach ($filesToInclude as $file)
+		{
+			$filePath = APATH_LIBRARIES . '/fof/' . $file;
 
-		    // Let's disable them
-		    $query = $db->getQuery(true)
-		                ->update($db->qn('#__extensions'))
-		                ->set($db->qn('enabled') . ' = ' . $db->q('0'))
-		                ->where($db->qn('type') . ' = ' . $db->q('plugin'))
-		                ->where($db->qn('folder') . ' = ' . $db->q('twofactorauth'));
-		    $db->setQuery($query)->execute();
+			if (file_exists($filePath))
+			{
+				include_once $filePath;
+			}
+		}
 
-		    return;
-	    }
+		// Does this host support AES?
+		if (!FOFEncryptAes::isSupported())
+		{
+			// If not, set a flag, so we will display a big, fat warning in the finalize screen
+			$this->container->session->set('tfa_warning', true);
 
-	    $oldaes = new FOFEncryptAes($oldsecret, 256);
-	    $newaes = new FOFEncryptAes($newsecret, 256);
+			// Let's disable them
+			$query = $db->getQuery(true)
+			            ->update($db->qn('#__extensions'))
+			            ->set($db->qn('enabled') . ' = ' . $db->q('0'))
+			            ->where($db->qn('type') . ' = ' . $db->q('plugin'))
+			            ->where($db->qn('folder') . ' = ' . $db->q('twofactorauth'));
+			$db->setQuery($query)->execute();
 
-	    foreach ($users as $user)
-	    {
-		    $update = (object) array(
-			    'id'     => $user->id,
-			    'otpKey' => '',
-			    'otep'   => ''
-		    );
+			return;
+		}
 
-		    list($method, $otpKey) = explode(':', $user->otpKey);
+		foreach ($users as $user)
+		{
+			$update = (object) array(
+				'id'     => $user->id,
+				'otpKey' => '',
+				'otep'   => ''
+			);
 
-		    $update->otpKey = $oldaes->decryptString($otpKey);
-		    $update->otpKey = $method . ':' . $newaes->encryptString($update->otpKey);
-		    $update->otep   = $oldaes->decryptString($user->otep);
-		    $update->otep   = $newaes->encryptString($update->otep);
+			list($method, $otpKey) = explode(':', $user->otpKey, 2);
 
-		    $db->updateObject('#__users', $update, 'id');
-	    }
-    }
+			$otpKey = $this->decryptTFAString($oldsecret, $otpKey);
+			$otep   = $this->decryptTFAString($oldsecret, $user->otep);
+
+			$update->otpKey = $method . ':' . $this->encryptTFAString($newsecret, $otpKey);
+			$update->otep   = $this->encryptTFAString($newsecret, $otep);
+
+			$db->updateObject('#__users', $update, 'id');
+		}
+	}
 
 	private function applySuperAdminChanges()
 	{
@@ -500,5 +523,412 @@ class AngieModelJoomlaSetup extends AngieModelBaseSetup
 		}
 
 		return $makepass;
+	}
+
+	/**
+	 * Tries to decrypt the TFA configuration, using a different method depending on the Joomla version.
+	 *
+	 * @param   string $secret          Site's secret key
+	 * @param   string $stringToDecrypt Base64-encoded and encrypted, JSON-encoded information
+	 *
+	 * @return  string  Decrypted, but JSON-encoded, information
+	 *
+	 * @see     https://github.com/joomla/joomla-cms/pull/12497
+	 */
+	private function decryptTFAString($secret, $stringToDecrypt)
+	{
+		$jVersion = $this->container->session->get('jversion', '3.6.0');
+
+		// Joomla 3.6.3 and earlier
+		if (version_compare($jVersion, '3.6.3', 'le') || !class_exists('FOFEncryptAesMcrypt', true))
+		{
+			$aesDecryptor = new FOFEncryptAes($secret, 256, 'cbc');
+
+			return $aesDecryptor->decryptString($stringToDecrypt);
+		}
+
+		// Joomla 3.6.4 or later. If it's raw JSON just return it, otherwise try to decrypt it first.
+		$stringToDecrypt = trim($stringToDecrypt, "\0");
+
+		if (!is_null(json_decode($stringToDecrypt, true)))
+		{
+			return $stringToDecrypt;
+		}
+
+		$openssl         = new FOFEncryptAes($secret, 256, 'cbc', null, 'openssl');
+		$mcrypt          = new FOFEncryptAes($secret, 256, 'cbc', null, 'mcrypt');
+
+		if ($openssl->isSupported())
+		{
+			$decryptedConfig = $openssl->decryptString($stringToDecrypt);
+			$decryptedConfig = trim($decryptedConfig, "\0");
+
+			if (!is_null(json_decode($decryptedConfig, true)))
+			{
+				return $decryptedConfig;
+			}
+		}
+
+		if ($mcrypt->isSupported())
+		{
+			$decryptedConfig = $mcrypt->decryptString($stringToDecrypt);
+			$decryptedConfig = trim($decryptedConfig, "\0");
+
+			if (!is_null(json_decode($decryptedConfig, true)))
+			{
+				return $decryptedConfig;
+			}
+		}
+
+		return '';
+	}
+
+	private function encryptTFAString($secret, $data)
+	{
+		$jVersion = $this->container->session->get('jversion', '3.6.0');
+
+		// Do not encode the TFA config for Joomla! 3.6.4 or later
+		if (version_compare($jVersion, '3.6.4', 'ge'))
+		{
+			return $data;
+		}
+
+		// Joomla 3.6.3 and earlier
+		$aes = new FOFEncryptAes($secret, 256, 'cbc');
+
+		return $aes->encryptString($data);
+	}
+
+	/**
+	 * Applies server configuration changes (removing/renaming server configuration files)
+	 */
+	private function applyServerconfigchanges()
+	{
+		if ($this->input->get('removephpini'))
+		{
+			$this->removePhpini();
+		}
+
+		if ($this->input->get('replacehtaccess'))
+		{
+			$this->replaceHtaccess();
+		}
+
+		if ($this->input->get('replacewebconfig'))
+		{
+			$this->replaceWebconfig();
+		}
+
+		if ($this->input->get('removehtpasswd'))
+		{
+			$this->removeHtpasswd();
+		}
+	}
+
+	/**
+	 * Removes any user-defined PHP configuration files (.user.ini or php.ini)
+	 *
+	 * @return  bool
+	 */
+	private function removePhpini()
+	{
+		if (!$this->hasPhpIni())
+		{
+			return true;
+		}
+
+		// First of all let's remove any .bak file
+		$files = array(
+			'.user.ini.bak',
+			'php.ini.bak',
+			'administrator/.user.ini.bak',
+			'administrator/php.ini.bak',
+		);
+
+		foreach ($files as $file)
+		{
+			if (file_exists(APATH_ROOT . '/' . $file))
+			{
+				// If I get any error during the delete, let's stop here
+				if (!@unlink(APATH_ROOT . '/' . $file))
+				{
+					return false;
+				}
+			}
+		}
+
+		$renameFiles = array(
+			'.user.ini',
+			'php.ini',
+			'administrator/.user.ini',
+			'administrator/php.ini',
+		);
+
+		// Let's use the copy-on-write approach to rename those files.
+		// Read the contents, create a new file, delete the old one
+		foreach ($renameFiles as $file)
+		{
+			$origPath = APATH_ROOT . '/' . $file;
+
+			if (!file_exists($origPath))
+			{
+				continue;
+			}
+
+			$contents = file_get_contents($origPath);
+
+			// If I can't create the file let's continue with the next one
+			if (!file_put_contents($origPath . '.bak', $contents))
+			{
+				if (!empty($contents))
+				{
+					continue;
+				}
+			}
+
+			unlink($origPath);
+		}
+
+		return true;
+	}
+
+	/**
+	 * Replaces the current version of the .htaccess file with the default one provided by Joomla.
+	 * The original contents are saved in a backup file named htaccess.bak
+	 *
+	 * @return bool
+	 */
+	private function replaceHtaccess()
+	{
+		// If I don't have any .htaccess file there's no point on continuing
+		if (!$this->hasHtaccess())
+		{
+			return true;
+		}
+
+		// Fetch the latest version from Github
+		$downloader = new ADownloadDownload();
+		$contents   = false;
+
+		if ($downloader->getAdapterName())
+		{
+			$contents = $downloader->getFromURL('https://raw.githubusercontent.com/joomla/joomla-cms/staging/htaccess.txt');
+		}
+
+		// If a connection error happens or there are no download adapters we'll use our local copy of the file
+		if (empty($contents))
+		{
+			$contents = file_get_contents(__DIR__ . '/serverconfig/htaccess.txt');
+		}
+
+		// First of all let's remove any backup file. Then copy the current contents of the .htaccess file in a
+		// backup file. Finally delete the .htaccess file and write a new one with the default contents
+		// If any of those steps fails we simply stop
+		if (!@unlink(APATH_ROOT . '/htaccess.bak'))
+		{
+			return false;
+		}
+
+		$orig = file_get_contents(APATH_ROOT . '/.htaccess');
+
+		if (!empty($orig))
+		{
+			if (!file_put_contents(APATH_ROOT . '/htaccess.bak', $orig))
+			{
+				return false;
+			}
+		}
+
+		if (file_exists(APATH_ROOT . '/.htaccess'))
+		{
+			if (!@unlink(APATH_ROOT . '/.htaccess'))
+			{
+				return false;
+			}
+		}
+
+		if (!file_put_contents(APATH_ROOT . '/.htaccess', $contents))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Replaces the current version of the web.config file with the default one provided by Joomla.
+	 * The original contents are saved in a backup file named web.config.bak
+	 *
+	 * @return bool
+	 */
+	private function replaceWebconfig()
+	{
+		// If I don't have any web.config file there's no point on continuing
+		if (!$this->hasWebconfig())
+		{
+			return true;
+		}
+
+		// Fetch the latest version from Github
+		$downloader = new ADownloadDownload();
+		$contents   = $downloader->getFromURL('https://raw.githubusercontent.com/joomla/joomla-cms/staging/web.config.txt');
+
+		// If a connection error happens, let's use the local version of such file
+		if ($contents === false)
+		{
+			$contents = file_get_contents(__DIR__.'/serverconfig/web.config.txt');
+		}
+
+		// First of all let's remove any backup file. Then copy the current contents of the web.config file in a
+		// backup file. Finally delete the web.config file and write a new one with the default contents
+		// If any of those steps fails we simply stop
+		if (!@unlink(APATH_ROOT.'/web.config.bak'))
+		{
+			return false;
+		}
+
+		$orig = file_get_contents(APATH_ROOT.'/web.config');
+
+		if (!file_put_contents(APATH_ROOT.'/web.config.bak', $orig))
+		{
+			return false;
+		}
+
+		if (!@unlink(APATH_ROOT.'/web.config'))
+		{
+			return false;
+		}
+
+		if (!file_put_contents(APATH_ROOT.'/web.config', $contents))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Removes password protection from /administrator folder
+	 *
+	 * @return bool
+	 */
+	private function removeHtpasswd()
+	{
+		if (!$this->hasHtpasswd())
+		{
+			return true;
+		}
+
+		$files = array(
+			'.htaccess',
+			'.htpasswd'
+		);
+
+		foreach ($files as $file)
+		{
+			if (file_exists(APATH_ROOT.'/administrator/'.$file))
+			{
+				@unlink(APATH_ROOT.'/administrator/'.$file);
+			}
+		}
+
+		return true;
+	}
+
+	/**
+	 * Checks if the current site has user-defined configuration files (ie php.ini or .user.ini etc etc)
+	 *
+	 * @return  bool
+	 */
+	public function hasPhpIni()
+	{
+		$files = array(
+			'.user.ini',
+			'.user.ini.bak',
+			'php.ini',
+			'php.ini.bak',
+			'administrator/.user.ini',
+			'administrator/.user.ini.bak',
+			'administrator/php.ini',
+			'administrator/php.ini.bak',
+		);
+
+		foreach ($files as $file)
+		{
+			if (file_exists(APATH_ROOT . '/' . $file))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if the current site has .htaccess files
+	 *
+	 * @return bool
+	 */
+	public function hasHtaccess()
+	{
+		$files = array(
+			'.htaccess',
+			'htaccess.bak'
+		);
+
+		foreach ($files as $file)
+		{
+			if (file_exists(APATH_ROOT.'/'.$file))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if the current site has webconfig files
+	 *
+	 * @return bool
+	 */
+	public function hasWebconfig()
+	{
+		$files = array(
+			'web.config',
+			'web.config.bak'
+		);
+
+		foreach ($files as $file)
+		{
+			if (file_exists(APATH_ROOT.'/'.$file))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Checks if the current site has htpasswd files
+	 *
+	 * @return bool
+	 */
+	public function hasHtpasswd()
+	{
+		$files = array(
+			'administrator/.htaccess',
+			'administrator/.htpasswd');
+
+		foreach ($files as $file)
+		{
+			if (file_exists(APATH_ROOT.'/'.$file))
+			{
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

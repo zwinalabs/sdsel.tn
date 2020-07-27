@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -9,6 +9,13 @@ namespace FOF30\Factory\Scaffolding\Layout;
 
 use FOF30\Model\DataModel;
 
+defined('_JEXEC') or die;
+
+/**
+ * Class BaseErector
+ * @package FOF30\Factory\Scaffolding\Layout
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
+ */
 class BaseErector implements ErectorInterface
 {
 	/**
@@ -189,13 +196,13 @@ class BaseErector implements ErectorInterface
 			case 'integer':
 			case 'bigint':
 				// Because the Integer field is rendered in Joomla! as a drop-down list. Ugh!!!
-				$detectedType = 'Numeric';
+				$detectedType = 'Number';
 				break;
 
 			case 'float':
 			case 'double':
 			case 'currency':
-				$detectedType = 'Numeric';
+				$detectedType = 'Number';
 				break;
 
 			case 'enum':

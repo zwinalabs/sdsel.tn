@@ -25,6 +25,9 @@ $fields = array();
 if(!empty($row->$field) && JString::strlen($row->$field) > 0) {
 	//$registry->loadString(stripslashes($row->$field), 'JSON');
 	$custom_fields = json_decode(str_replace('\/','/', $row->$field));
+	if(is_object($custom_fields)){
+        $custom_fields = \Joomla\Utilities\ArrayHelper::fromObject($custom_fields,false);
+    }
 	if(isset($custom_fields) && count($custom_fields)) {
 		foreach($custom_fields as $namekey=>$field) {
 			if(!property_exists($row, $type.'_'.$namekey) && !property_exists($row, 'user_'.$namekey) && $namekey !='country_id' && $namekey != 'zone_id' && $namekey != 'option' && $namekey !='task' && $namekey != 'view' && $namekey !='email' ) {

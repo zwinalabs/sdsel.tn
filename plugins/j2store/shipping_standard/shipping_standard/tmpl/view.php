@@ -59,6 +59,30 @@ JFilterOutput::objectHTMLSafe( $row );
 	            </td>
 	        </tr>
 
+			<?php if($this->item->shipping_method_type == 2):?>
+				<tr>
+					<td width="100" align="right" class="key">
+						<label for="shipping_price_based_on">
+							<?php echo JText::_('J2STORE_STANDARDS_BASED_ON_SUBTOTAL_OR_TOTAL'); ?>:
+						</label>
+					</td>
+					<td>
+						<?php echo $this->data['shipping_price_based_on']; ?>
+					</td>
+				</tr>
+			<?php endif; ?>
+			<tr>
+				<td width="100" align="right" class="key">
+					<label for="shipping_select_text">
+						<?php echo JText::_('J2STORE_ON_SELECTION_LABEL'); ?>:
+					</label>
+				</td>
+				<td>
+					<?php echo isset( $this->data['shipping_select_text'] ) ? $this->data['shipping_select_text']: ''; ?>
+				</td>
+			</tr>
+
+
 	          <tr>
 	            <td width="100" align="right" class="key">
 	                <label for="address_override">

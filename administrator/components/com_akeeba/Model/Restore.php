@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -57,13 +57,14 @@ class Restore extends Model
 	/**
 	 * Generates a pseudo-random password
 	 *
-	 * @param   int  $length  The length of the password in characters
+	 * @param   int $length The length of the password in characters
 	 *
 	 * @return  string  The requested password string
 	 */
 	function makeRandomPassword($length = 32)
 	{
 		\JLoader::import('joomla.user.helper');
+
 		return \JUserHelper::genRandomPassword($length);
 	}
 
@@ -72,19 +73,33 @@ class Restore extends Model
 	 *
 	 * @return  mixed  True if all is OK, an error string if something is wrong
 	 */
-	function validateRequest()
+	public function validateRequest()
 	{
 		// Is this a valid backup entry?
+		$ids       = $this->getIDsFromRequest();
+		$id        = array_pop($ids);
+		$profileID = $this->input->getInt('profileid', 0);
 
-		$ids = $this->getIDsFromRequest();
-		$id = array_pop($ids);
-
-		if (empty($id))
+		// No backup IDs in the request and no backup profile (which means I should use its latest backup record) is found.
+		if (empty($id) && ($profileID <= 0))
 		{
 			return JText::_('COM_AKEEBA_RESTORE_ERROR_INVALID_RECORD');
 		}
 
+		if (empty($id))
+		{
+			try
+			{
+				$id = $this->getLatestBackupForProfile($profileID);
+			}
+			catch (\RuntimeException $e)
+			{
+				return $e->getMessage();
+			}
+		}
+
 		$data = Platform::getInstance()->get_statistics($id);
+
 		if (empty($data))
 		{
 			return JText::_('COM_AKEEBA_RESTORE_ERROR_INVALID_RECORD');
@@ -101,7 +116,8 @@ class Restore extends Model
 
 		$path   = $data['absolute_path'];
 		$exists = @file_exists($path);
-		if ( !$exists)
+
+		if (!$exists)
 		{
 			// Let's try figuring out an alternative path
 			$config = Factory::getConfiguration();
@@ -109,7 +125,7 @@ class Restore extends Model
 			$exists = @file_exists($path);
 		}
 
-		if ( !$exists)
+		if (!$exists)
 		{
 			return JText::_('COM_AKEEBA_RESTORE_ERROR_ARCHIVE_MISSING');
 		}
@@ -117,7 +133,8 @@ class Restore extends Model
 		$filename  = basename($path);
 		$lastdot   = strrpos($filename, '.');
 		$extension = strtoupper(substr($filename, $lastdot + 1));
-		if ( !in_array($extension, array('JPS', 'JPA', 'ZIP')))
+
+		if (!in_array($extension, array('JPS', 'JPA', 'ZIP')))
 		{
 			return JText::_('COM_AKEEBA_RESTORE_ERROR_INVALID_TYPE');
 		}
@@ -127,6 +144,34 @@ class Restore extends Model
 		$this->extension = $extension;
 
 		return true;
+	}
+
+	/**
+	 * Finds the latest backup for a given backup profile with an "OK" status (the archive file exists on your server).
+	 * If none is found a RuntimeException is thrown.
+	 *
+	 * This method uses the code from the Transfer model for DRY reasons.
+	 *
+	 * @param   int  $profileID  The profile in which to locate the latest valid backup
+	 *
+	 * @return  int
+	 *
+	 * @throws  \RuntimeException
+	 *
+	 * @since   5.3.0
+	 */
+	public function getLatestBackupForProfile($profileID)
+	{
+		/** @var Transfer $transferModel */
+		$transferModel = $this->container->factory->model('Transfer')->tmpInstance();
+		$latestBackup  = $transferModel->getLatestBackupInformation($profileID);
+
+		if (empty($latestBackup))
+		{
+			throw new \RuntimeException(JText::sprintf('COM_AKEEBA_RESTORE_ERROR_NO_LATEST', $profileID));
+		}
+
+		return $latestBackup['id'];
 	}
 
 	/**
@@ -166,7 +211,23 @@ class Restore extends Model
 	'kickstart.jps.password' => '$password'
 ENDDATA;
 
-		if ($procengine == 'ftp')
+		/**
+		 * Should I enable the “Delete everything before extraction” option?
+		 *
+		 * This requires TWO conditions to be true:
+		 *
+		 * 1. The application-level configuration option showDeleteOnRestore was enabled to show the option to the user
+		 * 2. The user has enabled this option (the Controller sets it in the zapbefore model variable)
+		 */
+		$shownDeleteOnRestore = $this->container->params->get('showDeleteOnRestore', 0) == 1;
+
+		if ($shownDeleteOnRestore && ($this->getState('zapbefore', 0, 'int') == 1))
+		{
+			$data .= ",\n\t'kickstart.setup.zapbefore' => '1'";
+		}
+
+		// If we're using the FTP or Hybrid engine we need to set up the FTP parameters
+		if (in_array($procengine, array('ftp', 'hybrid')))
 		{
 			$ftp_host = $this->getState('ftp_host', '');
 			$ftp_port = $this->getState('ftp_port', '21');

@@ -25,7 +25,8 @@ require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/help.php');
 require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/view.php');
 require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/library/selectable/base.php');
 require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/library/selectable/fields.php');
-
+require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/queue.php');
+require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/strapper.php');
 /**
  * J2Store helper.
   */
@@ -145,5 +146,14 @@ class J2Store
 		return $fullurl;
 
 	}
+
+	public static function queue($config=array()) {
+
+		return J2Queue::getInstance($config);
+	}
+
+	public static function strapper($config = array()){
+        return J2StoreStrapper::getInstance($config);
+    }
 
 }

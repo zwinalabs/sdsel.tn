@@ -9,6 +9,7 @@ defined ( '_JEXEC' ) or die ();
 
 ?>
 <h4><?php echo JText::_('J2STORE_ORDER_HISTORY');?></h4>
+<?php echo J2Store::plugin()->eventWithHtml('BeforeCustomerOrderList',array($this->orders)); ?>
 <table class="table table-striped table-condensed table-bordered">
 	<thead>
 		<tr>

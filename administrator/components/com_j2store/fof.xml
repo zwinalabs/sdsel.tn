@@ -100,6 +100,26 @@
                 <option name="behaviors">filter,access</option>
             </config> 
         </view>
+        <view name="producttag">
+            <acl>
+                <task name="browse">true</task>
+                <task name="read">true</task>
+                <task name="update">true</task>
+                <task name="view">true</task>
+                <task name="edit">core.create</task>
+            </acl>
+        </view>
+        <view name="producttags">
+            <acl>
+                <task name="browse">true</task>
+                <task name="view">true</task>
+                <task name="wishlist">true</task>
+                <task name="compare">true</task>
+            </acl>
+            <config>
+                <option name="behaviors">filter,access</option>
+            </config>
+        </view>
   
         <view name="option">
         	<acl>
@@ -134,13 +154,29 @@
 				<task name="download">true</task>
 				<task name="createOrderPdf">true</task>
 				<task name="guestentry">true</task>
-				<task name="updateHitCount">true</task>				
+				<task name="updateHitCount">true</task>
+                <task name="reOrder">true</task>
 			</acl>
 		</view>		
 		  <view name="apps">
             <acl>
                 <task name="view">true</task>                         
             </acl>  
+        </view>
+        <view name="appstores">
+            <acl>
+                <task name="view">true</task>
+            </acl>
+        </view>
+        <view name="queue">
+            <acl>
+                <task name="processQueue">true</task>
+            </acl>
+        </view>
+        <view name="cron">
+            <acl>
+                <task name="cron">true</task>
+            </acl>
         </view>
 		
 	</frontend>

@@ -1,13 +1,14 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
 namespace FOF30\Container;
 
 use FOF30\Autoloader\Autoloader;
+use FOF30\Encrypt\EncryptService;
 use FOF30\Factory\FactoryInterface;
 use FOF30\Inflector\Inflector;
 use FOF30\Params\Params;
@@ -16,8 +17,7 @@ use FOF30\Render\RenderInterface;
 use FOF30\Template\Template;
 use FOF30\TransparentAuthentication\TransparentAuthentication as TransparentAuth;
 use FOF30\View\Compiler\Blade;
-use JDatabaseDriver;
-use JSession;
+use Joomla\Registry\Registry;
 
 defined('_JEXEC') or die;
 
@@ -69,6 +69,7 @@ defined('_JEXEC') or die;
  * @property-read  \FOF30\Template\Template            $template           The template helper
  * @property-read  TransparentAuth                     $transparentAuth    Transparent authentication handler
  * @property-read  \FOF30\Toolbar\Toolbar              $toolbar            The component's toolbar
+ * @property-read  EncryptService                      $crypto             The component's data encryption service
  */
 class Container extends ContainerBase
 {
@@ -79,6 +80,29 @@ class Container extends ContainerBase
 	 * @var   array
 	 */
 	protected static $instances = array();
+
+	/**
+	 * The container SHOULD NEVER be serialised. If this happens, it means that any of the installed version is doing
+	 * something REALLY BAD, so let's die and inform the user of what it's going on.
+	 */
+	public function __sleep()
+	{
+		// If the site is in debug mode we die and let the user figure it out
+		if (defined('JDEBUG') && JDEBUG)
+		{
+			$msg = <<< END
+Something on your site is broken and tries to save the plugin state in the cache. This is a major security issue and
+will cause your site to not work properly. Go to your site's backend, Global Configuration and set Caching to OFF as a
+temporary solution. Possible causes: older versions of JoomlaShine templates, JomSocial, BetterPreview and other third
+party Joomla! extensions. 
+END;
+
+			die($msg);
+		}
+
+		// Otherwise we serialise the Container
+		return array('values', 'factories', 'protected', 'frozen', 'raw', 'keys');
+	}
 
 	/**
 	 * Returns a container instance for a specific component. This method goes through fof.xml to read the default
@@ -489,7 +513,7 @@ class Container extends ContainerBase
 		{
 			$this['blade'] = function (Container $c)
 			{
-				return new Blade();
+				return new Blade($c);
 			};
 		}
 
@@ -650,6 +674,15 @@ class Container extends ContainerBase
 		{
 			$this['mediaVersion'] = $this->getDefaultMediaVersion();
 		}
+
+		// Encryption / cryptography service
+		if (!isset($this['crypto']))
+		{
+			$this['crypto'] = function (Container $c)
+			{
+				return new EncryptService($c);
+			};
+		}
 	}
 
 	/**
@@ -752,7 +785,16 @@ class Container extends ContainerBase
 			$db->setQuery($query);
 
 			$json = $db->loadResult();
-			$params = new \JRegistry($json);
+
+			if (class_exists('JRegistry'))
+			{
+				$params = new \JRegistry($json);
+			}
+			else
+			{
+				$params = new Registry($json);
+			}
+
 			$version = $params->get('version', $version);
 			$date = $params->get('creationDate', $date);
 		}

@@ -12,7 +12,7 @@ JHTML::_('behavior.modal');
 <table class="adminlist table table-striped table-condensed">
 			<tr>
 				<td>
-					<?php echo J2Html::button('reset',JText::_( 'J2STORE_FILTER_RESET_ALL' ),array('id'=>'reset-filter','class'=>'btn btn-inverse' ,'onclick'=>'j2storeResetAllFilters();'));?>
+					<?php echo J2Html::button('reset',JText::_( 'J2STORE_FILTER_RESET_ALL' ),array('id'=>'reset-filter','class'=>'btn btn-inverse'));?>
 				</td>
 				<td colspan="2">
 					<?php if(($this->state->since) || ($this->state->until) || ($this->state->paykey) ||  ($this->state->moneysum) || ($this->state->toinvoice) || ($this->state->coupon_code) || ($this->state->user_id)) :?>

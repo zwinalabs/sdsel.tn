@@ -15,10 +15,11 @@ $this->loadHelper('select');
 	<div id="j2store-system-message-container">
 
 	</div>
-<form class="form-horizontal form-validate" id="adminForm" name="adminForm" method="post" action="index.php">
+<form class="form-horizontal form-validate" id="adminForm" name="adminForm" method="post" action="<?php echo JRoute::_('index.php?option=com_j2store&view=filtergroup&task=edit&id='.$this->item->j2store_filtergroup_id);?>">
 	<input type="hidden" name="option" value="com_j2store">
-	<input type="hidden" name="view" value="filtergroups">
-	<input type="hidden" name="task" value="">
+	<input type="hidden" name="view" value="filtergroup">
+	<input type="hidden" name="task" value="edit">
+    <input type="hidden" name="id" value="<?php echo $this->item->j2store_filtergroup_id; ?>">
 	<input type="hidden" id="j2store_filtergroup_id" name="j2store_filtergroup_id" value="<?php echo $this->item->j2store_filtergroup_id; ?>" />
 	<input type="hidden" name="<?php echo JFactory::getSession()->getFormToken();?>" value="1" />
 	<fieldset>
@@ -58,7 +59,9 @@ $this->loadHelper('select');
 <fieldset id="filter-value">
 	<div class="row-fluid">
 		<div class="span9">
+
 			<legend><h3><?php echo JText::_('J2STORE_ADD_NEW_PRODUCT_FILTER_VALUES');?></h3></legend>
+            <span class="pull-right"><?php echo $this->filter_pagination->getLimitBox();?></span>
 				<table id="pFilerValue" class="list table table-bordered table-stripped">
 		          <thead>
 		            <tr>
@@ -68,8 +71,8 @@ $this->loadHelper('select');
 		            </tr>
 		          </thead>
 		          <?php $product_filter_value_row = 0; ?>
-		          <?php if(isset($this->item->filtervalues) && !empty($this->item->filtervalues)):?>
-		          <?php foreach($this->item->filtervalues as $filter_value):?>
+		          <?php if(isset($this->filtervalues) && !empty($this->filtervalues)):?>
+		          <?php foreach($this->filtervalues as $filter_value):?>
 		          <tbody id="filter-value-row<?php echo $product_filter_value_row; ?>">
 		            <tr>
 		            	<td>
@@ -93,6 +96,11 @@ $this->loadHelper('select');
 		              	<a  href="javascript:void(0)" onclick="j2storeAddFilterToGroup();" class="btn btn-primary pull-right"><i class="icon icon-plus"></i> <?php echo JText::_('J2STORE_ADD'); ?></a>
 		              	</td>
 		            </tr>
+                  <tr>
+                      <td colspan="4">
+                          <?php  echo $this->filter_pagination->getListFooter(); ?>
+                      </td>
+                  </tr>
 		          </tfoot>
 		        </table>
 	        </div>

@@ -54,6 +54,9 @@ class J2StoreTableProductFilter extends F0FTable
 	 */
 
 	public function addFilterToProduct($filters, $product_id) {
+	    if(is_array($filters)){
+            $filters = \Joomla\Utilities\ArrayHelper::fromObject($filters);
+        }
 		if(!is_array($filters) || empty($product_id)) return false;
 
 		$db = $this->getDbo();

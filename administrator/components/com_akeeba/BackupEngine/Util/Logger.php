@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Util;
@@ -99,9 +98,6 @@ class Logger implements LoggerInterface
 		{
 			@unlink($defaultLog);
 		}
-
-		// Give correct permissions to the log file
-		@chmod($this->logName, 0666);
 
 		// Set the current log tag
 		$this->currentTag = $tag;
@@ -297,7 +293,7 @@ class Logger implements LoggerInterface
 		@touch($this->logName);
 
 		// Open the log file
-		$this->fp = fopen($this->logName, 'ab');
+		$this->fp = @fopen($this->logName, 'ab');
 
 		// If we couldn't open the file set the file pointer to null
 		if ($this->fp === false)

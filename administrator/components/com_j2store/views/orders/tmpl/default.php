@@ -51,17 +51,28 @@ JHTML::_('behavior.modal');
  */
 function resetAdvancedFilters(){
 	jQuery("#advanced-search-controls .j2store-order-filters").each(function() {
-		jQuery(this).attr('value','');
+		if(jQuery(this).attr('name')=='reset' || jQuery(this).attr('name')=='go' || jQuery(this).attr('id')=='hideBtnAdvancedControl' || jQuery(this).attr('id')=='showBtnAdvancedControl' || jQuery(this).attr('name')=='advanced_search' || jQuery(this).attr('name')=='reset_advanced_filters'){
+
+		}else{
+			jQuery(this).attr('value','');
+		}
 	  });
-	 jQuery("adminForm").submit();
+	jQuery('#j2store_paykey').attr('value','');
+	 jQuery("#adminForm").submit();
 }
 
 /**
  * Method to reset All filters values
  */
 jQuery("#reset-filter").on('click',function(){
-	jQuery(".j2store-order-filters").each(function() {
-		jQuery(this).attr('value','');
+	jQuery('#j2store_orderstate').attr('value','');
+	jQuery('#j2store_paykey').attr('value','');
+	jQuery(".j2store-order-filters input").each(function() {
+		if(jQuery(this).attr('name')=='reset' || jQuery(this).attr('name')=='go' || jQuery(this).attr('id')=='showBtnAdvancedControl' || jQuery(this).attr('name')=='advanced_search' || jQuery(this).attr('name')=='reset_advanced_filters'){
+
+		}else{
+			jQuery(this).attr('value','');
+		}
 	  });
 	this.form.submit();
 })
@@ -73,7 +84,8 @@ jQuery("#reset-filter-search").on('click',function(){
 
 function submitOrderState(id,order_id){
 	(function($) {
-	var order_state = $("#order_state_id_"+id).attr('value');
+	//var order_state = $("#order_state_id_"+id).attr('value');
+	var order_state = $("#order_state_id_"+id).val();
 	var notify_customer = 0;
 	if($("#notify_customer_"+id).is(':checked')) {
 		notify_customer = 1;
@@ -128,7 +140,5 @@ var old_id = document.getElementById('jform_user_id').value;
 /*} */
 SqueezeBox.close();
 };
-function j2storeResetAllFilters(){
 
-}
 </script>

@@ -13,7 +13,7 @@
 defined('_JEXEC') or die('Restricted access');
 $app = JFactory::getApplication();
 require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/helpers/j2store.php');
-JFactory::getDocument()->addStyleSheet ( JUri::root () . 'media/j2store/css/font-awesome.min.css' );
+J2Store::strapper()->addFontAwesome();
 J2Store::utilities()->nocache();
 $ajax = $app->getUserState('mod_j2store_mini_cart.isAjax');
 $hide = false;

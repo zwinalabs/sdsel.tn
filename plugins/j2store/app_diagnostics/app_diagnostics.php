@@ -132,5 +132,57 @@ class plgJ2StoreApp_diagnostics extends J2StoreAppPlugin
 	    }
 		return $version;
     }
+
+    public function onJ2StoreProcessCron($command){
+        if($command == 'clear_cart'){
+            $this->clear_outdated_cart_data();
+        }
+    }
+
+    /**
+     * Task to clear the old cart data
+     * */
+    public function clear_outdated_cart_data(){
+        $app = JFactory::getApplication();
+        $clear_time = $app->input->getInt('clear_time',0);
+        if($clear_time <= 0){
+            $j2params = J2Store::config();
+            $no_of_days_old = $j2params->get('clear_outdated_cart_data_term',90);
+            //convert to seconds
+            $clear_time = ($no_of_days_old*1440);
+        }
+
+        $tz = JFactory::getConfig()->get('offset');
+        $formattedDate = JFactory::getDate('now -'.$clear_time.' minutes', $tz)->toSql(true);
+        $db = JFactory::getDbo();
+        $query = $db->getQuery(true);
+        $query->select('ab.j2store_cart_id')->from('#__j2store_carts as ab');
+        $query->where('ab.cart_type = '.$db->q('cart'));
+        $query->where('ab.created_on <= '.$db->q($formattedDate));
+        $db->setQuery($query);
+        $old_cart_items_exists = $db->loadObjectList();
+
+        if ( count($old_cart_items_exists) > 0 ) {
+            $cart_ids = array();
+            foreach ($old_cart_items_exists as $cart_id){
+                $cart_ids[] = $cart_id->j2store_cart_id;
+            }
+            //clear cart details
+            $delete_cartitems_qry = "delete from #__j2store_cartitems where cart_id in (".implode(',',$cart_ids).");";
+            $db->setQuery($delete_cartitems_qry);
+            try {
+                $db->execute();
+            }catch (Exception $e) {	}
+
+            $delete_carts_qry = "delete from #__j2store_carts where #__j2store_carts.cart_type=".$db->q('cart')
+                ." AND created_on <= ".$db->q($formattedDate).";";
+            $db->setQuery($delete_carts_qry);
+            try {
+                $db->execute();
+            }catch (Exception $e) {	}
+
+        }
+    }
+
 }
 

@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -35,14 +35,14 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 	 *
 	 * @var   string
 	 */
-	protected $minimumPHPVersion = '5.4.0';
+	protected $minimumPHPVersion = '5.6.0';
 
 	/**
 	 * The minimum Joomla! version required to install this extension
 	 *
 	 * @var   string
 	 */
-	protected $minimumJoomlaVersion = '3.3.0';
+	protected $minimumJoomlaVersion = '3.8.0';
 
 	/**
 	 * Obsolete files and folders to remove from the free version only. This is used when you move a feature from the
@@ -50,13 +50,17 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 	 *
 	 * @var   array
 	 */
-	protected $removeFilesFree = array(
-		'files'   => array(
+	protected $removeFilesFree = [
+		'files'   => [
 			// Pro component features
 			'administrator/components/com_akeeba/BackupEngine/Archiver/Directftp.php',
 			'administrator/components/com_akeeba/BackupEngine/Archiver/directftp.ini',
+			'administrator/components/com_akeeba/BackupEngine/Archiver/Directftpcurl.php',
+			'administrator/components/com_akeeba/BackupEngine/Archiver/directftpcurl.ini',
 			'administrator/components/com_akeeba/BackupEngine/Archiver/Directsftp.php',
 			'administrator/components/com_akeeba/BackupEngine/Archiver/directsftp.ini',
+			'administrator/components/com_akeeba/BackupEngine/Archiver/Directsftpcurl.php',
+			'administrator/components/com_akeeba/BackupEngine/Archiver/directsftpcurl.ini',
 			'administrator/components/com_akeeba/BackupEngine/Archiver/Jps.php',
 			'administrator/components/com_akeeba/BackupEngine/Archiver/jps.ini',
 			'administrator/components/com_akeeba/BackupEngine/Archiver/Zipnative.php',
@@ -65,6 +69,8 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Amazons3.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/azure.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Azure.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/backblaze.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Backblaze.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/cloudfiles.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Cloudfiles.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/cloudme.ini',
@@ -73,12 +79,18 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Dreamobjects.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/dropbox.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Dropbox.php',
-			'administrator/components/com_akeeba/BackupEngine/Postproc/email.ini',
-			'administrator/components/com_akeeba/BackupEngine/Postproc/Email.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/dropbox2.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Dropbox2.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/ftp.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Ftp.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/ftpcurl.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Ftpcurl.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/googledrive.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Googledrive.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/googlestorage.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Googlestorage.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/googlestoragejson.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Googlestoragejson.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/idrivesync.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Idrivesync.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/onedrive.ini',
@@ -87,13 +99,15 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/BackupEngine/Postproc/S3.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/sftp.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Sftp.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/sftpcurl.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Sftpcurl.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/sugarsync.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Sugarsync.php',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/webdav.ini',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Webdav.php',
 			'administrator/components/com_akeeba/BackupEngine/Scan/large.ini',
 			'administrator/components/com_akeeba/BackupEngine/Scan/Large.php',
-			
+
 			'administrator/components/com_akeeba/Controller/Alice.php',
 			'administrator/components/com_akeeba/Controller/Discover.php',
 			'administrator/components/com_akeeba/Controller/IncludeFolders.php',
@@ -113,7 +127,7 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/Model/RemoteFiles.php',
 			'administrator/components/com_akeeba/Model/S3Import.php',
 			'administrator/components/com_akeeba/Model/Upload.php',
-			
+
 			'administrator/components/com_akeeba/BackupPlatform/Joomla3x/Filter/Components.php',
 			'administrator/components/com_akeeba/BackupPlatform/Joomla3x/Filter/Extensiondirs.php',
 			'administrator/components/com_akeeba/BackupPlatform/Joomla3x/Filter/Extensionfiles.php',
@@ -127,8 +141,8 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/Master/Installers/abi.jpa',
 			'administrator/components/com_akeeba/Master/Installers/angie-generic.ini',
 			'administrator/components/com_akeeba/Master/Installers/angie-generic.jpa',
-		),
-		'folders' => array(
+		],
+		'folders' => [
 			// Pro component features
 			'administrator/components/com_akeeba/Alice',
 			'administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro',
@@ -142,8 +156,8 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/View/S3Import',
 			'administrator/components/com_akeeba/View/Upload',
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Connector',
-		)
-	);
+		],
+	];
 
 	/**
 	 * Obsolete files and folders to remove from both paid and free releases. This is used when you refactor code and
@@ -151,9 +165,21 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 	 *
 	 * @var   array
 	 */
-	protected $removeFilesAllVersions = array(
-		'files'   => array(
+	protected $removeFilesAllVersions = [
+		'files'   => [
+			// Outdated CLI scripts
+			'cli/akeeba-update.php',
+
 			// Outdated media files
+			'media/com_akeeba/icons/akeeba-48.png',
+			'media/com_akeeba/icons/akeeba-warning-48.png',
+			'media/com_akeeba/icons/arrow_small.png',
+			'media/com_akeeba/icons/error_small.png',
+			'media/com_akeeba/icons/ok_small.png',
+			'media/com_akeeba/icons/reload.png',
+			'media/com_akeeba/icons/scheduling-32.png',
+			'media/com_akeeba/icons/update.png',
+
 			'media/com_akeeba/js/akeebajq.js',
 			'media/com_akeeba/js/akeebajqui.js',
 			'media/com_akeeba/js/akeebaui.js',
@@ -185,6 +211,19 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			// -- Back-end
 			'administrator/components/com_akeeba/dispatcher.php',
 			'administrator/components/com_akeeba/toolbar.php',
+			'administrator/components/com_akeeba/views/backup/view.html.php',
+			'administrator/components/com_akeeba/views/backup/tmpl/default.php',
+			'administrator/components/com_akeeba/views/restore/view.html.php',
+			'administrator/components/com_akeeba/views/restore/tmpl/default.php',
+			'administrator/components/com_akeeba/views/restore/tmpl/restore.php',
+			'administrator/components/com_akeeba/views/transfer/view.html.php',
+			'administrator/components/com_akeeba/views/transfer/tmpl/default.php',
+			'administrator/components/com_akeeba/views/transfer/tmpl/default_dialogs.php',
+			'administrator/components/com_akeeba/views/transfer/tmpl/default_manualtransfer.php',
+			'administrator/components/com_akeeba/views/transfer/tmpl/default_prerequisites.php',
+			'administrator/components/com_akeeba/views/transfer/tmpl/default_remoteconnection.php',
+			'administrator/components/com_akeeba/views/transfer/tmpl/default_upload.php',
+
 			// -- Front-end
 			'components/com_akeeba/dispatcher.php',
 
@@ -260,8 +299,87 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 
 			// Obsolete Azure files
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Connector/Azure/Credentials/Sharedsignature.php',
-		),
-		'folders' => array(
+
+			// Obsolete AES-128 CTR implementation in Javascript
+			'media/com_akeeba/js/Encryption.min.js',
+			'media/com_akeeba/js/Encryption.min.map',
+
+			// PHP 7.2 compatibility
+			'administrator/components/com_akeeba/BackupEngine/Base/Object.php',
+
+			// Obsolete media files
+			'media/com_akeeba/icons/akeeba-ui-32.png',
+			'media/com_akeeba/changelog.png',
+
+			// Microsoft sucks. Go get some real storage from a company that knows what they are doing.
+			'administrator/components/com_akeeba/BackupEngine/Postproc/onedrivebusiness.ini',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Onedrivebusiness.php',
+			'administrator/components/com_akeeba/BackupEngine/Postproc/Connector/OneDriveBusiness.php',
+
+			// Old FOF 3 XML manifest files
+			'libraries/fof30/lib_fof30.xml',
+			'administrator/manifests/libraries/lib_fof30.xml',
+
+			// Migration of Akeeba Engine to JSON format
+			"administrator/components/com_akeeba/BackupEngine/Dump/native.ini",
+			"administrator/components/com_akeeba/BackupEngine/Dump/reverse.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/none.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/webdav.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/sugarsync.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/email.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/box.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/dropbox2.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/ovh.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/cloudme.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/idrivesync.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/ftpcurl.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/dreamobjects.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/azure.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/sftp.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/amazons3.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/cloudfiles.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/googlestorage.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/googlestoragejson.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/swift.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/sftpcurl.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/onedrive.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/googledrive.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/backblaze.ini",
+			"administrator/components/com_akeeba/BackupEngine/Postproc/ftp.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/zipnative.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/directftp.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/directsftpcurl.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/zip.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/directftpcurl.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/directsftp.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/jps.ini",
+			"administrator/components/com_akeeba/BackupEngine/Archiver/jpa.ini",
+			"administrator/components/com_akeeba/BackupEngine/Scan/smart.ini",
+			"administrator/components/com_akeeba/BackupEngine/Scan/large.ini",
+			"administrator/components/com_akeeba/BackupEngine/Filter/Stack/dateconditional.ini",
+			"administrator/components/com_akeeba/BackupEngine/Filter/Stack/errorlogs.ini",
+			"administrator/components/com_akeeba/BackupEngine/Filter/Stack/hoststats.ini",
+			"administrator/components/com_akeeba/BackupEngine/Core/04.quota.ini",
+			"administrator/components/com_akeeba/BackupEngine/Core/02.advanced.ini",
+			"administrator/components/com_akeeba/BackupEngine/Core/01.basic.ini",
+			"administrator/components/com_akeeba/BackupEngine/Core/scripting.ini",
+			"administrator/components/com_akeeba/BackupEngine/Core/05.tuning.ini",
+
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/02.advanced.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro/04.quota.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro/02.advanced.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro/01.basic.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro/02.platform.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro/03.filters.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Config/Pro/05.tuning.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Filter/Stack/finder.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Filter/Stack/myjoomla.ini",
+			"administrator/components/com_akeeba/BackupPlatform/Joomla3x/Filter/Stack/actionlogs.ini",
+
+			// Obsolete eAccelerator warning
+			"administrator/components/com_akeeba/View/eaccelerator.php",
+		],
+		'folders' => [
 			// Directories used up to version 4.1 (inclusive)
 			// -- Back-end
 			'administrator/components/com_akeeba/akeeba',
@@ -279,7 +397,26 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			'administrator/components/com_akeeba/models',
 			'administrator/components/com_akeeba/platform',
 			'administrator/components/com_akeeba/tables',
-			'administrator/components/com_akeeba/views',
+			'administrator/components/com_akeeba/views/alices',
+			'administrator/components/com_akeeba/views/browser',
+			'administrator/components/com_akeeba/views/buadmin',
+			'administrator/components/com_akeeba/views/config',
+			'administrator/components/com_akeeba/views/confwiz',
+			'administrator/components/com_akeeba/views/cpanel',
+			'administrator/components/com_akeeba/views/dbef',
+			'administrator/components/com_akeeba/views/discover',
+			'administrator/components/com_akeeba/views/eff',
+			'administrator/components/com_akeeba/views/fsfilter',
+			'administrator/components/com_akeeba/views/log',
+			'administrator/components/com_akeeba/views/multidb',
+			'administrator/components/com_akeeba/views/profiles',
+			'administrator/components/com_akeeba/views/regexdbfilter',
+			'administrator/components/com_akeeba/views/regexfsfilter',
+			'administrator/components/com_akeeba/views/remotefiles',
+			'administrator/components/com_akeeba/views/s3import',
+			'administrator/components/com_akeeba/views/schedule',
+			'administrator/components/com_akeeba/views/updates',
+			'administrator/components/com_akeeba/views/upload',
 			// -- Front-end
 			'components/com_akeeba/controllers',
 			'components/com_akeeba/models',
@@ -296,8 +433,11 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 
 			// Dropbox v1 integration
 			'administrator/components/com_akeeba/BackupEngine/Postproc/Connector/Dropbox',
-		)
-	);
+
+			// Common tables (they're installed by FOF)
+			'administrator/components/com_akeeba/sql/common',
+		],
+	];
 
 	/**
 	 * Runs on installation
@@ -407,22 +547,11 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 			}
 		}
 
-		if (is_object($model) && class_exists('Akeeba\\Backup\\Admin\\Model\\UsageStatistics')
-			&& ($model instanceof Akeeba\Backup\Admin\Model\UsageStatistics)
-			&& method_exists($model, 'checkAndFixCommonTables'))
-		{
-			try
-			{
-				$model->checkAndFixCommonTables();
-			}
-			catch (Exception $e)
-			{
-				// Do nothing if that failed.
-			}
-		}
-
 		// Parent method
 		parent::postflight($type, $parent);
+
+		// Add ourselves to the list of extensions depending on Akeeba FEF
+		$this->addDependency('file_fef', $this->componentName);
 
 		// Uninstall post-installation messages we are no longer using
 		$this->uninstallObsoletePostinstallMessages();
@@ -486,11 +615,6 @@ class Com_AkeebaInstallerScript extends \FOF30\Utils\InstallScript
 		<img src="../media/com_akeeba/icons/logo-48.png" width="48" height="48" alt="Akeeba Backup" align="right"/>
 
 		<h2>Welcome to Akeeba Backup!</h2>
-
-		<div style="margin: 1em; font-size: 14pt; background-color: #fffff9; color: black">
-			You can download translation files <a href="http://cdn.akeebabackup.com/language/akeebabackup/index.html">directly
-				from our CDN page</a>.
-		</div>
 
 		<fieldset>
 			<p>
@@ -829,7 +953,7 @@ HTML;
 	{
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true)
-					->delete($db->qn('#__update_sites_extensions'))
+					->delete($db->qn('#__update_sites'))
 					->where($db->qn('location') . ' = ' . $db->q('http://cdn.akeebabackup.com/updates/fof.xml'));
 		try
 		{

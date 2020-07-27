@@ -22,7 +22,7 @@ class J2StoreMessage{
 
 	public static function additionalTags(){
 
-		return $result = 	array(
+		$result = 	array(
 				"[SITENAME]" 		=> JText::_('J2STORE_EMAILTEMPLATE_TAG_SITENAME'),
 				"[SITEURL]"	 		=> JText::_('J2STORE_EMAILTEMPLATE_TAG_SITEURL'),
 				"[INVOICE_URL]"		=> JText::_('J2STORE_EMAILTEMPLATE_TAG_INVOICE_URL'),
@@ -37,9 +37,9 @@ class J2StoreMessage{
 				"[ORDER_TOKEN]"		=> JText::_('J2STORE_EMAILTEMPLATE_TAG_ORDER_TOKEN'),
 				"[COUPON_CODE]"		=> JText::_('J2STORE_COUPON_CODE'),
 				"[ITEMS]"			=> JText::_('J2STORE_EMAILTEMPLATE_TAG_ITEMS'),
-
-
 		);
+        J2Store::plugin()->event('AfterAdditionalTags', array(&$result));
+        return $result;
 
 	}
 

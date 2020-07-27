@@ -9,6 +9,8 @@ defined('_JEXEC') or die;
 class J2StoreControllerMyProfile extends F0FController
 {
 
+	protected $cacheableTasks = array();
+
 	public function execute($task) {
 		if(in_array($task, array('add', 'edit', 'read'))) {
 			$task = 'browse';
@@ -74,6 +76,9 @@ class J2StoreControllerMyProfile extends F0FController
 		$guest_token = $session->get('guest_order_token', '', 'j2store');
 		$guest_order_email = $session->get('guest_order_email', '', 'j2store');
 		$orders = array();
+        $limit_start = $app->input->get('limitstart',0);
+        $limit		= $app->getUserStateFromRequest( 'global.list.limit', 'limit', $app->getCfg('list_limit'), 'int' );
+
 		if (empty($user->id) && (empty($guest_token) || empty($guest_order_email)) )
 		{
 			$view->setLayout('default_login');
@@ -85,9 +90,13 @@ class J2StoreControllerMyProfile extends F0FController
 			$order_model->clearState()->clearInput();
 			$order_model->setState('filter_order', 'created_on');
 			$order_model->setState('filter_order_Dir', 'DESC');
-			$orders = $order_model->user_id($user->id)->orderstatuses($limit_orderstatuses)->getItemList();
+            $order_model->setState('limitstart', $limit_start);
+            $order_model->setState('limit', $limit);
+			$orders = $order_model->user_id($user->id)->order_type('normal')->orderstatuses($limit_orderstatuses)->getItemList();
+			$pagination = $order_model->getPagination();
+            $view->assign('order_pagination', $pagination);
 			$view->assign('orders', $orders);
-			$view->assign('beforedisplayprofile' , J2Store::plugin()->eventWithHtml('BeforeDisplayMyProfile',$orders));
+			$view->assign('beforedisplayprofile' , J2Store::plugin()->eventWithHtml('BeforeDisplayMyProfile',array($orders)));
 			$orderinfos = F0FModel::getTmpInstance('Myprofiles','J2StoreModel')->getAddress();
 			$view->assign('orderinfos',$orderinfos);
 			$view->assign('fieldClass',J2Store::getSelectableBase());
@@ -101,7 +110,11 @@ class J2StoreControllerMyProfile extends F0FController
 			$order_model->clearState()->clearInput();
 			$order_model->setState('filter_order', 'created_on');
 			$order_model->setState('filter_order_Dir', 'DESC');
-			$orders = $order_model->token($guest_token)->user_email($guest_order_email)->orderstatuses($limit_orderstatuses)->getItemList();
+            $order_model->setState('limitstart', $limit_start);
+            $order_model->setState('limit', $limit);
+			$orders = $order_model->token($guest_token)->order_type('normal')->user_email($guest_order_email)->orderstatuses($limit_orderstatuses)->getItemList();
+            $pagination = $order_model->getPagination();
+            $view->assign('order_pagination', $pagination);
 			$view->assign('guest', true);
 			if($this->getTask()!='editAddress'){
 				$view->setLayout('default');
@@ -161,11 +174,12 @@ class J2StoreControllerMyProfile extends F0FController
 		$msgType = 'success';
 		if($table->load($o_id)){
 			$user = JFactory::getUser ();
-			if($user->id == $table->user_id){
+			if($user->id == $table->user_id && $table->user_id > 0){
 				if(!$table->delete($o_id)){
 					$msg  = JText::_('J2STORE_MYPROFILE_ADDRESS_DELETE_ERROR');
 					$msgType = 'warning';
 				}
+                J2Store::plugin()->event('AfterMyProfileAddressDelete',array($table));
 			}else{
 				$msg  = JText::_('J2STORE_MYPROFILE_ADDRESS_INVALID');
 				$msgType = 'error';
@@ -216,6 +230,7 @@ class J2StoreControllerMyProfile extends F0FController
 					$json['success']['msg'] = JText::_('J2STORE_'.strtoupper($table->type).'_ADDRESS_SAVED_SUCCESSFULLY');
 					$json['success']['address_id'] = $table->j2store_address_id;
 					$json['success']['msgType']='success';
+					J2Store::plugin()->event('AfterMyProfileAddressSave',array($table));
 				}else{
 					$json['error']['message'] = $table->getError ();
 					$json['error']['msgType']='error';
@@ -283,19 +298,154 @@ class J2StoreControllerMyProfile extends F0FController
 	}
 
 
+	public function reOrder(){
+		//order
+		$app = JFactory::getApplication();
+		$order_id = $app->input->get('order_id',0);
+		$url = 'index.php?option=com_j2store&view=myprofile';
+
+		if(!$order_id || JFactory::getUser ()->id < 1 || !JSession::checkToken('get') ){
+			$app->redirect ( $url, JText::_('J2STORE_INVALID_ORDER_PROFILE') );
+		}
+
+		$order = F0FTable::getInstance('Order' ,'J2StoreTable')->getClone();
+		$order->load(array('order_id' => $order_id));
+		$user = JFactory::getUser ();
+
+		if($order->load(array('order_id' => $order_id)) && $order->order_state_id == 5 ){
+			// variant check
+			// validate stock
+			// option available
+			$items = $order->getItems();
+			if(count ( $items ) > 0){
+				$cart_table = F0FTable::getAnInstance ( 'Cart', 'J2StoreTable' )->getClone ();
+				$cart_table->load(array('user_id'=>$user->id));
+				$db = JFactory::getDbo ();
+				if(!empty($cart_table->j2store_cart_id)){
+					$db->getQuery(true);
+					$query = 'DELETE FROM #__j2store_cartitems where cart_id ='.$db->q($cart_table->j2store_cart_id);
+					$db->setQuery ( $query );
+					$db->execute ();
+				}
+				$db->getQuery ( true );
+				// delete the old cart items for that user
+				$del_qry = 'DELETE FROM #__j2store_carts WHERE user_id=' . $db->q ( $user->id );
+				$db->setQuery ( $del_qry );
+				$db->execute ();
+				
+				// set new cart
+				$cart = F0FTable::getAnInstance ( 'Cart', 'J2StoreTable' )->getClone ();
+				$cart->j2store_cart_id = 0;
+				$cart->user_id = $user->id;
+				$session = JFactory::getSession ();
+				$cart->session_id = $session->getId();
+				$cart->cart_type = 'cart';
+				$cart->created_on = JFactory::getDate ()->toSql (true);
+				$cart->modified_on = JFactory::getDate ()->toSql (true);
+				$cart->customer_ip = $_SERVER['REMOTE_ADDR'];
+				jimport('joomla.environment.browser');
+				$browser = JBrowser::getInstance();
+				$cart->cart_browser = $browser->getBrowser();
+				$analytics = array();
+				$analytics['is_mobile'] = $browser->isMobile();
+				$cart->cart_analytics = json_encode($analytics);
+				if($cart->store()){
+					//product_id
+					//product_qty
+					//product_option
+					foreach ($items as $key=>$item){
+						// change table to table transfer
+						$cartitem = F0FTable::getAnInstance ( 'Cartitem', 'J2StoreTable' )->getClone ();
+						$cartitem->cart_id = $cart->j2store_cart_id;
+						$cartitem->product_id = $item->product_id ;
+						$cartitem->variant_id = $item->variant_id;
+						$cartitem->vendor_id = $item->vendor_id;
+						$cartitem->product_type = $item->product_type;
+						$cartitem->cartitem_params = $item->orderitem_params;
+						$cartitem->product_qty = $item->orderitem_quantity ;
+						$cartitem->product_options = $item->orderitem_attributes;
+						$cartitem->store ();
+					}
+					$session->set('payment_method',$order->orderpayment_type, 'j2store');
+					$order_info = $order->getOrderInformation();
+					$model = $this->getThisModel();
+					//find shipping and billing id
+					$billing_id = $model->getBillingAddress($order_info,$order->user_email)->j2store_address_id;
+					$shipping_id = $model->getShippingAddress($order_info,$order->user_email)->j2store_address_id;
+					$session->set('billing_address_id',$billing_id, 'j2store');
+					$session->set('shipping_address_id',$shipping_id, 'j2store');
+
+					$update_order = F0FModel::getTmpInstance('Orders', 'J2StoreModel');
+					$order = $update_order->initOrder($order_id)->getOrder();
+					$order->saveOrder();
+					$session->set ( 'profile_order_id',$order->order_id,'j2store' );
+					$app->setUserState( 'j2store.order_id', $order->order_id );
+					// do ajax call for shipping_payment_method
+					// do ajax call for validation
+					// do ajax call for confirm
+					// thats it
+
+					$view = $this->getThisView();
+
+					if ($model = $this->getThisModel())
+					{
+						// Push the model into the view (as default)
+						$view->setModel($model, true);
+					}
+					$params = J2Store::config ();
+					$showShipping = false;
+					if($params->get('show_shipping_address', 0)) {
+						$showShipping = true;
+					}
+
+					if ($isShippingEnabled = $order->isShippingEnabled())
+					{
+						$showShipping = true;
+					}
+
+					$view->showShipping = $showShipping;
+					$view->assign('order' ,$order );
+					$view->setLayout('reorder');
+					$view->display();
+				}
+			}
+
+		}else{
+			$app->redirect ( $url, JText::_('J2STORE_INVALID_ORDER_PROFILE') );
+		}
+
+	}
+
 
 	public function getCountry(){
 		$app = JFactory::getApplication();
-		$country_id = $this->input->getInt('country_id');
-		$zone_id = $this->input->getInt('zone_id');
-		if($country_id) {
-			$zones = F0FModel::getTmpInstance('Zones', 'J2storeModel')->country_id($country_id)->getList();
-		}
+		$country_id = $app->input->getInt('country_id');
+		$country_info = F0FModel::getTmpInstance('Countries', 'J2StoreModel')->getItem($country_id);
 		$json = array();
-		$json['zone'] = $zones ;
+		if ($country_info) {
+			$model = F0FModel::getTmpInstance('Zones', 'J2StoreModel')
+				->enabled(1)
+				->country_id($country_id);
+
+			$model->setState('filter_order',"zone_name");
+			$model->setState('filter_order_Dir',"ASC");
+			$zones = $model->getList();
+
+			foreach($zones as &$zone) {
+				$zone->zone_name = JText::_($zone->zone_name);
+			}
+			if(isset($zones) && is_array($zones)) {
+				$json = array(
+					'country_id'        => $country_info->j2store_country_id,
+					'name'              => $country_info->country_name,
+					'iso_code_2'        => $country_info->country_isocode_2,
+					'iso_code_3'        => $country_info->country_isocode_3,
+					'zone'              => $zones
+				);
+			}
+		}
 		echo json_encode($json);
 		$app->close();
-
 	}
 
 	public function validate($order) {
@@ -322,6 +472,7 @@ class J2StoreControllerMyProfile extends F0FController
 				$status = true;
 			}
 		}
+		J2Store::plugin ()->event ( 'AfterViewOrderValidate', array($order,&$status) );
 		return $status;
 	}
 

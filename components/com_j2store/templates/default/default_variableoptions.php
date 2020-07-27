@@ -57,6 +57,7 @@ $options = $this->product->options;
           	<?php $checked = ''; if($option_value['product_optionvalue_default']) $checked = 'checked="checked"'; ?>
 
           <input <?php echo $checked; ?> type="radio" name="product_option[<?php echo $option['productoption_id']; ?>]"
+                                         autocomplete="off"
           	 onClick="doAjaxPrice(
           	 		<?php echo $this->product->j2store_product_id?>,
           	 		'#option-<?php echo $option["productoption_id"]; ?>'
@@ -82,7 +83,7 @@ $options = $this->product->options;
           <br />
           <?php } ?>
         </div>
-        <br />
+
         <?php } ?>
     		<?php echo J2Store::plugin()->eventWithHtml('AfterDisplaySingleProductOption', array($this->product, $option)); ?>
         <?php } ?>

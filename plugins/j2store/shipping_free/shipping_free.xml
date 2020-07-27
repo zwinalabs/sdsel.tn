@@ -27,6 +27,11 @@
 					<option value="1">JYES</option>
 				</field>
 				<field name="shipping_method" type="shipping" multiple="multiple" label="J2STORE_FREESHIPPING_EXCLUDE_SHIPPING_METHOD" description="J2STORE_FREESHIPPING_EXCLUDE_SHIPPING_METHOD_DESC" addfieldpath="/plugins/j2store/shipping_free/shipping_free/models/fields"/>
+				<field name="check_shipping_product" type="radio" default="0"  label="J2STORE_FREESHIPPING_CHECK_SHIPPING_PRODUCT" description="J2STORE_FREESHIPPING_CHECK_SHIPPING_PRODUCT_DESC">
+					<option value="0">JNO</option>
+					<option value="1">JYES</option>
+				</field>
+
 				<field name="usergroup" type="usergroup" multiple="multiple" label="J2STORE_FREESHIPPING_EXCLUDE_USER_GROUP" description="J2STORE_FREESHIPPING_EXCLUDE_USER_GROUP_DESC"  />
 			</fieldset>
 		</fields>

@@ -74,9 +74,22 @@ class J2StoreControllerShippingStandard extends J2StoreControllerShippingPlugin
 		$model->addIncludePath(JPATH_SITE.'/plugins/j2store/shipping_standard/shipping_standard/tables');
 		$this->includeCustomTables();
 		$table = F0FTable::getInstance('ShippingMethod', 'J2StoreTable');
+		$table->load ($sid);
+		if(empty( $table->params )){
+			$table->params = '{}';
+		}
+		$params = new JRegistry($table->params);
+
+		if(isset( $values['shipping_select_text'] )){
+			$params->set('shipping_select_text',$values['shipping_select_text']);
+		}
+		if(isset( $values['shipping_price_based_on'] )){
+			$params->set('shipping_price_based_on',$values['shipping_price_based_on']);
+		}
+		$values['params'] = $params->toString();
 		$table->bind($values);
 		try {
-			$table->save($values);
+			$table->store ();
 			$link = $this->baseLink();
 			$this->messagetype 	= 'message';
 			$this->message  	= JText::_('J2STORE_ALL_CHANGES_SAVED');
@@ -162,6 +175,18 @@ class J2StoreControllerShippingStandard extends J2StoreControllerShippingPlugin
 		$data ['taxclass'] =  J2StoreHelperSelect::taxclass($shippingmethod_table->tax_class_id, 'tax_class_id');
 		$data ['shippingtype'] =  J2StoreHelperSelect::shippingtype($shippingmethod_table->shipping_method_type, 'shipping_method_type', '', 'shipping_method_type', false );
 
+		if(isset( $shippingmethod_table->params ) && empty( $shippingmethod_table->params ) ){
+			$shippingmethod_table->params = "{}";
+		}
+		$params = new JRegistry($shippingmethod_table->params);
+		$shipping_select_table = $params->get('shipping_select_text','');
+		$shipping_price_based_on = $params->get('shipping_price_based_on',0);
+		$shipping_price = array();
+		$shipping_price[]= JHtml::_('select.option', '0', JText::_('J2STORE_STANDARD_SHIPPING_BEFORE_DISCOUNT'));
+		$shipping_price[]= JHtml::_('select.option', '1', JText::_('J2STORE_STANDARD_SHIPPING_AFTER_DISCOUNT'));
+		$data ['shipping_price_based_on'] = JHtmlSelect::genericlist($shipping_price, 'shipping_price_based_on', array(), 'value', 'text', $shipping_price_based_on);
+
+		$data ['shipping_select_text'] = J2Html::text ( 'shipping_select_text', $shipping_select_table );
 		$options=array();
 		$options[]= JHtml::_('select.option', 'no', JText::_('JNO'));
 		$options[]= JHtml::_('select.option', 'store', JText::_('J2STORE_SHIPPING_STORE_ADDRESS'));

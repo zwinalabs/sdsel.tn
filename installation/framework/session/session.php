@@ -1,20 +1,16 @@
 <?php
 /**
- * @package angifw
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer Framework
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
 
 class ASession
 {
-	/** @var string Chooses the data storage method (file/session) */
-	private $method;
-
 	/** @var string Where temporary data is stored when using file storage */
 	private $storagefile;
 
@@ -25,6 +21,20 @@ class ASession
 	private $sessionkey = null;
 
 	/**
+	 * Should I enable extra session security?
+	 *
+	 * When this is enabled ANGIE will check if there's another session. If so, it will refuse to run until you remove
+	 * the session file for all other sessions from the tmp directory. Implemented in Akeeba Engine 5.4.0 I had to
+	 * disable it in 5.4.2 because either people couldn't read or their servers are screwed up.
+	 *
+	 * So here's the deal: if you do not want ANYONE ON THE FREAKING INTERNET to find out all the gory details about
+	 * your site during restoration, including your database password, JUST USE THE ANGIE PASSWORD FEATURE. This is what
+	 * we wrote that feature for.
+	 */
+
+	const ENABLE_EXTRA_SECURITY = false;
+
+	/**
 	 * Singleton implementation
 	 *
 	 * @return  ASession
@@ -33,7 +43,7 @@ class ASession
 	{
 		static $instance = null;
 
-		if(!is_object($instance))
+		if (!is_object($instance))
 		{
 			$instance = new ASession();
 		}
@@ -68,14 +78,103 @@ class ASession
 			$server_ip = '';
 		}
 
-		$this->sessionkey = md5($ip . $_SERVER['HTTP_USER_AGENT'] . $httpsstatus . $server_ip . $_SERVER['SERVER_NAME']);
+		/**
+		 * I removed server IP because of cases like the (private) ticket #28313  The user has a server farm with four
+		 * nodes. Each node has the same SERVER_NAME but a different (internal network) LOCAL_ADDR. As a result the
+		 * session key is different depending on which nodes responds.
+		 *
+		 * If session lock is enabled this will kick you out unless your requst is handled by the one node that
+		 * originally replied to your request.
+		 *
+		 * If session lock is disabled the restoration will go through BUT the database connection information will not
+		 * be remembered betweeen page loads (since they are saved in the session which depends on the server IP). This
+		 * WILL cause database restoration mayhem if you are restoring on the same db server as the original site: some
+		 * of the nodes will have a blank session which "remembers" the original site's db connection information,
+		 * therefore they will OVERWRITE your main site.
+		 *
+		 * If you run a server farm you MUST have /administrator and /installation (as well as kickstart.php) served
+		 * always from one specific node. You should then rsync that server's files to all other servers in the group.
+		 * You should probably do the same for pages that allow uploads from clients but that's beyond the scope of what
+		 * we do here.
+		 */
+		// $this->sessionkey = md5($ip . $_SERVER['HTTP_USER_AGENT'] . $httpsstatus . $server_ip . $_SERVER['SERVER_NAME']);
+		$this->sessionkey = md5($ip . $_SERVER['HTTP_USER_AGENT'] . $httpsstatus . $_SERVER['SERVER_NAME']);
 
-		// Always use the file method. The PHP session method seems to be
-		// causing database restoration issues.
-		$this->method = 'file';
+		if (defined('ANGIE_FORCED_SESSION_KEY') && ANGIE_FORCED_SESSION_KEY)
+		{
+			if ($this->sessionkey != ANGIE_FORCED_SESSION_KEY)
+			{
+				die(AText::_('SESSIONBLOCKED_HEADER_IN_USE'));
+			}
+		}
 
-		$storagefile = APATH_INSTALLATION . '/tmp/storagedata-' . $this->sessionkey . '.dat';
+		$storagefile       = APATH_INSTALLATION . '/tmp/storagedata-' . $this->sessionkey . '.dat';
 		$this->storagefile = $storagefile;
+
+		/**
+		 * If there is another storagedata-* file we unset the value for ourselves. This allows us to warn the user that
+		 * the restoration is already in progress by someone else.
+		 */
+		if (self::ENABLE_EXTRA_SECURITY)
+		{
+			try
+			{
+				$baseNameSelf     = basename($storagefile);
+
+				$di = new DirectoryIterator(APATH_INSTALLATION . '/tmp');
+
+				foreach ($di as $file)
+				{
+					if (!$file->isFile())
+					{
+						continue;
+					}
+
+					if ($file->isDot())
+					{
+						continue;
+					}
+
+					$basename = $file->getBasename();
+
+					if ($basename == $baseNameSelf)
+					{
+						continue;
+					}
+
+					if (substr($basename, -4) != '.dat')
+					{
+						continue;
+					}
+
+					// Another storage file found. Whoopsie! You are doing something wrong here, pal.
+					if (substr($basename, 0, 12) == 'storagedata-')
+					{
+						/**
+						 * If the user has not overridden the session key to lock it to their browser we unset the
+						 * storagefile property, causing the session to error out. This triggers the "Oops! The installer
+						 * is already in use." page.
+						 */
+						if (!defined('ANGIE_FORCED_SESSION_KEY') || !ANGIE_FORCED_SESSION_KEY)
+						{
+							$this->storagefile = '';
+
+							break;
+						}
+
+						/**
+						 * If, however, the user has edited defines.php to force the session key we can simply delete the
+						 * extra session files.
+						 */
+						@unlink($file->getPathname());
+					}
+				}
+			}
+			catch (Exception $e)
+			{
+				// Do nothing; unreadable / unwriteable sessions are caught elsewhere
+			}
+		}
 
 		$this->loadData();
 	}
@@ -95,29 +194,22 @@ class ASession
 	 */
 	public function isStorageWorking()
 	{
-		if(!file_exists($this->storagefile)) {
-			$dummy = '';
-			$fp = @fopen($this->storagefile,'wb');
+		if (!file_exists($this->storagefile))
+		{
+			$fp = @fopen($this->storagefile, 'wb');
 
 			if ($fp === false)
 			{
-				$result = false;
-			}
-			else
-			{
-				@fclose($fp);
-				@unlink($this->storagefile);
-				$result = true;
+				return false;
 			}
 
-			return $result;
-		}
-		else
-		{
-			return @is_writable($this->storagefile);
+			@fclose($fp);
+			@unlink($this->storagefile);
+
+			return true;
 		}
 
-		return false;
+		return @is_writable($this->storagefile);
 	}
 
 	/**
@@ -133,35 +225,43 @@ class ASession
 	 */
 	public function loadData()
 	{
-		$file = @fopen($this->storagefile,'rb');
-		if($file === false)
+		$file = @fopen($this->storagefile, 'rb');
+
+		if ($file === false)
 		{
 			$this->data = array();
+
 			return;
 		}
-		else
-		{
-			$raw_data = fread($file, filesize($this->storagefile));
-		}
-		if(@strlen($raw_data) > 0)
+
+		$raw_data   = fread($file, filesize($this->storagefile));
+		$this->data = array();
+
+		if (@strlen($raw_data) > 0)
 		{
 			$this->decode_data($raw_data);
-		}
-		else
-		{
-			$this->data = array();
 		}
 	}
 
 	/**
 	 * Saves session data to a file or a session variable (auto detect)
+	 *
+	 * @return  bool  True if the session storage filename is set
 	 */
 	public function saveData()
 	{
+		if (empty($this->storagefile))
+		{
+			return false;
+		}
+
 		$data = $this->encode_data();
-		$fp = @fopen($this->storagefile,'wb');
+		$fp   = @fopen($this->storagefile, 'wb');
+
 		@fwrite($fp, $data);
 		@fclose($fp);
+
+		return true;
 	}
 
 	/**
@@ -185,14 +285,12 @@ class ASession
 	 */
 	public function get($key, $default = null)
 	{
-		if(array_key_exists($key, $this->data))
+		if (array_key_exists($key, $this->data))
 		{
 			return $this->data[$key];
 		}
-		else
-		{
-			return $default;
-		}
+
+		return $default;
 	}
 
 	/**
@@ -202,10 +300,47 @@ class ASession
 	 */
 	public function remove($key)
 	{
-		if(array_key_exists($key, $this->data))
+		if (array_key_exists($key, $this->data))
 		{
 			unset($this->data[$key]);
 		}
+	}
+
+	/**
+	 * Do we have a storage file for the session? If not, it means that ANGIE has detected another active session, i.e.
+	 * someone else is using it already to restore a site. This method is used by the Dispatcher to block the request
+	 * and warn the user of the issue.
+	 *
+	 * @return  bool
+	 */
+	public function hasStorageFile()
+	{
+		return !empty($this->storagefile);
+	}
+
+	/**
+	 * Returns the session key file. Used to display the message in view=session&layout=blocked which is displayed when
+	 * the user is trying to access ANGIE while someone else is already using it.
+	 *
+	 * @return  string
+	 */
+	public function getSessionKey()
+	{
+		return $this->sessionkey;
+	}
+
+	/**
+	 * Disable saving the storage data. This is used by the password view to prevent starting a new session when a
+	 * password has not been entered. This way, if the installer is password-protected, a random visitor getting to the
+	 * installer before the site administrator will NOT cause the administrator to be locked out of the installer,
+	 * therefore won't require the administrator to have to delete the session storage files from tmp to get access to
+	 * their site's installer.
+	 *
+	 * @return  void
+	 */
+	public function disableSave()
+	{
+		$this->storagefile = '';
 	}
 
 	/**
@@ -215,59 +350,71 @@ class ASession
 	private function encode_data()
 	{
 		$data = serialize($this->data);
-		if( function_exists('base64_encode') && function_exists('base64_decode') )
+
+		if (function_exists('base64_encode') && function_exists('base64_decode'))
 		{
-			// Prefer Basse64 ebcoding of data
-			$data = base64_encode($data);
+			// Prefer Βαse64 encoding of data
+			return base64_encode($data);
 		}
-		elseif( function_exists('convert_uuencode') && function_exists('convert_uudecode') )
+
+		if (function_exists('convert_uuencode') && function_exists('convert_uudecode'))
 		{
-			// UUEncode is just as good if Base64 is not available
-			$data = convert_uuencode( $data );
+			// UUEncode is just as good if Βαse64 is not available
+			return convert_uuencode($data);
 		}
-		elseif( function_exists('bin2hex') && function_exists('pack') )
+
+		if (function_exists('bin2hex') && function_exists('pack'))
 		{
 			// Ugh! Let's use plain hex encoding
-			$data = bin2hex($data);
+			return bin2hex($data);
 		}
-		// Note: on an anal server we might end up with raw data; all bets are off!
 
+		// Note: on such a badly configure server we might end up with raw data; all bets are off!
 		return $data;
 	}
 
 	/**
 	 * Loads the temporary data off their serialized form
-	 * @param $data
+	 *
+	 * @param   string $data
 	 */
 	private function decode_data($data)
 	{
 		$this->data = array();
+		$data       = $this->internalDecode($data);
+		$temp       = @unserialize($data);
 
-		if( function_exists('base64_encode') && function_exists('base64_decode') )
-		{
-			// Prefer Basse64 ebcoding of data
-			$data = base64_decode($data);
-		}
-		elseif( function_exists('convert_uuencode') && function_exists('convert_uudecode') )
-		{
-			// UUEncode is just as good if Base64 is not available
-			$data = convert_uudecode( $data );
-		}
-		elseif( function_exists('bin2hex') && function_exists('pack') )
-		{
-			// Ugh! Let's use plain hex encoding
-			$data = pack("H*" , $data);
-		}
-		// Note: on an anal server we might end up with raw data; all bets are off!
-
-		$temp = @unserialize($data);
-		if(is_array($temp))
+		if (is_array($temp))
 		{
 			$this->data = $temp;
 		}
-		else
+	}
+
+	/**
+	 * The symmetric method to encode_data
+	 *
+	 * @param   string $data
+	 *
+	 * @return  string
+	 */
+	private function internalDecode($data)
+	{
+		if (function_exists('base64_encode') && function_exists('base64_decode'))
 		{
-			$this->data = array();
+			return base64_decode($data);
 		}
+
+		if (function_exists('convert_uuencode') && function_exists('convert_uudecode'))
+		{
+			return convert_uudecode($data);
+		}
+
+		if (function_exists('bin2hex') && function_exists('pack'))
+		{
+			// Ugh! Let's use plain hex encoding
+			return pack("H*", $data);
+		}
+
+		return $data;
 	}
 }

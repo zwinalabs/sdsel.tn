@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -13,7 +14,7 @@ abstract class AngieModelBaseSetup extends AModel
     /**
      * Cached copy of the configuration model
      *
-     * @var  AngieModelBaseConfiguration
+     * @var  AngieModelWordpressConfiguration
      */
     protected $configModel = null;
 
@@ -54,6 +55,30 @@ abstract class AngieModelBaseSetup extends AModel
     abstract protected function getSuperUsersVars();
 
     abstract public function applySettings();
+
+	/**
+	 * Are we restoring to a new host?
+	 *
+	 * @return bool
+	 */
+	public function isNewhost()
+	{
+		/** @var AngieModelBaseMain $mainModel */
+		$mainModel = AModel::getAnInstance('Main', 'AngieModel');
+		$extrainfo = $mainModel->getExtraInfo();
+
+		if (isset($extrainfo['host']))
+		{
+			$uri = AUri::getInstance();
+
+			if ($extrainfo['host']['current'] != $uri->getHost())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 
     /**
      * Returns the database connection variables for the default database.

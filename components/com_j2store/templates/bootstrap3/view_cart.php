@@ -13,20 +13,7 @@ if(!empty($this->product->addtocart_text)) {
 } else {
 	$cart_text = JText::_('J2STORE_ADD_TO_CART');
 }
-
-if($this->product->variant->availability || J2Store::product()->backorders_allowed($this->product->variant)) {
-	$show = true;
-} else {
-	$show = false;
-}
-
-if($this->product->product_type == 'variable') {
-	if($this->product->all_sold_out){
-		$show = false;
-	}else{
-		$show = true;
-	}
-}
+$show = J2Store::product ()->validateVariableProduct($this->product);
 ?>
 <?php echo J2Store::plugin()->eventWithHtml('BeforeAddToCartButton', array($this->product, J2Store::utilities()->getContext('view_cart'))); ?>
 	<?php if($show): ?>

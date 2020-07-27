@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -11,6 +11,7 @@ use FOF30\Container\Container;
 use FOF30\Model\DataModel;
 use FOF30\Model\DataModel\Collection;
 use FOF30\View\View;
+use Joomla\Registry\Registry;
 
 defined('_JEXEC') or die;
 
@@ -25,7 +26,7 @@ class Raw extends View implements DataViewInterface
 	/** @var \JPagination The pagination object */
 	protected $pagination = null;
 
-	/** @var \JRegistry Page parameters object, for front-end views */
+	/** @var \JRegistry|Registry Page parameters object, for front-end views */
 	protected $pageParams = null;
 
 	/** @var Collection The records loaded (browse views) */
@@ -159,7 +160,7 @@ class Raw extends View implements DataViewInterface
 	/**
 	 * Returns the internal list of useful variables to the benefit of header fields.
 	 *
-	 * @return array
+	 * @return \stdClass
 	 */
 	public function getLists()
 	{
@@ -219,7 +220,7 @@ class Raw extends View implements DataViewInterface
 	/**
 	 * Get the Joomla! page parameters
 	 *
-	 * @return \JRegistry
+	 * @return \JRegistry|Registry
 	 */
 	public function getPageParams()
 	{
@@ -298,7 +299,27 @@ class Raw extends View implements DataViewInterface
 		/** @var DataModel $model */
 		$model = $this->getModel();
 
-		$this->item = $model->reset(true, true);
+		/**
+		 * The model is pushed into the View by the Controller. As you can see in DataController::add() it is possible
+		 * to push both default values (defaultsForAdd) as well as data from the state (e.g. when saving a new record
+		 * failed for some reason and the user needs to edit it). That's why we populate defaultFields from $model. We
+		 * still do a full reset on a clone of the Model to get a clean object and merge default values (instead of null
+		 * values) with the data pushed by the controller.
+		 */
+		$defaultFields = $model->getData();
+		$this->item    = $model->getClone()->reset(true, true);
+
+		foreach ($defaultFields as $k => $v)
+		{
+			try
+			{
+				$this->item->setFieldValue($k, $v);
+			}
+			catch (\Exception $e)
+			{
+				// Suppress errors in field assignments at this stage
+			}
+		}
 	}
 
 	/**
@@ -312,7 +333,7 @@ class Raw extends View implements DataViewInterface
 		// It seems that I can't edit records, maybe I can edit only this one due asset tracking?
 		if (!$this->permissions->edit || !$this->permissions->editown)
 		{
-			if($model)
+			if ($model)
 			{
 				// Ok, record is tracked, let's see if I can this record
 				if ($model->isAssetsTracked())

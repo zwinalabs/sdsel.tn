@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -11,7 +11,6 @@ use FOF30\Form\FieldInterface;
 use FOF30\Form\Form;
 use FOF30\Model\DataModel;
 use FOF30\Utils\StringHelper;
-use \JText;
 
 defined('_JEXEC') or die;
 
@@ -20,6 +19,8 @@ defined('_JEXEC') or die;
 /**
  * Form Field class for the FOF framework
  * Supports a one line text field.
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
  */
 class Email extends \JFormFieldEMail implements FieldInterface
 {
@@ -151,7 +152,8 @@ class Email extends \JFormFieldEMail implements FieldInterface
 
 		if (!empty($empty_replacement) && empty($this->value))
 		{
-			$this->value = JText::_($empty_replacement);
+            $replacement_key = (string) $this->element['empty_replacement'];
+            $this->value = \JText::_($replacement_key);
 		}
 
 		$value = htmlspecialchars($this->value, ENT_COMPAT, 'UTF-8');

@@ -18,7 +18,7 @@ $this->form_id = 'j2store-addtocart-form-'.$this->product->j2store_product_id;
 	<?php if(J2Store::product()->managing_stock($this->product->variant)): ?>
 		<?php echo $this->loadTemplate('stock'); ?>
 	<?php endif; ?>
-<?php if($this->params->get('catalog_mode', 0) == 0): ?>
+<?php if( J2Store::product()->canShowCart($this->params) ): ?>
 	<form action="<?php echo $this->product->cart_form_action; ?>"
 		method="post" class="j2store-addtocart-form"
 		id="<?php echo $this->form_id; ?>"

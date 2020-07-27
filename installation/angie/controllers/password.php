@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -12,21 +13,22 @@ class AngieControllerPassword extends AController
 {
 	public function unlock()
 	{
-		$parts = explode(':', AKEEBA_PASSHASH);
+		$parts    = explode(':', AKEEBA_PASSHASH);
 		$password = $this->input->get('password', '', 'raw');
 		$passHash = md5($password . $parts[1]);
 
-        $this->container->session->set('angie.passhash', $passHash);
-        $this->container->session->saveData();
+		$this->container->session->set('angie.passhash', $passHash);
 
-		if($passHash == $parts[0])
+		if ($passHash == $parts[0])
 		{
+			$this->container->session->saveData();
 			$this->setRedirect('index.php?view=main');
+
+			return;
 		}
-		else
-		{
-			$msg = AText::_('PASSWORD_ERR_INVALIDPASSWORD');
-			$this->setRedirect('index.php?view=password', $msg, 'error');
-		}
+
+		$msg = AText::_('PASSWORD_ERR_INVALIDPASSWORD');
+		$this->container->session->disableSave();
+		$this->setRedirect('index.php?view=password', $msg, 'error');
 	}
 }

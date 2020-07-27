@@ -11,7 +11,7 @@ defined('_JEXEC') or die;
 <?php echo J2Store::plugin()->eventWithHtml('BeforeRenderingProductPrice', array($this->product)); ?>
 
 <?php if($this->params->get('item_show_product_base_price', 1) || $this->params->get('item_show_product_special_price', 1)): ?>
-<div itemprop="offers" itemscope itemtype="http://schema.org/Offer" class="product-price-container">
+<div itemprop="offers" itemscope itemtype="https://schema.org/Offer" class="product-price-container">
 		<?php if($this->params->get('item_show_product_base_price', 1) && $this->product->pricing->base_price != $this->product->pricing->price): ?>
 			<?php $class='';?>
 			<?php if(isset($this->product->pricing->is_discount_pricing_available)) $class='strike'; ?>
@@ -34,20 +34,21 @@ defined('_JEXEC') or die;
 			</div>
 		<?php endif; ?>
 	
-	<meta itemprop="price" content="<?php echo $this->product->pricing->price; ?>" />
+	<meta itemprop="price" content="<?php echo  $this->currency->format($this->product->pricing->price, $this->currency->getCode(), $this->currency->getValue(), false); ?>" />
 	<meta itemprop="priceCurrency" content="<?php echo $this->currency->getCode(); ?>" />
-	<link itemprop="availability" href="http://schema.org/<?php echo $this->product->variant->availability ? 'InStock':'OutOfStock'; ?>" />
+	<link itemprop="availability" href="https://schema.org/<?php echo $this->product->variant->availability ? 'InStock':'OutOfStock'; ?>" />
 </div>
 <?php endif; ?>
 
 <?php echo J2Store::plugin()->eventWithHtml('AfterRenderingProductPrice', array($this->product)); ?>
 
-
-<?php if($this->params->get('item_show_discount_percentage', 1) && isset($this->product->pricing->is_discount_pricing_available)): ?>
-	<?php $discount =(1 - ($this->product->pricing->price / $this->product->pricing->base_price) ) * 100; ?>
-	<?php if($discount > 0): ?>
-		<div class="discount-percentage">
-			<?php  echo round($discount).' % '.JText::_('J2STORE_PRODUCT_OFFER');?>
-		</div>
-	<?php endif; ?>
+<?php if($this->params->get('item_show_discount_percentage', 1)): ?>
+    <div class="discount-percentage">
+        <?php if( isset($this->product->pricing->is_discount_pricing_available)): ?>
+            <?php $discount =(1 - ($this->product->pricing->price / $this->product->pricing->base_price) ) * 100; ?>
+            <?php if($discount > 0): ?>
+                <?php  echo JText::sprintf('J2STORE_PRODUCT_OFFER',round($discount).'%');?>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
 <?php endif; ?>

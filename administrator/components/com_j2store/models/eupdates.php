@@ -58,4 +58,22 @@ class J2StoreModelEupdates extends F0FModel
 		return $resp;
 	}
 
+	public function getDownloadIdStatus($download_id){
+        $message_data = array();
+	    if( J2Store::isPro () && !empty($download_id) ){
+            $url = 'https://www.j2store.org/index.php?j2storetask=getj2subscription&download_id='.$download_id;
+            $json = $this->sendRequest($url);
+
+            if(!empty($json)) {
+                $registry = new JRegistry($json);
+                $response_data = $registry->toArray();
+                if(isset($response_data['valid']) && $response_data['valid']){
+                    $config = J2Store::config();
+                    $config->saveOne('downloadid',$download_id);
+                }
+                return $response_data;
+            }
+        }
+        return $message_data;
+    }
 }

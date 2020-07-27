@@ -12,6 +12,7 @@
 defined('_JEXEC') or die('Restricted access');
 
 $shipping_rates_text = JText::_('J2STORE_GETTING_SHIPPING_RATES');
+$shipping_selected_text = '';
 ?>
 <?php if(count($this->rates)): ?>
 <h3><?php echo JText::_('J2STORE_CHECKOUT_SELECT_A_SHIPPING_METHOD');?></h3>
@@ -21,16 +22,23 @@ $shipping_rates_text = JText::_('J2STORE_GETTING_SHIPPING_RATES');
         foreach ($this->rates as $rate)
         {
             $checked = "";
-
             if(!empty($this->default_rate)) {
             	if ( $this->default_rate['name'] == $rate['name'] )
             	{
             		$checked = "checked";
             	}
             }
+			$select_text = "";
+			if(isset( $rate['select_text'] )){
+				$select_text = $rate['select_text'];
+			}
+
+	        $css_id = $rate['element']."_".JFilterOutput::stringURLSafe($rate['name']);
+
+			$shipping_selected_text .= "<div class='shipping_element ".$css_id."_select_text hide'>".JText::_ ( $select_text )."</div>"
             ?>
-            <input id="shipping_<?php echo $rate['element']; ?>_<?php echo str_replace(' ', '', $rate['name']); ?>" name="shipping_plugin" rel="<?php echo $rate['name']; ?>" type="radio" value="<?php echo $rate['element'] ?>" onClick="j2storeSetShippingRate('<?php echo $rate['name']; ?>','<?php echo $rate['price']; ?>',<?php echo $rate['tax']; ?>,<?php echo $rate['extra']; ?>, '<?php echo $rate['code']; ?>', true );" <?php echo $checked; ?> />
-            <label for="shipping_<?php echo $rate['element']; ?>_<?php echo str_replace(' ', '', $rate['name']); ?>" onClick="j2storeSetShippingRate('<?php echo $rate['name']; ?>','<?php echo $rate['price']; ?>',<?php echo $rate['tax']; ?>,<?php echo $rate['extra']; ?>, '<?php echo $rate['code']; ?>', true );"><?php echo $rate['name']; ?> ( <?php echo $this->currency->format( $rate['total']); ?> )</label><br />
+            <input id="shipping_<?php echo $css_id; ?>" name="shipping_plugin" rel="<?php echo $rate['name']; ?>" type="radio" value="<?php echo $rate['element'] ?>" onClick="j2storeSetShippingRate('<?php echo $rate['name']; ?>','<?php echo $rate['price']; ?>',<?php echo $rate['tax']; ?>,<?php echo $rate['extra']; ?>, '<?php echo $rate['code']; ?>', true, '<?php echo $rate['element'];?>', '<?php echo $css_id; ?>' );" <?php echo $checked; ?> />
+            <label for="shipping_<?php echo $css_id; ?>" onClick="j2storeSetShippingRate('<?php echo $rate['name']; ?>','<?php echo $rate['price']; ?>',<?php echo $rate['tax']; ?>,<?php echo $rate['extra']; ?>, '<?php echo $rate['code']; ?>', true, '<?php echo $rate['element'];?>', '<?php echo $css_id; ?>' );"><?php echo $rate['name']; ?> ( <?php echo $this->currency->format( $rate['total']); ?> )</label><br />
             <?php
         }
 ?>
@@ -46,12 +54,13 @@ $shipping_rates_text = JText::_('J2STORE_GETTING_SHIPPING_RATES');
 <div id='shipping_form_div' style="padding-top: 10px;"></div>
 <div id='shipping_error_div' style="padding-top: 10px;"></div>
 <?php
+echo $shipping_selected_text;
 if (!empty($this->default_rate) ) :
 	$default_rate = $this->default_rate; ?>
 <script type="text/javascript">
 (function($) {
 	$(document).ready(function(){
-		j2storeSetShippingRate('<?php echo $default_rate['name']; ?>','<?php echo $default_rate['price']; ?>',<?php echo $default_rate['tax']; ?>,<?php echo $default_rate['extra']; ?>, '<?php echo $default_rate['code']; ?>', '<?php echo JText::_('J2STORE_UPDATING_SHIPPING_RATES')?>', '<?php echo JText::_('J2STORE_UPDATING_CART')?>', true );
+		j2storeSetShippingRate('<?php echo $default_rate['name']; ?>','<?php echo $default_rate['price']; ?>',<?php echo $default_rate['tax']; ?>,<?php echo $default_rate['extra']; ?>, '<?php echo $default_rate['code']; ?>', true,'<?php echo $default_rate['element'];?>', '<?php echo $css_id; ?>' );
 });
 })(j2store.jQuery);
 </script>

@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -23,6 +24,7 @@ class AngieControllerOffsitedirs extends AController
 				'error'		=> AText::_('OFFSITEDIRS_ERR_INVALIDKEY'),
 				'done'		=> 1,
 			);
+			@ob_clean();
 			echo json_encode($result);
 			return;
 		}
@@ -48,6 +50,7 @@ class AngieControllerOffsitedirs extends AController
 			);
 		}
 
+		@ob_clean();
 		echo json_encode($result);
 	}
 
@@ -60,6 +63,7 @@ class AngieControllerOffsitedirs extends AController
         $model = $this->getThisModel();
         $dirs  = $model->getDirs();
 
+	    @ob_clean();
         echo json_encode((bool)count($dirs));
     }
 }

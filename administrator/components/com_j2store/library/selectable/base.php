@@ -213,7 +213,6 @@ class J2StoreSelectableBase {
 
 
 	function handleZone(&$fields,$test=false,$data){
-
 		$types = array();
 		foreach($fields as $k => $field){
 			if($field->field_type=='zone' && !empty($field->field_options['zone_type'])){
@@ -277,9 +276,13 @@ class J2StoreSelectableBase {
 			foreach($zones as $zone){
 				$title = $zone->country_name;
 				$obj = new stdClass();
-				$obj->value = $zone->country_name;
+				$obj->value = JText::_($zone->country_name);
 				$obj->disabled = '0';
-				$fields[$k]->field_value[$zone->j2store_country_id]=$obj;
+
+				if(!is_array($fields[$k]->field_value)) {
+					$fields[$k]->field_value = array();
+				}
+				$fields[$k]->field_value[$zone->j2store_country_id] = $obj;
 			}
 		} elseif($field->field_type=='zone' && !empty($field->field_options['zone_type']) && $field->field_options['zone_type']=='zone'){
 
@@ -287,13 +290,16 @@ class J2StoreSelectableBase {
 
 				if(isset($zone->j2store_zone_id)) {
 					if($key == 0 && empty( $field->field_default )){
-						$field->field_default = $zone->j2store_zone_id;
+						//$field->field_default = $zone->j2store_zone_id;
 					}
 					$title = $zone->zone_name;
 					$obj = new stdClass();
 					$obj->value = $title;
 					$obj->disabled = '0';
-					$fields[$k]->field_value[$zone->j2store_zone_id]=$obj;
+					if(!is_array($fields[$k]->field_value)) {
+						$fields[$k]->field_value = array();
+					}
+					$fields[$k]->field_value[$zone->j2store_zone_id] = $obj;
 				}
 			}
 
@@ -1293,6 +1299,7 @@ class j2storeZone extends j2storeSingledropdown{
 		$country_id = ($store->get('country_id') > 0)?$store->get('country_id'):'';
 
 		//if no default value was set in the fields, then use the country id set in the store profile.
+		//echo $field->field_default;
 		if(empty($field->field_default)) {
 			$defaultCountry = $country_id;
 		}

@@ -12,7 +12,7 @@ class J2StoreTableCart extends F0FTable {
 		$status =  true;
 		// load cart items
 		$query = $this->_db->getQuery (true);
-		$query->select ( '*' )->from ( '#__j2store_cartitems' )->where ( 'cart_id = ' . ( int ) $oid );
+		$query->select ( '*' )->from ( '#__j2store_cartitems' )->where ( 'cart_id = ' . $this->_db->q( ( int ) $oid ));
 		$this->_db->setQuery ( $query );
 
  		try {

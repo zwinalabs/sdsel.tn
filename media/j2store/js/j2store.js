@@ -1,6 +1,24 @@
 /**
  * Setup (required for Joomla! 3)
  */
+if(typeof jQuery === 'undefined' || (parseInt(jQuery.fn.jquery) === 1 && parseFloat(jQuery.fn.jquery.replace(/^1\./,'')) < 10)){
+    var head = document.getElementsByTagName('head')[0];
+    var script = document.createElement('script');
+    script.src = '//ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js';
+    script.type = 'text/javascript';
+    script.onload = script.onreadystatechange = function() {
+        if (script.readyState) {
+            if (script.readyState === 'complete' || script.readyState === 'loaded') {
+                script.onreadystatechange = null;
+                onload(jQuery.noConflict(true));
+            }
+        }
+        else {
+            onload(jQuery.noConflict(true));
+        }
+    };
+    head.appendChild(script);
+}
 if(typeof(j2store) == 'undefined') {
 	var j2store = {};
 }
@@ -11,6 +29,20 @@ if(typeof(j2store.jQuery) == 'undefined') {
 if(typeof(j2storeURL) == 'undefined') {
 	var j2storeURL = '';
 }
+
+//make sure the ajax requests are not cached
+(function($) {
+	$(document).ready(function() {
+		$.ajaxSetup({
+			cache: false,
+			headers: {
+				'Cache-Control': 'no-cache, no-store, must-revalidate',
+				'Pragma': 'no-cache',
+				'Expires': '0'
+			}
+		});
+	});
+})(j2store.jQuery);
 
 (function($) {
 // Ajax add to cart
@@ -40,7 +72,7 @@ $( document ).on( 'click', '.j2store_add_to_cart_button', function(e) {
 		$( 'body' ).trigger( 'adding_to_cart', [ $thisbutton, data ] );
 		
 		var href = $thisbutton.attr('href');
-		if(typeof href !== 'undefined' || href == '') {
+		if(typeof href === 'undefined' || href === '') {
 			href = 'index.php';
 		}
 
@@ -75,9 +107,7 @@ $( document ).on( 'click', '.j2store_add_to_cart_button', function(e) {
 		}, 'json');
 
 		return false;
-
-
-	return true;
+	
 });
 })(j2store.jQuery);
 
@@ -100,6 +130,8 @@ $( document ).on( 'click', '.j2store_add_to_cart_button', function(e) {
 		if(typeof href == 'undefined' || href == '') {
 			var href = 'index.php';
 		}
+			// Trigger event
+			$( 'body' ).trigger( 'adding_to_cart', [ form, values ] );
 		//var values = form.serializeArray();
 	 	var j2Ajax = $.ajax({
 				url: href,
@@ -108,7 +140,7 @@ $( document ).on( 'click', '.j2store_add_to_cart_button', function(e) {
 				dataType: 'json'
 					
 	 	 });
-	 	
+
 	 	j2Ajax.done(function(json) {
 	 	 		form.find('.j2success, .j2warning, .j2attention, .j2information, .j2error').remove();
 				$('.j2store-notification').hide();				
@@ -263,7 +295,7 @@ function j2storeDoTask(url, container, form, msg, formdata) {
 	})(j2store.jQuery);
 }
 
-function j2storeSetShippingRate(name, price, tax, extra, code, combined )
+function j2storeSetShippingRate(name, price, tax, extra, code, combined, ship_element, css_id )
 {
 	
 (function($) {
@@ -271,7 +303,10 @@ function j2storeSetShippingRate(name, price, tax, extra, code, combined )
 	$("input[type='hidden'][name='shipping_code']").val(code);
 	$("input[type='hidden'][name='shipping_price']").val(price);
 	$("input[type='hidden'][name='shipping_tax']").val(tax);
-	$("input[type='hidden'][name='shipping_extra']").val(extra);	
+	$("input[type='hidden'][name='shipping_extra']").val(extra);
+	var ship_name = name.replace(' ','');
+	$('#onCheckoutShipping_wrapper .shipping_element').hide();
+	$('#onCheckoutShipping_wrapper .'+css_id+'_select_text').show();
 })(j2store.jQuery);
 
 } 
@@ -351,8 +386,11 @@ function doAjaxFilter(pov_id, product_id, po_id, id) {
 					value :$variant_id
 				});		
 		}
-		
+		values = values.filter(function( element ) {
+			return element !== undefined;
+		});
 		values = jQuery.param(values);
+		$( 'body' ).trigger( 'before_doAjaxFilter', [ form, values ] );
 		$.ajax({
 					url : j2storeURL+'index.php?option=com_j2store&view=products&task=update&po_id='
 							+ po_id
@@ -400,8 +438,7 @@ function doAjaxFilter(pov_id, product_id, po_id, id) {
 								$product.find('input[name="product_qty"]').val(response.quantity);
 								if(form.data('product_type') == 'variable' || form.data('product_type') == 'advancedvariable') {
 									$product.find('input[name="product_qty"]').attr({
-										value: response.quantity,
-										min: response.quantity
+										value: response.quantity
 									});
 								}
 							}
@@ -415,7 +452,24 @@ function doAjaxFilter(pov_id, product_id, po_id, id) {
 							if (response.weight) {
 								$product.find('.product-weight').html(response.weight);						
 							}
-							
+							// main image change
+                            if(response.main_image){
+
+                                $product.find('.j2store-product-thumb-image-'+product_id).attr("src", response.main_image);
+                                j2store.jQuery('.j2store-product-thumb-image-'+product_id).attr("src", response.main_image);
+                                j2store.jQuery('.j2store-product-main-image-'+product_id).attr("src", response.main_image);
+                                $product.find('.j2store-mainimage .j2store-img-responsive').attr("src", response.main_image);
+                                $product.find('.j2store-product-additional-images .additional-mainimage').attr("src", response.main_image);
+                            }
+
+                            //discount text
+                            if(response.pricing.discount_text){
+
+                                $product.find('.discount-percentage').html(response.pricing.discount_text);
+                            }else{
+                                $product.find('.discount-percentage').addClass('no-discount');
+                            }
+
 							//stock status
 							
 							if (typeof response.stock_status != 'undefined') {
@@ -432,7 +486,7 @@ function doAjaxFilter(pov_id, product_id, po_id, id) {
 							}
 
 						}
-
+						$( 'body' ).trigger( 'after_doAjaxFilter_response', [ $product, response ] );
 					},
 					error : function(xhr, ajaxOptions, thrownError) {
 						console.log(thrownError + "\r\n" + xhr.statusText
@@ -484,7 +538,7 @@ function doAjaxPrice(product_id, id) {
 		arrayClean(values);
 		
 		//variable check
-		if(form.data('product_type') == 'variable' || form.data('product_type') == 'advancedvariable') {
+		if(form.data('product_type') == 'variable' || form.data('product_type') == 'advancedvariable' || form.data('product_type') == 'variablesubscriptionproduct') {
 			var csv = [];
 			if(form.data('product_type') == 'advancedvariable') {
 				form.find('input[type=\'radio\']:checked, select').each( function( index, el ) {	
@@ -514,7 +568,10 @@ function doAjaxPrice(product_id, id) {
 				value :$variant_id
 			});	
 		}
-		
+		values = values.filter(function( element ) {
+			return element !== undefined;
+		});
+		$( 'body' ).trigger( 'before_doAjaxPrice', [ form, values ] );
 		$.ajax({
 			url : j2storeURL+ 'index.php?option=com_j2store&view=product&task=update',
 			type : 'get',
@@ -532,12 +589,20 @@ function doAjaxPrice(product_id, id) {
 					}
 					//base price
 					if (response.pricing.base_price) {
-						$product.find('.base-price').html(response.pricing.base_price);						
+						$product.find('.base-price').html(response.pricing.base_price);
+                        if(response.pricing.class){
+                            if(response.pricing.class == 'show'){
+                                $product.find('.base-price').show()
+                            }else{
+                                $product.find('.base-price').hide()
+                            }
+                        }
 					}
 					//price
 					if (response.pricing.price) {
 						$product.find('.sale-price').html(response.pricing.price);
 					}
+
 					//afterDisplayPrice
 					if (response.afterDisplayPrice) {
 						$product.find('.afterDisplayPrice').html(response.afterDisplayPrice);
@@ -545,16 +610,17 @@ function doAjaxPrice(product_id, id) {
 					//qty
 					if (response.quantity) {
 						$product.find('input[name="product_qty"]').val(response.quantity);
-						if(form.data('product_type') == 'variable' || form.data('product_type') == 'advancedvariable') {
+						if(form.data('product_type') == 'variable' || form.data('product_type') == 'advancedvariable' || form.data('product_type') == 'variablesubscriptionproduct') {
 							$product.find('input[name="product_qty"]').attr({
-								value: response.quantity,
-								min: response.quantity
+								value: response.quantity
 							});
 						}
 					}
 					if(response.main_image){
 
 						$product.find('.j2store-product-thumb-image-'+product_id).attr("src", response.main_image);
+						j2store.jQuery('.j2store-product-thumb-image-'+product_id).attr("src", response.main_image);
+						j2store.jQuery('.j2store-product-main-image-'+product_id).attr("src", response.main_image);
 						$product.find('.j2store-mainimage .j2store-img-responsive').attr("src", response.main_image);
 						$product.find('.j2store-product-additional-images .additional-mainimage').attr("src", response.main_image);
 					}
@@ -577,9 +643,11 @@ function doAjaxPrice(product_id, id) {
 					if (response.weight) {
 						$product.find('.product-weight').html(response.weight);						
 					}
-					console.log(response);
+					// discount text
+                    $product.find('.discount-percentage').html(response.pricing.discount_text);
 					// Trigger event
 					$( 'body' ).trigger( 'after_doAjaxFilter', [ $product, response ] );
+					$( 'body' ).trigger( 'after_doAjaxPrice', [ $product, response ] );
 				}
 			},
 			error : function(xhr, ajaxOptions, thrownError) {
@@ -608,9 +676,9 @@ function setMainPreview(addimagId, product_id, imageZoom, zoom_type){
 			zoomWindowHeight:300
 			 });
 		}else if(zoom_type=='inner') {
-			$("#j2store-item-main-image-"+product_id + " .zoomImg").attr('src',src);			
+			$("#j2store-item-main-image-"+product_id + " .zoomImg").attr('src',src);
 			$("#j2store-item-main-image-"+product_id + " img" ).attr('src',src);
-			$('#j2store-item-main-image-'+product_id).zoom({
+			$('#j2store-item-main-image-'+product_id).elevateZoom({
 				cursor: "crosshair",
 				zoomWindowFadeIn: 500,
 				zoomWindowFadeOut: 750,

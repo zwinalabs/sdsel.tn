@@ -11,6 +11,7 @@
 
 // no direct access
 defined( '_JEXEC' ) or die( 'Restricted access' );
+$ajax_base_url = JRoute::_('index.php');
 ?>
 
 <?php if($this->params->get('show_tax_calculator', 1) && isset($this->shipping_methods) && count($this->shipping_methods)): ?>
@@ -58,7 +59,7 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 			form.find("input[type='hidden'][name='task']").val('shippingUpdate');
 
 			$.ajax({
-				url: 'index.php?option=com_j2store&view=carts&task=shippingUpdate',
+				url: '<?php echo $ajax_base_url;?>?option=com_j2store&view=carts&task=shippingUpdate',
 				type: 'get',
 				data: $('#j2store-cart-shipping-form input[type=\'hidden\'], #j2store-cart-shipping-form input[type=\'radio\']:checked'),
 				dataType: 'json',
@@ -80,15 +81,5 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 			});
 		})(j2store.jQuery);
 	}
-
-	<?php
-		// if the auto select feature is enabled then apply the first shipping when shipping is empty
-		if ($this->params->get('auto_apply_shipping_rate',0) == 1 ) {
-			if ( empty($this->shipping_values) && !empty($this->shipping_methods) && isset($this->shipping_methods[0]) ) {
-				$method = $this->shipping_methods[0];
-				?>
-				j2storeUpdateShipping('<?php echo addslashes($method['name']); ?>','<?php echo $method['price']; ?>',<?php echo $method['tax']; ?>,<?php echo $method['extra']; ?>, '<?php echo $method['code']; ?>', true );
-	<?php }
-		}	?>
 	</script>
 	<?php endif;?>

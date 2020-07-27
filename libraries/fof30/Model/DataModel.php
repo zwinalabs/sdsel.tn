@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -9,6 +9,7 @@ namespace FOF30\Model;
 
 use FOF30\Container\Container;
 use FOF30\Controller\Exception\LockedRecord;
+use FOF30\Date\Date;
 use FOF30\Event\Dispatcher;
 use FOF30\Event\Observer;
 use FOF30\Form\Form;
@@ -22,7 +23,9 @@ use FOF30\Model\DataModel\Exception\NoItemsFound;
 use FOF30\Model\DataModel\Exception\NoTableColumns;
 use FOF30\Model\DataModel\Exception\RecordNotLoaded;
 use FOF30\Model\DataModel\Exception\SpecialColumnMissing;
+use FOF30\Model\DataModel\Relation\Exception\RelationNotFound;
 use FOF30\Model\DataModel\RelationManager;
+use FOF30\Utils\ArrayHelper;
 
 defined('_JEXEC') or die;
 
@@ -131,13 +134,31 @@ class DataModel extends Model implements \JTableInterface
 	/** @var  string  The UCM content type (typically: com_something.viewname, e.g. com_foobar.items) */
 	protected $contentType = null;
 
-	/** @var  string|null  The name of the XML form to load */
+	/**
+	 * The name of the XML form to load
+	 *
+	 * @var  string|null
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
+	 */
 	protected $formName = null;
 
-	/** @var  Form[]  Array of form objects */
+	/**
+	 * Array of form objects
+	 *
+	 * @var  Form[]
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
+	 */
 	protected $_forms = array();
 
-	/** @var  array  The data to load into a form */
+	/**
+	 * The data to load into a form
+	 *
+	 * @var  array
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
+	 */
 	protected $_formData = array();
 
  	/** @var  array  Shared parameters for behaviors */
@@ -359,10 +380,12 @@ class DataModel extends Model implements \JTableInterface
 			$this->_trackAssets = true;
 		}
 
+		/**
 		if ($this->_trackAssets && array_key_exists($access_field, $this->knownFields) && !($this->getState($access_field, null)))
 		{
 			$this->$access_field = (int) $this->container->platform->getConfig()->get('access');
 		}
+		**/
 
 		$assetKey = $this->container->componentName . '.' . strtolower($container->inflector->singularize($this->getName()));
 		$this->setAssetKey($assetKey);
@@ -655,10 +678,7 @@ class DataModel extends Model implements \JTableInterface
 	 * Basically, if you find yourself using this method you are probably doing something very wrong or very advanced.
 	 * If you do not feel confident with debugging FOF code STOP WHATEVER YOU'RE DOING and rethink your Model. Why are
 	 * you using a JOIN? If you want to filter the records by a field found in another table you can still use
-	 * relations and whereHas with a callback. If you want to display data from related entries in an XML form
-	 * you can do that with relations, using the dot notation (name_from="relationName.fieldName"). If you want to do
-	 * advanced grouping of records (GROUP clauses) then allright, you can't use relations. But if you are doing this
-	 * kind of advanced stuff you needn't be reading introductory texts like this so get back to coding already!
+	 * relations and whereHas with a callback.
 	 *
 	 * @param   string  $fieldName  The name of the field
 	 * @param   mixed   $default    Default value, used by reset() (default: null)
@@ -1026,6 +1046,53 @@ class DataModel extends Model implements \JTableInterface
 		}
 
 		return $fields;
+	}
+
+	/**
+	 * Returns the qualified foreign model name, in the format "componentName.modelName", for the specified model
+	 * field. First it checks the relations you have defined. If none is found it will try to parse the field name as
+	 * following the componentName_modelName_id naming convention (FOF best practice and recommendation).
+	 *
+	 * This feature is used by the Blade compiler.
+	 *
+	 * @param   string  $fieldName  The field name for which we'll get a foreign model name
+	 *
+	 * @return  string
+	 */
+	public function getForeignModelNameFor($fieldName)
+	{
+		// First look for a local field mapped in a relationship
+		try
+		{
+			$relationMap  = $this->getRelationFields();
+			$relationName = array_search($fieldName, $relationMap);
+
+			if ($relationName !== false)
+			{
+				$model     = $this->relationManager->getRelation($relationName)->getForeignModel();
+				$component = $model->getContainer()->componentName;
+				$modelName = $model->getName();
+
+				return "$component.$modelName";
+			}
+		}
+		catch (RelationNotFound $e)
+		{
+			// Bummer. The relation cannot be found. I will fall back to parsing the field name.
+		}
+
+		// Do I have a field following the componentName_modelName_id format?
+		$parts = explode('_', $fieldName);
+		if ((substr($fieldName, -3) != '_id') || (count($parts) < 3))
+		{
+			throw new \RuntimeException("Cannot determine the foreign model for local field '$fieldName'; it does not follow the expected component_model_id convention.");
+		}
+
+		$fieldName = substr($fieldName, 0, -3);
+		list($component, $modelName) = explode('_', $fieldName, 2);
+		$modelName = $this->container->inflector->camelize($modelName);
+
+		return "$component.$modelName";
 	}
 
 	/**
@@ -1634,7 +1701,7 @@ class DataModel extends Model implements \JTableInterface
 		// Get a "count all" query
 		$db = $this->getDbo();
 		$query = $this->buildQuery(true);
-		$query->clear('select')->select('COUNT(*)');
+		$query->clear('select')->clear('order')->select('COUNT(*)');
 
 		// Run the "before build query" hook and behaviours
 		$this->triggerEvent('onBuildCountQuery', array(&$query));
@@ -2143,6 +2210,7 @@ class DataModel extends Model implements \JTableInterface
 	public function reset($useDefaults = true, $resetRelations = false)
 	{
 		$this->recordData = array();
+		$this->whereClauses = array();
 
 		foreach ($this->knownFields as $fieldName => $information)
 		{
@@ -2563,7 +2631,7 @@ class DataModel extends Model implements \JTableInterface
 	/**
 	 * Adds a behaviour by its name. It will search the following classes, in this order:
 	 * \component_namespace\Model\modelName\Behaviour\behaviourName
-	 * \component_namespace\Model\DataModel\Behaviour\behaviourName
+	 * \component_namespace\Model\Behaviour\behaviourName
 	 * \FOF30\Model\DataModel\Behaviour\behaviourName
 	 * where:
 	 * component_namespace  is the namespace of the component as defined in the container
@@ -2767,7 +2835,7 @@ class DataModel extends Model implements \JTableInterface
 		}
 
 		$db = $this->getDbo();
-		$date = new \JDate();
+		$date = new Date();
 
 		// Update the created_on / modified_on
 		if ($this->hasField('modified_on'))
@@ -2818,7 +2886,7 @@ class DataModel extends Model implements \JTableInterface
 
 		if ($this->hasField('locked_on'))
 		{
-			$date             = new \JDate();
+			$date             = new Date();
 			$locked_on        = $this->getFieldAlias('locked_on');
 			$this->$locked_on = $date->toSql(false, $db);
 		}
@@ -3744,7 +3812,7 @@ class DataModel extends Model implements \JTableInterface
 			throw new BaseException($historyTable->getError());
 		}
 
-		$rowArray = \JArrayHelper::fromObject(json_decode($historyTable->version_data));
+		$rowArray = ArrayHelper::fromObject(json_decode($historyTable->version_data));
 
 		$typeId = \JTable::getInstance('Contenttype')->getTypeId($alias);
 
@@ -3852,8 +3920,8 @@ class DataModel extends Model implements \JTableInterface
 						'dbtable' => $this->getTableName(),
 						'key'     => $this->getKeyName(),
 						'type'    => $name,
-						'prefix'  => $this->_tablePrefix,
-						'class'   => 'F0FTable',
+						'prefix'  => $this->container->getNamespacePrefix() . '\\Model\\',
+						'class'   => $this->getName(),
 						'config'  => 'array()'
 					),
 					'common' => array(
@@ -3949,6 +4017,8 @@ class DataModel extends Model implements \JTableInterface
 	 * @param   string  $formName  The abstract form file name to set, e.g. "form.default"
 	 *
 	 * @return  void
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function setFormName($formName)
 	{
@@ -3958,7 +4028,9 @@ class DataModel extends Model implements \JTableInterface
 	/**
 	 * Gets the abstract XML form file name
 	 *
-	 * @return  string  The abstract form file name to set, e.g. "form.default"
+	 * @return  string  The abstract form file name, e.g. "form.default"
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function getFormName()
 	{
@@ -3975,6 +4047,8 @@ class DataModel extends Model implements \JTableInterface
 	 * @return  Form|bool  A Form object on success, false on failure
 	 *
 	 * @since   2.0
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function getForm($data = array(), $loadData = true, $source = null)
 	{
@@ -4026,6 +4100,8 @@ class DataModel extends Model implements \JTableInterface
 	 *
 	 * @see     Form
 	 * @since   2.0
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	protected function loadForm($name, $source, $options = array(), $clear = false, $xpath = false)
 	{
@@ -4081,6 +4157,8 @@ class DataModel extends Model implements \JTableInterface
 	 * @return  array    The default data is an empty array.
 	 *
 	 * @since   2.0
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	protected function loadFormData()
 	{
@@ -4106,6 +4184,8 @@ class DataModel extends Model implements \JTableInterface
 	 * @since   2.0
 	 *
 	 * @throws  \Exception if there is an error in the form event.
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	protected function preprocessForm(Form &$form, &$data, $group = 'content')
 	{
@@ -4131,6 +4211,8 @@ class DataModel extends Model implements \JTableInterface
 	 * @see     \JFilterInput
 	 *
 	 * @since   2.0
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function validateForm($form, $data, $group = null)
 	{
@@ -4195,12 +4277,15 @@ class DataModel extends Model implements \JTableInterface
 	}
 
 	/**
-	 * Set or get the backlisted filters
+	 * Set or get the backlisted filters.
+	 *
+	 * Note: passing a null $list to get the filter blacklist is deprecated as of FOF 3.1. Pleas use getBlacklistFilters
+	 *       instead.
 	 *
 	 * @param   mixed    $list    A filter or list of filters to backlist. If null return the list of backlisted filter
 	 * @param   boolean  $reset   Reset the blacklist if true
 	 *
-	 * @return  void|array  Return an array of value if $list is null
+	 * @return  null|array  Return an array of value if $list is null
 	 */
 	public function blacklistFilters($list = null, $reset = false)
 	{
@@ -4220,6 +4305,18 @@ class DataModel extends Model implements \JTableInterface
 		}
 
 		$this->setBehaviorParam('blacklistFilters', $list);
+
+		return null;
+	}
+
+	/**
+	 * Get the blacklisted filters.
+	 *
+	 * @return  array
+	 */
+	public function getBlacklistFilters()
+	{
+		return $this->getBehaviorParam('blacklistFilters', array());
 	}
 
 	/**

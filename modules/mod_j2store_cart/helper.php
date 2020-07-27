@@ -18,6 +18,7 @@ class modJ2StoreCartHelper {
 
 	protected static $_data = null;
 	protected static $_items = null;
+	protected static $_orders = null;
 
 	public static function getItems() {
 
@@ -26,13 +27,7 @@ class modJ2StoreCartHelper {
 			$list = array();
 			$total = 0;
 
-			$j2params = J2Store::config();
-			$order = F0FModel::getTmpInstance('Orders', 'J2StoreModel')->initOrder()->getOrder();
-
-		//	$module = JModuleHelper::getModule('mod_j2store_cart');
-			// Get params and output
-		//	$params = new JRegistry($module->params);
-
+			$order = self::getOrder ();
 			$params = ModJ2StoreCartHelper::getModuleParams();
 			if($params->get('quantity_count',1) == 1){
 				$items = $order->getItems();
@@ -60,16 +55,36 @@ class modJ2StoreCartHelper {
 		return self::$_data;
 	}
 
+	public static function getOrder(){
+		if(empty( self::$_orders )){
+			self::$_orders = F0FModel::getTmpInstance('Orders', 'J2StoreModel')->initOrder()->getOrder();
+		}
+		return self::$_orders;
+	}
 	public static function getAdavcedItems(){
 
 		if (empty(self::$_items))
 		{
-			$j2params = J2Store::config();
-			$order = F0FModel::getTmpInstance('Orders', 'J2StoreModel')->initOrder()->getOrder();
-			$module = JModuleHelper::getModule('mod_j2store_cart');
+			$order = self::getOrder ();
+
 			// Get params and output
-			$params = new JRegistry($module->params);
 			$items = $order->getItems();
+
+			// fix the file name 
+			foreach($items as $item) {
+				if(isset($item->orderitemattributes) && count($item->orderitemattributes)) {
+					foreach($item->orderitemattributes as &$attribute) {
+						if($attribute->orderitemattribute_type == 'file') {
+							unset($table);
+							$table = F0FTable::getInstance('Upload', 'J2StoreTable')->getClone ();
+							if($table->load(array('mangled_name'=>$attribute->orderitemattribute_value))) {
+								$attribute->orderitemattribute_value = $table->original_name; 
+							}
+						}
+					}
+				}
+			}
+
 			self::$_items = $items;
 		}
 		return self::$_items;
@@ -79,10 +94,8 @@ class modJ2StoreCartHelper {
 	public static function getModuleParams(){
 		$db = JFactory::getDBO();
 		$query = $db->getQuery(true)->select('params')->from('#__modules')->where('module='.$db->q('mod_j2store_cart'))->where('published = 1');
-		//$query = 'SELECT params FROM #__modules WHERE module="mod_j2store_cart" and published=1';
 		$db->setQuery($query);
 		$result = $db->loadResult();
-		//$module = JModuleHelper::getModule('mod_j2store_cart');
 		// Get params and output
 		return $params = new JRegistry($result);//$module->params
 	}

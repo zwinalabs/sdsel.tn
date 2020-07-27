@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -44,8 +44,7 @@ class GetIncludedDirectories extends AbstractTask
 		}
 
 		// Set the active profile
-		$session = $this->container->session;
-		$session->set('profile', $profile);
+		$this->container->platform->setSessionVar('profile', $profile);
 
 		// Load the configuration
 		Platform::getInstance()->load_configuration($profile);

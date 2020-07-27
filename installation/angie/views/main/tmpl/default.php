@@ -1,36 +1,50 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
 
 /** @var $this AView */
 
-$document = $this->container->application->getDocument();
+$platformJSFile = APATH_INSTALLATION . '/platform/js/main.js';
+$document       = $this->container->application->getDocument();
 
 $document->addScript('angie/js/json.js');
 $document->addScript('angie/js/ajax.js');
-$document->addScript('platform/js/main.js');
+
+if (file_exists($platformJSFile) && (@filesize($platformJSFile) > 512))
+{
+	$document->addScript('platform/js/main.js');
+}
+else
+{
+	$document->addScript('angie/js/main.js');
+}
 
 $url = 'index.php';
 
-$document->addScriptDeclaration(<<<ENDSRIPT
+$document->addScriptDeclaration(<<<JS
+
 var akeebaAjax = null;
-$(document).ready(function(){
+
+akeeba.System.documentReady(function ()
+{
 	akeebaAjax = new akeebaAjaxConnector('$url');
 });
-ENDSRIPT
+JS
+
 );
 
 $document->appendButton(
-	'GENERIC_BTN_STARTOVER', 'index.php?view=main&task=startover', 'danger', 'white fire'
+	'GENERIC_BTN_STARTOVER', 'index.php?view=main&task=startover', 'red', 'fireball'
 );
 $document->appendButton(
-	'GENERIC_BTN_RECHECK', 'javascript:mainGetPage();', 'warning', 'white retweet'
+	'GENERIC_BTN_RECHECK', 'javascript:mainGetPage();', 'orange', 'loop'
 );
 
 echo $this->loadAnyTemplate('steps/buttons');
@@ -44,7 +58,7 @@ echo $this->loadAnyTemplate('steps/buttons');
 <div class="well" style="text-align: center;">
 	<h1><?php echo AText::_('MAIN_HEADER_INITIALISING') ?></h1>
 	<p>
-		<img src="template/angie/img/loading_big.gif" />
+		<img src="template/flat/image/loading_small.gif" />
 	</p>
 	<p>
 		<?php echo AText::_('MAIN_LBL_INITIALISINGWAIT') ?>

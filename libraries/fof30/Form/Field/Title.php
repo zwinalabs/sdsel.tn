@@ -1,15 +1,14 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
 namespace FOF30\Form\Field;
 
 use FOF30\Form\FieldInterface;
-use FOF30\Model\DataModel;
-use \JText;
+use JText;
 
 defined('_JEXEC') or die;
 
@@ -18,6 +17,8 @@ defined('_JEXEC') or die;
 /**
  * Form Field class for the FOF framework
  * Supports a title field with an optional slug display below it.
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
  */
 class Title extends Text implements FieldInterface
 {

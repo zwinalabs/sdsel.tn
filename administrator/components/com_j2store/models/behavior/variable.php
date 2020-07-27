@@ -68,6 +68,9 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 		if(!isset($data['product_type']) || $data['product_type'] != 'variable') return;
 		$utility_helper = J2Store::utilities();
 
+		if(!isset( $data['visibility'] )){
+			$data['visibility'] = 1;
+		}
 		if(isset($data['cross_sells'])) {
 			$data['cross_sells'] = $utility_helper->to_csv($data['cross_sells']);
 		}else{
@@ -202,6 +205,11 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 				}else{
 					$this->_rawData['additional_images'] = json_encode($this->_rawData['additional_images']);
 				}
+                if(is_object($this->_rawData['additional_images_alt'])){
+                    $this->_rawData['additional_images_alt'] = json_encode(JArrayHelper::fromObject($this->_rawData['additional_images_alt']));
+                }else{
+                    $this->_rawData['additional_images_alt'] = json_encode($this->_rawData['additional_images_alt']);
+                }
 			}
 			$this->_rawData['product_id'] = $table->j2store_product_id;
 
@@ -211,9 +219,11 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 
 			//finally run indexes to get the min - max price
 			$this->runIndexes($table);
+            if(isset($this->_rawData ['productfilter_ids'])){
+                //save product filters
+                F0FTable::getAnInstance('ProductFilter', 'J2StoreTable' )->addFilterToProduct ( $this->_rawData ['productfilter_ids'], $table->j2store_product_id );
+            }
 
-			//save product filters
-			F0FTable::getAnInstance('ProductFilter', 'J2StoreTable' )->addFilterToProduct ( $this->_rawData ['productfilter_ids'], $table->j2store_product_id );
 		}
 	}
 
@@ -289,7 +299,7 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 		try {
 			//first load master variant
 
-			$variant_table = F0FTable::getAnInstance('Variant', 'J2StoreTable');
+			$variant_table = F0FTable::getAnInstance('Variant', 'J2StoreTable')->getClone();
 			$variant_table->load(array('product_id'=>$product->j2store_product_id, 'is_master'=>1));
 			$product->variant = $variant_table;
 
@@ -388,9 +398,9 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 		$param_data->loadString($product->variant->params);
 		$main_image = $param_data->get('variant_main_image','');
 		$is_main_as_thum = $param_data->get('is_main_as_thum',0);
-		$product->main_image = isset( $main_image ) && !empty( $main_image ) ? $main_image: $product->main_image;
+		$product->main_image = isset( $main_image ) && !empty( $main_image ) ? $main_image: (isset($product->main_image) ? $product->main_image: '');
 		if($is_main_as_thum){
-			$product->thumb_image = isset( $main_image ) && !empty( $main_image ) ? $main_image: $product->thumb_image;
+			$product->thumb_image = isset( $main_image ) && !empty( $main_image ) ? $main_image: (isset($product->thumb_image) ? $product->thumb_image: '');
 		}
 		//only if the product has options and variations
 		if($product->has_options && $product->variants) {
@@ -488,7 +498,7 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 
 		//process pricing. returns an object
 		$variant->pricing = $product_helper->getPrice($variant, $quantity);
-
+        J2Store::plugin()->event('BeforeUpdateProductReturn',array(&$params,$product));
 		//prepare return values
 		$return = array();
 		$return['variant_id'] = $variant->j2store_variant_id;
@@ -513,11 +523,27 @@ class J2StoreModelProductsBehaviorVariable extends F0FModelBehavior {
 		$return['pricing'] = array();
 		$return['pricing']['base_price'] = J2Store::product()->displayPrice($variant->pricing->base_price, $product, $params);
 		$return['pricing']['price'] = J2Store::product()->displayPrice($variant->pricing->price, $product, $params);
-
+		$return ['pricing'] ['orginal'] = array();
+		$return ['pricing'] ['orginal']['base_price'] = $variant->pricing->base_price;
+		$return ['pricing'] ['orginal']['price'] = $variant->pricing->price;
+        if($variant->pricing->base_price != $variant->pricing->price){
+            $return['pricing']['class'] = 'show';
+        }else{
+            $return['pricing']['class'] = 'hide';
+        }
+        $return['pricing']['discount_text'] = '';
+        if( isset($variant->pricing->is_discount_pricing_available)) {
+            $discount = (1 - ($variant->pricing->price / $variant->pricing->base_price)) * 100;
+            if ($discount > 0){
+                $return['pricing']['discount_text'] = JText::sprintf('J2STORE_PRODUCT_OFFER',round($discount).'%');
+            }
+        }
 		//dimensions
-		$return['dimensions'] = round($variant->length,2).' x '.round($variant->height,2).' x '.round($variant->width,2).' '.$variant->length_title;
+		$return['dimensions'] = round($variant->length,2).' x '.round($variant->width,2).' x '.round($variant->height,2).' '.$variant->length_title;
 		$return['weight'] = round($variant->weight,2).' '.$variant->weight_title;
-
+		$return['weight_raw'] = round($variant->weight,2);
+		$return['weight_unit'] = $variant->weight_unit;
+        J2Store::plugin()->event('AfterUpdateProductReturn',array(&$return,$product,$params));
 		return $return;
 
 	}

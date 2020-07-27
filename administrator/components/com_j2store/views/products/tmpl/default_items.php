@@ -95,7 +95,7 @@ $this->params = J2Store::config();
 
 			</td>
 
-						<?php if($item->product_type !='variable'):?>
+                        <?php if(!in_array($item->product_type,array('variable','variablesubscriptionproduct'))):?>
 						<td><?php echo $item->sku; ?></td>
 					<td> <?php echo J2store::currency()->format($item->price); ?></td>
 					
@@ -119,7 +119,7 @@ $this->params = J2Store::config();
 							<?php endif;?>
 						<?php else:?>
 						<td colspan="4">
-							<?php if($item->product_type=='variable'):?>
+                            <?php if(in_array($item->product_type,array('variable','variablesubscriptionproduct'))):?>
 							<?php echo JText::_('J2STORE_HAS_VARIANTS'); ?>
 							<button type="button" class="btn btn-small btn-warning"
 					id="showvariantbtn-<?php echo $item->j2store_product_id;?>"

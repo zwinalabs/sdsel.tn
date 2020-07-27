@@ -11,10 +11,7 @@ defined('_JEXEC') or die;
    <div class="coupon">
 	  <!--   <form action="index.php" method="post" enctype="multipart/form-data">	  -->
 	    <?php
-	    $coupon = '';
-	    if(JFactory::getSession()->has('coupon', 'j2store')) {
-			$coupon =JFactory::getSession()->get('coupon', '', 'j2store');
-	    }
+		$coupon = F0FModel::getTmpInstance ( 'Coupons', 'J2StoreModel' )->get_coupon();
 	    ?>
 		<input type="text" name="coupon" value="<?php echo $coupon; ?>" />
 		<input type="button" onClick="applyCoupon()" value="<?php echo JText::_('J2STORE_APPLY_COUPON')?>" class="button btn btn-primary" />

@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Core;
@@ -14,7 +13,7 @@ namespace Akeeba\Engine\Core;
 // Protection against direct access
 defined('AKEEBAENGINE') or die();
 
-use Akeeba\Engine\Base\Object;
+use Akeeba\Engine\Base\BaseObject;
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Filter\Base as FilterBase;
 use Akeeba\Engine\Platform;
@@ -23,7 +22,7 @@ use Psr\Log\LogLevel;
 /**
  * Akeeba filtering feature
  */
-class Filters extends Object
+class Filters extends BaseObject
 {
 	/** @var array An array holding data for all defined filters */
 	private $filter_registry = array();
@@ -81,8 +80,7 @@ class Filters extends Object
 				}
 
 				// PHP 5.3.5 and earlier do not support getExtension
-				//if ($file->getExtension() != 'php')
-				if (substr($file->getBasename(), -4) != '.php')
+				if ($file->getExtension() != 'php')
 				{
 					continue;
 				}
@@ -95,7 +93,7 @@ class Filters extends Object
 					continue;
 				}
 
-				// Some hosts copy .ini and .php files, renaming them (ie foobar.1.php)
+				// Some hosts copy .json and .php files, renaming them (ie foobar.1.php)
 				// We need to exclude them, otherwise we'll get a fatal error for declaring the same class twice
 				$bare_name = $file->getBasename('.php');
 
@@ -173,7 +171,7 @@ class Filters extends Object
 					continue;
 				}
 
-				// Some hosts copy .ini and .php files, renaming them (ie foobar.1.php)
+				// Some hosts copy .json and .php files, renaming them (ie foobar.1.php)
 				// We need to exclude them, otherwise we'll get a fatal error for declaring the same class twice
 				$bare_name = strtolower($file->getBasename('.php'));
 
@@ -196,8 +194,8 @@ class Filters extends Object
 					continue;
 				}
 
-				// Make sure the INI file also exists
-				if ( !file_exists($folder . '/' . $bare_name . '.ini'))
+				// Make sure the JSON file also exists
+				if ( !file_exists($folder . '/' . $bare_name . '.json'))
 				{
 					continue;
 				}
@@ -422,4 +420,15 @@ class Filters extends Object
 		return false;
 	}
 
+	/**
+	 * Resets all filters, reverting them to a blank state
+	 *
+	 * @return  void
+	 *
+	 * @since   5.4.0
+	 */
+	public function reset()
+	{
+		$this->filter_registry = array();
+	}
 }

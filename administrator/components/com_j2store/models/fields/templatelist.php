@@ -52,14 +52,19 @@ class JFormFieldTemplateList extends JFormFieldList {
 		{
 			$folders = $componentFolders;
 		}
-
-		$exclude = 'default';
+		$exclude_array = array(
+			'tag',
+			'default'
+		);
+		//$exclude = 'default';
 		$options = array();
 		foreach ($folders as $folder)
 		{
-			if (preg_match(chr(1).$exclude.chr(1), $folder))
-			{
-				continue;
+			foreach ($exclude_array as $exclude){
+				$substring = substr ( $folder,0,strlen ( $exclude )  );
+				if($substring == $exclude){
+					continue 2;
+				}
 			}
 			if($folder != 'tmpl') {
 				$options[] = JHTML::_('select.option', $folder, $folder);
@@ -67,7 +72,6 @@ class JFormFieldTemplateList extends JFormFieldList {
 		}
 
 		array_unshift($options, JHTML::_('select.option', 'default', JText::_('J2STORE_USE_DEFAULT')));
-
 		return JHTML::_('select.genericlist', $options, $fieldName, 'class="inputbox"', 'value', 'text', $this->value, $this->control_name.$this->name);
 	}
 

@@ -1,7 +1,16 @@
 <?php
 /**
+ * Akeeba Engine
+ * The PHP-only site backup engine
+ *
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   GNU GPL version 3 or, at your option, any later version
+ * @package   akeebaengine
+ */
+
+/**
  * @package     Awf
- * @copyright   2014-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 3 or later
  *
  * This class is adapted from the Joomla! Framework
@@ -9,8 +18,8 @@
 
 namespace Akeeba\Engine\Driver\Query;
 
-use Awf\Database\QueryLimitable;
-use Awf\Database\QueryPreparable;
+// Protection against direct access
+defined('AKEEBAENGINE') or die();
 
 /**
  * SQLite Query Building Class.

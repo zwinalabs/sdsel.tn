@@ -1,4 +1,316 @@
 <?php die();?>
+Akeeba Backup 6.4.2.1
+================================================================================
+! Backup over CLI was broken (the previous fix didn't cover another, less common, failure reason)
+
+Akeeba Backup 6.4.2
+================================================================================
+! Backup over CLI was broken
+# [HIGH] Path browser does not work on Windows
+
+Akeeba Backup 6.4.1
+================================================================================
+~ Joomla! 4 alpha 7 compatibility
++ Support for PDO PostgreSQL database driver (this code was submitted by a third party developer)
++ Allow Site Transfer Wizard to ignore free disk space requirements
++ Added BackupID in the failed backups email notifications
+# [HIGH] Upload to Azure: incompatible with HTTP/2
+
+Akeeba Backup 6.4.0
+================================================================================
++ Protection of all component and plugin folders against direct web access
+# [HIGH] Google Storage JSON API could not download files when the path or filename contained spaces
+# [HIGH] Google Storage would create large files with %2F in the filename instead of using subdirectories (the Google API documentation was, unfortunately, instructing us to do something wrong)
+# [LOW] Some character combinations in configuration values (e.g. \$) could get changed or removed upon saving
+# [LOW] Google Storage would not work on hosts which disable parse_ini_string()
+
+Akeeba Backup 6.3.3
+================================================================================
++ Added new Stockholm region for Amazon S3 post-processing engine
+# [LOW] Fixed fatal error when two users are deleting the same backup at the same time
+
+Akeeba Backup 6.3.2
+================================================================================
++ Added integration with Joomla! User Actions Log component
+# [MEDIUM] Fixed importing backup archives from Amazon S3
+# [LOW] cannot finish restoring when you have two or more off-site folders
+# [LOW] CLI Backups could fail if PHP cannot report the current working directory and you're using [SITEROOT] followed by a folder name which is not preceded by a slash (extremely rare)
+
+Akeeba Backup 6.3.1
+================================================================================
+~ Workaround for buggy cURL versions breaking Google Drive uploads
+~ Site Transfer Wizard: detect and report wrong DNS setup and invalid SSL certifications instead of a generic error
+# [HIGH] Site Transfer Wizard: uploading the backup archive through FTP/SFTP had mulitple issues preventing its operation
+# [MEDIUM] Restoration: Invalid redirection after deleting the installation directory when not using Kickstart or the integrated restoration
+# [LOW] We should no longer attempt to load the obsolete Encryption.min.js file
+
+Akeeba Backup 6.3.0
+================================================================================
++ Support for Application Keys in BackBlaze B2
++ Added new filter to exclude User Action Logs from the backup (Joomla 3.9+ only)
++ New look and feel for the backup restoration script (ANGIE)
+~ Always enable multipart uploads in Google Drive 
+~ OneDrive: do not disable multipart uploads when the option to upload part files immediately after their creation is enabled
+~ Google Storage (JSON API): do not disable multipart uploads when the option to upload part files immediately after their creation is enabled
+~ Dropbox: do not disable multipart uploads when the option to upload part files immediately after their creation is enabled
+# [HIGH] Upload to DreamObjects: the Cluster setting had no effect
+# [HIGH] Uploading multiple parts to CloudFiles results in files stored in the wrong location
+# [MEDIUM] Cannot delete files stored on BackBlaze
+# [MEDIUM] Google Drive fails to upload files larger than 5MB and smaller than the part size
+# [MEDIUM] Kickstart (used in Site Transfer Wizard) showed untranslated strings
+# [MEDIUM] OneDrive download to browser does not work when the tokens have expired
+# [LOW] Fixed JavaScript issues when Content-Security-Policy header is missing the unsafe-eval value
+# [LOW] PHP 7.3 warning in the Control Panel page
+# [LOW] Sometimes media folder permissions may not be detected correctly
+
+Akeeba Backup 6.2.1
+================================================================================
+! Missing language strings in the restoration script (ANGIE)
+
+Akeeba Backup 6.2.0
+================================================================================
++ Support for DreamObjects' new US East cluster
++ Use automatically provisioned temporary Amazon S3 credentials when running inside an Amazon EC2 instance with an attached IAM Role
++ Option to delete everything before restoring a backup archive. Please read the documentation before enabling and using it.
+- Removing OneDrive for Business support. Microsoft's documentation is wrong and the integration only worked with the one test account we used - and it stopped working after release of version 6.1.2. This feature will NOT be revisited.
+# [HIGH] Uploading to Google Drive, Dropbox, OneDrive or Google Storage (JSON API) would fail if chunked uploads were enabled but the uploaded file was smaller than the selected chunk size.
+# [HIGH] Some multipart ZIP files would result in an infinite loop
+# [MEDIUM] Cannot fetch back or delete files stored in a Google Team Drive
+# [MEDIUM] Using Hybrid mode for restoration had no effect (worked like direct file writes)
+# [MEDIUM] Google Storage (JSON API) creates problematic file name when saving files to the bucket's root
+# [LOW] Suppress open_basedir warning on parent of web root folder
+# [LOW] ANGIE: Warnings issued on empty message queue
+# [LOW] Cosmetic: PHP 7.2 warning on Manage Backups page with single part backups
+
+Akeeba Backup 6.1.2
+================================================================================
++ Added support for Google Team Drives
++ Manage One-click Backup Icon status from the Profiles page
+# [MEDIUM] Testing the FTP / SFTP connection was unreliable when using the cURL transport options
+# [MEDIUM] JPS secret key was not applied on backups started from backend
+# [MEDIUM] ANGIE secret key was not applied on backups started from backend
+# [HIGH] DirectSFTP over cURL did not work due to wrong class name
+
+Akeeba Backup 6.1.1
+================================================================================
++ Added support for new Amazon S3 regions: Canada, Mumbai, Seoul, Osaka-Local, Ningxia, London, Paris
++ OneDrive for Business support
++ OVH cloud storage support
++ OpenStack Swift support
+# [LOW] DirectFTP and Upload to FTP create folders with 0744 instead of 0755 permissions
+
+Akeeba Backup 6.1.0
+================================================================================
++ Support for Amazon S3 OneZone-IA (single zone, infrequent access) storage class
++ Revamped Site Transfer Wizard, with more options to improve compatibility with more servers
+# [HIGH] Links pointing outside open_basedir restrictions cause a PHP Fatal error, halting the backup
+# [MEDIUM] Installer (ANGIE) language files not included in the backup
+# [MEDIUM] Default backup file permissions should be 0644, not 0755
+# [MEDIUM] Fixed folder scanning when a file is inaccessible due to open_basedir restrictions
+# [LOW] The View Log link displayed after backup is broken when the backup completes in a single page load
+# [LOW] The Site Transfer Wizard uses the wrong color labels
+# [LOW] The Site Transfer Wizard interface works erratically
+
+Akeeba Backup 6.0.1
+================================================================================
++ Warn the user if either FOF or FEF is not installed
++ While importing backup archives, they are now sorted alphabetically
+# [HIGH] Site Transfer Wizard: browser-specific BUTTON element behavior prevents using this feature in Firefox
+# [LOW] Inadvertent space between domain and path in the Schedule page
+
+Akeeba Backup 6.0.0
+================================================================================
+# [LOW] Fixed warning message during the installation due to missing folders
+
+Akeeba Backup 6.0.0.b1
+================================================================================
++ Rewritten interface using our brand new Akeeba Frontend Framework
++ Preliminary Joomla! 4.0 support
+# [MEDIUM] Fixed connection issue to the database when certain hostnames are used (named pipes)
+# [LOW] The kicktemp folder and the kickstart.transfer.php file were not removed after Site Transfer Wizard had finished
+# [LOW] The Transfer Wizard may select a chunk size which is too big for the target server
+# [LOW] Using the Site Transfer Wizard may result in a "wordpress" folder being left behind on some servers with a broken FTP server (technically a bug with your FTP server; we had to remove a minor feature to work around it)
+# [LOW] Add-on ANGIE language files would not be included in the backup archive
+# [LOW] Leftover empty file after the end of the Configuration Wizard run
+
+Akeeba Backup 5.6.4
+================================================================================
+# [LOW] Add-on ANGIE language files would not be included in the backup archive
+
+Akeeba Backup 5.6.3
+================================================================================
+! Some JavaScript files had a zero size in the 5.6.2 package
+
+Akeeba Backup 5.6.1 & 5.6.2
+================================================================================
+! Missing language strings (fixed in 5.6.2)
++ Display info about exceptions and PHP 7+ fatal errors in the backend
++ BackBlaze B2 integration (Pro only)
+~ PHP 7.2 compatibility: renaming Object class to BaseObject
+~ Update Dropbox API with the new "_v2" endpoints where applicable
+~ JSON API stepBackup: now enforcing the check for the MANDATORY parameter "backupid"
+# [MEDIUM] Backing up to JPS with a static salt using the JSON API would always fail
+# [MEDIUM] "Apply to all" filter button does not work due to a Javascript issue
+# [LOW] Core version: some post-processing options were displayed even though the code to make them work was not present.
+# [LOW] The ANGIE Password option in Configuration and Backup Now pages didn't show up in the Core release
+# [LOW] Calendar fields did not display the month due to a Joomla! 3.7+ CSS-related bug
+# [LOW] Programmatically triggering mouse events could fail in some browsers, e.g. newer versions of Firefox
+# [LOW] WebDav post-processing: Fixed issue with hosts without a valid certificate file and SSL connections
+# [LOW] Backup On Update was available on Pro version only. Now it's available in the Core version, too.
+
+Akeeba Backup 5.6.0
+================================================================================
++ Added warning if HHVM instead of PHP is used
++ Added variables for timezone information: [TIME_TZ], [TZ], [TZ_RAW], [GMT_OFFSET]
++ Backup Timezone: force all date / time variables to be expressed in a fixed timezone during backup (gh-626)
++ Clicking on "Reload update information" will fix Joomla! erroneously reporting an update is available when you have the latest version installed
++ Display the Secret Word unencrypted in the component's Options page (required for you to easily set up third party services)
+~ Updates now use HTTPS URLs for both the XML update stream and the package download itself
+# [LOW] Save & New button in the Configuration page didn't work correctly
+# [LOW] Editing RegEx filters creates a new entry, doesn't edit in place (gh-623)
+# [LOW] Repeated messages in the JavaScript console after editing a filter in Tabular or RegEx views (gh-625)
+
+Akeeba Backup 5.5.2
+================================================================================
+! [SECURITY] Settings encryption key was neither cryptographically random or big enough. Now changed to 64 crypto-safe random bytes.
+! [SECURITY] Secret Word for front-end and JSON backups is now stored encrypted in the database (as long as settings encryption in the application's Options is NOT disabled and your server supports encryption).
+! [SECURITY] Improved internal authentication in restore.php makes brute forcing the restoration takeover a few dozen orders of magnitude harder.
+- [SECURITY ADVICE] ANGIE will no longer lock its session to prevent information leaks. Please always use the ANGIE Password feature.
+~ [SECURITY] akeeba-altbackup.php: verify SSL certificates by default. Use --no-verify command line option to revert to the old behavior.
+~ Work around broken MijoShop plugin causing an error in Joomla's backend when the System - Backup on Update plugin is enabled.
+# [HIGH] Editing two or more Multiple Databases definitions consecutively would overwrite all of them with the settings of the last definition saved
+# [HIGH] Disabling decryption can lead to loss of current settings
+# [LOW] "_QQ_" shown during restoration instead of double quotes
+# [LOW] Removed MB label from count quota
+# [LOW] ANGIE: restoring sites served by a server cluster could result in "random" errors due to session handling being tied to the server IP
+
+Akeeba Backup 5.5.1
+================================================================================
+! The System - Backup on Update plugin may cause an error accessing the backend on some sites
+
+Akeeba Backup 5.5.0
+================================================================================
++ Prevent simultaneous use of ANGIE (restoration script) from two or more people / browsers
++ Workaround for Joomla! bug "Sometimes files are not copied on update"
++ Alphabetical sorting of engines and installation scripts in the Configuration page
++ Backup on Update: Show the status in the backend status bar (footer), with the ability to quickly toggle it off
++ Support for Google Storage native JSON API
+~ ANGIE for Joomla (restoration): Use alternate method to read the site's configuration, preventing PHP errors from getting in the way
+# [HIGH] Cannot change database prefix on restoration if the backup was taken with No Dependency Tracking enabled
+# [MEDIUM] Double slashes in the WebDAV path cause 0 byte uploads on some servers
+# [MEDIUM] Version information not loaded correctly (thanks Joe F.!)
+# [LOW] Notice thrown converting memory_limit to bytes under PHP 7.1
+# [LOW] Workaround for Joomla! bug 16147 (https://github.com/joomla/joomla-cms/issues/16147) - Cannot access component after installation when cache is enabled
+
+Akeeba Backup 5.4.0
+================================================================================
+# [HIGH] Resuming after error was broken when using the file storage for temporary files (default)
+# [MEDIUM] Errors when reading the backup engine's state were not reported, causing the backup to seem like it runs forever
+# [MEDIUM] Database storage wouldn't report the lack of stored engine state, potentially causing forever stuck backups
+# [MEDIUM] Blank page if you delete all backup profiles from the database (a default backup profile could not be created in this case)
+# [MEDIUM] Errors always result in the resume pane being shown, no matter what your settings are
+# [LOW] The Warnings pane was always displayed following resuming from a backup error
+# [LOW] The How to Restore modal would get in the way unless you chose to not be reminded again
+
+Akeeba Backup 5.4.0.b1
+================================================================================
+! Yet another BIG Joomla! 3.7.0 bug throws an exception when using the CLI backup under some circumstances.
+! Yet another BIG Joomla! 3.7.0 bug kills the front-end and remote backup when you are using the System - Page Cache plugin.
+- Removing the automatic update CLI script. Joomla! 3.7.0 can no longer execute extension installation under a CLI application.
+# [HIGH] PHP Fatal Error if the row batch size leads to an amount of data that exceeds free PHP memory
+# [HIGH] Large database records can cause an infinitely growing runaway backup or, if you're lucky, a backup crash due to exceeding PHP time limits.
+# [MEDIUM] Database hostname localhost:3306 leads to connection error under some circumstances. Note that this hostname is wrong: you should use localhost without a port instead!
+# [MEDIUM] Logic error leads to leftover temporary database dump files in the backup output directory under some circumstances
+# [LOW] The wrong message is shown by ANGIE when performing an integrated restoration through Akeeba Backup for Joomla!
+# [LOW] Wouldn't show up in the Joomla! 3.7 new backend menu type selection dialog
+# [LOW] FTP/SFTP over cURL uploads would fail if the remote directory couldn't be created
+
+Akeeba Backup 5.3.4
+================================================================================
+# [MEDIUM] Integrated restoration leads to an error message about the file extension being wrong
+
+Akeeba Backup 5.3.3
+================================================================================
+! The workaround to Joomla! 3.7's date bugs could cause a blank / error page (with an error about double timezone) under some circumstances.
+! Joomla! 3.7.0 broke backwards compatibility again, making CLI scripts fail.
+! Joomla! 3.7.0 broke the JDate package, effectively ignoring timezones, causing grave errors in date / time calculations and display
+~ Workaround for badly configured servers which print out notices before we have the chance to set the error reporting
+~ Control Panel: Display the backup date/time in the user's timezone
+~ Default backup description in the component backend includes the date / time in the user's local timezone instead of GMT
+~ Date and time shown in Site Transfer Wizard is in the user's local timezone instead of GMT
+# [LOW] Joomla! 3.7 added a fixed width to specific button classes in the toolbar, breaking the page layout
+
+Akeeba Backup 5.3.2
+================================================================================
+! Joomla! 3.7.0 broke backwards compatibility again, making CLI scripts fail.
+! Joomla! 3.7.0 broke the JDate package, effectively ignoring timezones, causing grave errors in date / time calculations and display
+~ Workaround for badly configured servers which print out notices before we have the chance to set the error reporting
+~ Control Panel: Display the backup date/time in the user's timezone
+~ Default backup description in the component backend includes the date / time in the user's local timezone instead of GMT
+~ Date and time shown in Site Transfer Wizard is in the user's local timezone instead of GMT
+# [LOW] Joomla! 3.7 added a fixed width to specific button classes in the toolbar, breaking the page layout
+
+Akeeba Backup 5.3.1
+================================================================================
+# [HIGH] Integrated restoration: clicking Run the Installer does nothing; you can still run the installer manually
+# [HIGH] Archive integrity and restoration of JPS archives fails (the archive is valid, it's the extraction script that's the problem).
+# [HIGH] The "Replace main .htaccess with default" feature, enabled by default, causes the restoration to fail.
+# [LOW] Restoration was not removing password protection from the administrator folder even if requested to
+
+Akeeba Backup 5.3.0
+================================================================================
+! SECURITY: Workaround for MySQL security issue CVE-2016-5483 (https://blog.tarq.io/cve-2016-5483-backdooring-mysqldump-backups/) affecting SQL-only backups. This is a security issue in MySQL itself, not our backup engine. Full site backups / restoration were NOT affected.
++ You can use multiple PushBullet tokens to notify multiple accounts
+# [MEDIUM] gh-619 "Invalid upload ID specified" when trying to re-upload backup to remote storage from the Manage Backups page
+# [HIGH] PHP's memory_limit given in bytes (e.g. 134217728 instead of 128M) prevent the backup from running
+# [LOW] How To Restore modal in Manage Backups appearing halfway outside the page if your computer is a bit too fast
+
+Akeeba Backup 5.3.0.b1
+================================================================================
++ Add support for Canada (Montreal) Amazon S3 region
++ Add support for EU (London) Amazon S3 region
++ Add support for Joomla! 3.7's new administrator menu manager
++ Support for JPS format v2.0 with improved password security
++ Hide action icons based on the user's permissions
+~ Permissions are now more reasonably assigned to different views
+~ Now using the Reverse Engineering database dump engine when a Native database dump engine is not available (PostgreSQL, Microsoft SQL Server, SQLite)
+# [MEDIUM] The web.config file introduced in Akeeba Backup 3.3 was removed from the backup output directory
+# [MEDIUM] Infinite recursion if the current profile doesn't exist
+# [MEDIUM] Views defined against fully qualified tables (i.e. including the database name) could not be restored on a database with a different name
+# [LOW] The unit of measurement was not displayed in the Configuration page
+
+Akeeba Backup 5.2.5
+================================================================================
+# [HIGH] Trailing slashes in the Directory name would cause donwloading a backup back from Dropbox to fail
++ Alternative FTP post-processing engine and DirectFTP engine using cURL providing better compatibility with misconfigured and broken FTP servers
++ Alternative SFTP post-processing engine and DirectSFTP engine using cURL providing compatibility with a wide range of servers
+~ Anticipate and report database errors in more places while backing up MySQL databases
+~ Do not show the JPS password field in the Restoration page when not restoring JPS archives
+# [HIGH] Site Transfer Wizard does not work with single part backup archives
+# [HIGH] Outdated, end-of-life PHP 5.4.4 in old Debian distributions has a MAJOR bug resulting in file data not being backed up (zero length files). We've rewritten our code to work around the bug in this OLD, OUTDATED, END-OF-LIFE AND INSECURE version of PHP. PLEASE UPGRADE YOUR SERVERS. OLD PHP VERSIONS ARE **DANGEROUS**!!!
+# [MEDIUM] Dumping VIEW definers in newer MySQL versions can cause restoration issues when restoring to a new host
+# [MEDIUM] Dropbox: error while fetching the archive back from the server
+# [MEDIUM] Error restoring procedures, functions or triggers originally defined with inline MySQL comments
+# [LOW] Folders not added to archive when both their subdirectories and all their files are filtered.
+# [LOW] ALICE would display many false positives in the old backups detection step
+# [LOW] The quickicon plugin was sometimes not sure which Akeeba Backup version is installed on your site
+# [LOW] The "No Installer" option was accidentally removed
+
+Akeeba Backup 5.2.4
+================================================================================
++ ALICE: Added check about old backups being included in the backup after changing your backup output directory
++ JSON API: export and import a profile's configuration
+# [HIGH] Changes in Joomla 3.6.3 and 3.6.4 regarding Two Factor Authentication setup handling could lead to disabling TFA when restoring a site
+# [HIGH] Javascript error when using on sites with the sequence "src" in their domain name
+# [HIGH] Site Transfer Wizard fails on sites with too much memory or very fast connection speeds to the target site
+# [MEDIUM] In several instances there was a typo declaring 1Mb = 1048756 bytes instead of the correct 1048576 bytes (1024 tiems 1024). This threw off some size calculations which, in extreme cases, could lead to backup failure.
+# [MEDIUM] Obsolete records quota was applied to all backup records, not just the ones from the currently active backup profile
+# [MEDIUM] Obsolete records quota did not delete the associated log file when removing an obsolete backup record
+# [MEDIUM] The backup quickicon plugin would always deactivate itself upon first use
+# [MEDIUM] Infinite loop creating part size in rare cases where the space left in the part is one byte or less
+# [LOW] Fixed ordering in Manage Backups page
+# [LOW] Fixed removing One Click backup flag
+
 Akeeba Backup 5.2.3
 ================================================================================
 + ANGIE: Prevent direct web access to the installation/sql directory
@@ -42,7 +354,7 @@ Akeeba Backup 5.1.3
 + Automatically handle unsupported database storage engines when restoring MySQL databases
 + Help buttons everywhere. No more excuses for not reading the fine manual.
 # [HIGH] Failure to upload to newly created Amazon S3 buckets
-# [MEDIUM] Import from S3 didn't work with API v4-only regions (Frankfurt, São Paulo)
+# [MEDIUM] Import from S3 didn't work with API v4-only regions (Frankfurt, S??o Paulo)
 # [LOW] The [WEEKDAY] variable in archive name templates returned the weekday number (e.g 1) instead of text (e.g. Sunday)
 # [LOW] Deleting the currently active profile would cause a white page / internal server error
 # [LOW] Chrome and other misbehaving browsers autofill the database username/password, leading to restoration failure if you're not paying very close attention. We are now working around these browsers.

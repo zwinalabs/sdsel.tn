@@ -42,7 +42,8 @@ class J2StoreModelInventories extends F0FModel {
 		$this->_buildQueryOrderBy($query);
 		$query->group('#__j2store_products.j2store_product_id');
 		//$query->group('#__j2store_productquantities.variant_id');
-		J2Store::plugin()->event('AfterStockProductListQuery', array(&$query, &$this));
+        $model = $this;
+		J2Store::plugin()->event('AfterStockProductListQuery', array(&$query, &$model));
 		return $query;
 
 	}
@@ -56,8 +57,20 @@ class J2StoreModelInventories extends F0FModel {
 		$query->join('INNER','#__j2store_products ON #__j2store_products.j2store_product_id = #__j2store_variants.product_id');
 	}
 
-	public function _buildWhereQuery($query){
+	public function _buildWhereQuery(&$query){
+        $db = JFactory::getDbo();
+		$inventry = $this->getState ('inventry_stock','');
+		if($inventry == 'in_stock'){
+			$query->where('#__j2store_variants.availability = 1');
+		}
+		if($inventry == 'out_of_stock'){
+			$query->where('#__j2store_variants.availability = 0');
+		}
 
+		$search = $this->getState('search','');
+		if($search){
+            $query->where('#__j2store_variants.sku LIKE '.$db->q('%'.$search.'%'));
+        }
 	}
 
 	public function _buildQueryOrderBy($query){

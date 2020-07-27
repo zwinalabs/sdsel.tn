@@ -69,47 +69,47 @@ class J2StoreControllerProductsBase extends F0FController
 	 * Method to get Related products
 	 *
 	 */
-	public function getRelatedProducts(){
+    public function getRelatedProducts(){
 
-		$app = JFactory::getApplication();
-		$db = JFactory::getDbo();
-		$q = $app->input->post->getString('q');
-		$ignore_product_id = $app->input->getInt('product_id');
-		$json = array();
-		$model = $this->getModel('Products');
-		$model->setState('search', $q);
-		$query = $db->getQuery(true);
-		$query->select('#__j2store_products.j2store_product_id')->from("#__j2store_products as #__j2store_products");
-		$query->join ( 'LEFT', '#__j2store_variants AS v ON v.product_id=#__j2store_products.j2store_product_id' );
-		$query->select('v.sku');
-		$query->where('v.is_master=1');
-		$query->where('#__j2store_products.enabled=1');
-		$query->where('#__j2store_products.visibility=1');
-		$query->where('#__j2store_products.j2store_product_id !=' .$db->q($ignore_product_id));
+        $app = JFactory::getApplication();
+        $db = JFactory::getDbo();
+        $q = $app->input->post->get('q', '','string');
+        $ignore_product_id = $app->input->getInt('product_id');
+        $json = array();
+        $model = $this->getModel('Products');
+        $model->setState('search', $q);
+        $query = $db->getQuery(true);
+        $query->select('#__j2store_products.j2store_product_id')->from("#__j2store_products as #__j2store_products");
+        $query->join ( 'LEFT', '#__j2store_variants ON #__j2store_variants.product_id=#__j2store_products.j2store_product_id' );
+        $query->select('#__j2store_variants.sku');
+        $query->where('#__j2store_variants.is_master=1');
+        $query->where('#__j2store_products.enabled=1');
+        $query->where('#__j2store_products.visibility=1');
+        $query->where('#__j2store_products.j2store_product_id !=' .$db->q($ignore_product_id));
 
-		J2Store::plugin()->importCatalogPlugins();
-		JFactory::getApplication()->triggerEvent('onJ2StoreAfterProductListQuery',array(&$query ,&$model));
-		//echo $query;
-		$db->setQuery($query);
-		$items = $db->loadObjectList();
-		$result = array();
-		if(isset($items) && !empty($items)){
-			foreach ($items as $key=>$item) {
-				  if($item->product_name){
-					$result[$key]['j2store_product_id'] = $item->j2store_product_id;
-					$product_name = $item->product_name;
+        J2Store::plugin()->importCatalogPlugins();
+        JFactory::getApplication()->triggerEvent('onJ2StoreAfterProductListQuery',array(&$query ,&$model));
+        //echo $query;
+        $db->setQuery($query);
+        $items = $db->loadObjectList();
+        $result = array();
+        if(isset($items) && !empty($items)){
+            foreach ($items as $key=>$item) {
+                if($item->product_name){
+                    $result[$key]['j2store_product_id'] = $item->j2store_product_id;
+                    $product_name = $item->product_name;
 
-					if(!empty($item->sku)){
-						$product_name .= "(".$item->sku.")";
-					}
-					$result[$key]['product_name'] = $product_name;
-			  	}
-			}
-		}
-		$json['products'] = $result;
-		echo json_encode($json);
-		$app->close();
-	}
+                    if(!empty($item->sku)){
+                        $product_name .= "(".$item->sku.")";
+                    }
+                    $result[$key]['product_name'] = $product_name;
+                }
+            }
+        }
+        $json['products'] = $result;
+        echo json_encode($json);
+        $app->close();
+    }
 
 	/**
 	 * Method to set productoptionvalues
@@ -130,7 +130,6 @@ class J2StoreControllerProductsBase extends F0FController
 		//to get Item
 		//$model->setId($productoption_id);
 		$product_option = F0FModel::getTmpInstance('ProductOption' ,'J2StoreModel')->getItem($productoption_id);
-
 		//get all the optionvalues matching the option id
 		$option_values =  F0FModel::getTmpInstance('Optionvalues','J2StoreModel')->option_id($product_option->option_id)->getList();
 
@@ -155,6 +154,38 @@ class J2StoreControllerProductsBase extends F0FController
 		$view = $this->display();
 	}
 
+	public function addAllOptionValue(){
+		$app = JFactory::getApplication();
+		//get product option id
+		$productoption_id = $app->input->getInt('productoption_id', 0);
+
+		$product_option = F0FModel::getTmpInstance('ProductOption' ,'J2StoreModel')->getItem($productoption_id);
+		//get all the optionvalues matching the option id
+		$option_values =  F0FModel::getTmpInstance('Optionvalues','J2StoreModel')->option_id($product_option->option_id)->getList();
+
+		foreach ($option_values as $option_value){
+			$product_option_value = array(
+				'productoption_id' => $productoption_id,
+				'optionvalue_id' => $option_value->j2store_optionvalue_id,
+				'parent_optionvalue' => '',
+				'product_optionvalue_price' => 0,
+				'product_optionvalue_prefix' => '+',
+				'product_optionvalue_weight' => 0,
+				'product_optionvalue_weight_prefix' => '+',
+				'product_optionvalue_sku' => '',
+				'product_optionvalue_default' => '',
+				'ordering' => 0,
+				'product_optionvalue_attribs'=> '{}'
+			);
+			$poptionvalue = F0FTable::getAnInstance('Productoptionvalue','J2StoreTable')->getClone ();
+			$poptionvalue->bind ( $product_option_value );
+			$poptionvalue->store ();
+		}
+		$json = array();
+		$json['success'] = true;
+		echo json_encode ( $json );
+		$app->close ();
+	}
 
 	/**
 	 * Method to setparent optionvalues
@@ -231,11 +262,18 @@ class J2StoreControllerProductsBase extends F0FController
 				$data['parent_optionvalue'] = implode(',',$data['parent_optionvalue']);
 			}
 		}
+
+		$product_option = F0FTable::getAnInstance('ProductOption','J2StoreTable');
+		$product_option->load($data['productoption_id']);
 		$poptionvalue = F0FTable::getAnInstance('Productoptionvalue','J2StoreTable');
 		//$url = "index.php?option=com_j2store&view=products&task=setproductoptionvalues&productoption_id=".$data['productoption_id']."&layout=productoptionvalues&tmpl=component";
 		$url ="index.php?option=com_j2store&view=products&task=setproductoptionvalues&product_id=".$data['product_id']."&productoption_id=".$data['productoption_id']."&layout=productoptionvalues&tmpl=component";
 		$msgType ="Message";
 		$msg = JText::_('J2STORE_PRODUCT_OPTION_SAVED_SUCCESSFULLY');
+		
+		if(isset( $product_option->is_variant ) && $product_option->is_variant){
+			$data['product_optionvalue_price'] = 0;
+		}
 		if(!$poptionvalue->save($data)){
 			$msgType ="Warning";
 			$msg = $poptionvalue->getError();
@@ -256,9 +294,11 @@ class J2StoreControllerProductsBase extends F0FController
 		$url ="index.php?option=com_j2store&view=products&task=setproductoptionvalues&product_id=".$product_id."&productoption_id=".$poption_id."&layout=productoptionvalues&tmpl=component";
 		$msgType ="Message";
 		$msg = '';
-
+		
+		$product_option = F0FTable::getAnInstance('ProductOption','J2StoreTable');
+		$product_option->load($poption_id);
 		foreach($data['jform']['poption_value'] as $povalue_item){
-			$poptionvalue = F0FTable::getAnInstance('Productoptionvalue','J2StoreTable');
+			$poptionvalue = F0FTable::getAnInstance('Productoptionvalue','J2StoreTable')->getClone ();
 			if(isset($povalue_item['parent_optionvalue'])){
 				$povalue_item['parent_optionvalue'] = implode(',',$povalue_item['parent_optionvalue']);
 			}
@@ -266,12 +306,18 @@ class J2StoreControllerProductsBase extends F0FController
 			if( isset($povalue_item['product_optionvalue_attribs']) && !empty($povalue_item['product_optionvalue_attribs'])){
 				$povalue_item['product_optionvalue_attribs']=$povalue_item['product_optionvalue_attribs'];
 			}
+			if(isset( $product_option->is_variant ) && $product_option->is_variant){
+				$povalue_item['product_optionvalue_price'] = 0;
+			}
 
 			if(!$poptionvalue->save($povalue_item)){
 				$msg .= $poptionvalue->getError();
 				$msgType = 'notice';
 				$error = true;
-			}
+			}else{
+			    //
+                J2Store::plugin()->event('AfterProductOptionValueSave',array($data));
+            }
 		}
 		if ($error)
 		{
@@ -393,18 +439,22 @@ class J2StoreControllerProductsBase extends F0FController
 			$data['date_to'] = $nullDate;
 		}
 
-		$variant = F0FTable::getAnInstance('Variant','J2StoreTable');
+		$variant = F0FTable::getAnInstance('Variant','J2StoreTable')->getClone();
 		$variant->load(array('product_id' => $product_id));
 
-		$price = F0FTable::getAnInstance('ProductPrice','J2StoreTable');
+		$price = F0FTable::getAnInstance('ProductPrice','J2StoreTable')->getClone();
 
 		$msg =JText::_('J2STORE_PRODUCT_PRICE_SAVED_SUCCESSFULLY');
 		$msgType = "Message";
 		$url ="index.php?option=com_j2store&view=products&task=setproductprice&product_id=".$product_id."&variant_id=".$variant_id."&layout=productpricing&tmpl=component";
 		$data['variant_id'] = $variant_id;
+        
 		if(!$price->save($data)){
-			$msg =JText::_('J2STORE_PRODUCT_PRICE_ERROR_IN_SAVING_PRICE');
-			$msgType = "Warning";
+		    $errors = $price->getErrors();
+		    if(count($errors) > 0){
+                $msg = JText::_('J2STORE_PRODUCT_PRICE_ERROR_IN_SAVING_PRICE');
+                $msgType = "Warning";
+            }
 		}
 		JFactory::getApplication()->redirect($url,$msg,$msgType);
 	}
@@ -956,7 +1006,7 @@ class J2StoreControllerProductsBase extends F0FController
 
 			if ( !empty($filter_id) ) {
 				$search_term .= ( !empty($search_term) ) ? ' OR ' : '';		
-				$search_term .= 'p.j2store_product_id=' .$filter_id ;	
+				$search_term .= 'p.j2store_product_id=' .$db->q($filter_id) ;
 			}
 			if (!empty($search_term)) {
 				$query->where( $search_term ) ;
@@ -1092,7 +1142,61 @@ class J2StoreControllerProductsBase extends F0FController
 		return $state;
 	}
 
+    public function getProductFilterListAjax(){
+        $app = JFactory::getApplication();
+        $params = J2Store::config();
+        $json = array();
+        $product_id = $app->input->get('product_id');
+        $form_prefix = $app->input->getString('form_prefix','jform[attribs][j2store]');
+        $limit = 10;
+        if(!empty($product_id)){
+            $model = $this->getThisModel();
+            $model->setId($product_id);
+            $item = $model->runMyBehaviorFlag(true)->getItem();
 
+            $limitstart = $app->input->get('limitstart');
+
+            $product_filter_model = F0FModel::getTmpInstance('ProductFilters', 'J2StoreModel');
+            //$product_filter_model->setState('product_id',$product_id);
+            $product_filter_list = $product_filter_model->product_id($product_id)->limit($limit)->limitstart($limitstart)->getList();
+
+            $product_filters = array();
+            foreach($product_filter_list as $row) {
+                if(!isset($product_filters[$row->group_id])){
+                    $product_filters[$row->group_id] = array();
+                }
+                $product_filters[$row->group_id]['group_name'] = $row->group_name;
+                $product_filters[$row->group_id]['filters'][] = $row;
+            }
+
+            $product_filter_pagination = $product_filter_model->getPagination();
+            $controller = F0FController::getTmpInstance ( 'com_j2store', 'Products' );
+            $view = $controller->getView ( 'Product', 'Html', 'J2StoreView' );
+            if ($model = $controller->getModel ( 'Products', 'J2StoreModel' )) {
+                // Push the model into the view (as default)
+                $view->setModel ( $model, true );
+            }
+            $view->assign('reinitialize',  1 );
+            $view->assign('product',  $item );
+            $view->assign('filter_limit',  $limit );
+            //$view->assign('weights', $weights);
+            //$view->assign('lengths', $lengths);
+            $view->assign('product_filters' , $product_filters);
+            $view->assign( 'params', $params );
+            $view->assign('form_prefix',$form_prefix);
+            $view->assign('productfilter_pagination',$product_filter_pagination);
+
+            $view->setLayout('form_ajax_avfilter');
+            
+            ob_start ();
+            $view->display ( );
+            $html = ob_get_contents ();
+            ob_end_clean ();
+            $json['html'] = $html;
+        }
+        echo json_encode($json);
+        $app->close();
+    }
 	/**
 	 * Method to list of variants
 	 * based on the ajax request
@@ -1104,6 +1208,8 @@ class J2StoreControllerProductsBase extends F0FController
 		$product_id = $app->input->get('product_id');
 		$global_config = JFactory::getConfig();
 		$limit = $global_config->get('list_limit',20);
+		$form_prefix = $app->input->getString('form_prefix','jform[attribs][j2store]');
+        //$form_layout = $app->input->getString('layout','form_ajax_avoptions');
 		if(!empty($product_id)){
 			$limitstart = $app->input->get('limitstart');
 			$model = $this->getThisModel();
@@ -1121,14 +1227,23 @@ class J2StoreControllerProductsBase extends F0FController
 				// Push the model into the view (as default)
 				$view->setModel ( $model, true );
 			}
+		
+			$view->assign('reinitialize',  1 );
 			$view->assign('product',  $item );
 			$view->assign('weights', $weights);
 			$view->assign('lengths', $lengths);
 			$view->assign('variant_list' , $variant_list);
 			$view->assign( 'params', $params );
-			$view->assign('form_prefix','jform[attribs][j2store]');
+			$view->assign('form_prefix',$form_prefix);
 			$view->assign('variant_pagination',$variant_pagination);
-			$view->setLayout('form_ajax_avoptions');
+			if(in_array($item->product_type,array('variable'))){
+                $view->setLayout('form_ajax_avoptions');
+            }elseif ($item->product_type == 'variablesubscriptionproduct'){
+                $view->setLayout('form_ajax_'.$item->product_type.'_options');
+            }else{
+                $view->setLayout('form_ajax_'.$item->product_type.'options');
+            }
+            J2Store::plugin()->event('AfterVariantListAjax',array(&$view,&$item));
 			ob_start ();
 			$view->display ( );
 			$html = ob_get_contents ();
@@ -1145,7 +1260,7 @@ class J2StoreControllerProductsBase extends F0FController
 	function displayAdminProduct(){
 		$app = JFactory::getApplication();
 		$data = $app->input->getArray($_POST);
-	
+		$document = JFactory::getDocument();
 		$product = F0FTable::getInstance('Product' ,'J2StoreTable')->getClone();;
 		if(isset($data['product_id']) && $data['product_id'] && $product->get_product_by_id($data['product_id'])){
 			$model = F0FModel::getTmpInstance('Products', 'J2StoreModel');
@@ -1154,13 +1269,39 @@ class J2StoreControllerProductsBase extends F0FController
 			$html = '';
 			if(isset($product_data->product_name)){
 				$html = "<h3>".$product_data->product_name."</h3>";
-			}			 
+			}
+			$style = '';
+			$params = J2Store::config ();
+
+			if(!$params->get('catalog_mode',0)){
+				$style .= "#add-to-cart-{$product->j2store_product_id} {
+					display: block !important;
+				}";
+				$style .= ".j2store_add_to_cart_button {
+							display: block !important;
+						}";
+
+			}
+			//show_price_field
+			if($params->get('show_price_field',0)){
+				$style .= ".product-{$product->j2store_product_id} .product-price-container {
+					display: block !important;
+				}";
+			}
+
+			if(!empty($style)) {
+				$document->addStyleDeclaration($style);
+			}
+			$session = JFactory::getSession();
+			$session->set('is_admin_request',1,'j2store');
+
 			$html .= $product->get_product_html();
+
 			$html .= '<input type="hidden" name="user_id" id="user_id" value="'.$data['user_id'].'"/>';
 			$html .= '<input type="hidden" name="oid" id="oid" value="'.$data['oid'].'"/>';
 			$html .= '<input type="hidden" name="product_id" id="product_id" value="'.$data['product_id'].'"/>';
 			echo $html;
-			$document = JFactory::getDocument();
+
 			$headData = $document->getHeadData();
 			$scripts = $headData['scripts'];
 			unset($scripts['/j2store/j2store_v3/develop/j3_point2/media/j2store/js/j2store.js']);

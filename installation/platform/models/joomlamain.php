@@ -1,9 +1,10 @@
 <?php
 /**
- * @package angi4j
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -22,8 +23,21 @@ class AngieModelJoomlaMain extends AngieModelBaseMain
 		if (file_exists($filename))
 		{
 			include_once $filename;
-			$jv = new JVersion();
+
+			$jv  = new JVersion();
 			$ret =$jv->getShortVersion();
+		}
+		elseif (file_exists(APATH_LIBRARIES . '/src/Version.php'))
+		{
+			if (!defined('JPATH_PLATFORM'))
+			{
+				define('JPATH_PLATFORM', 1);
+			}
+
+			include_once APATH_LIBRARIES . '/src/Version.php';
+
+			$jv  = new \Joomla\CMS\Version();
+			$ret = $jv->getShortVersion();
 		}
 
 		$this->container->session->set('jversion', $ret);

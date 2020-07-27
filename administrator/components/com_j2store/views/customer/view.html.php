@@ -19,11 +19,13 @@ class J2StoreViewCustomer extends F0FViewHtml
 		$this->currency = J2Store::currency();
 		if($task == 'viewOrder' && $this->email){
 			$this->addresses = F0FModel::getTmpInstance('Addresses','J2StoreModel')->email($this->email)->getList();
-			$this->orders =F0FModel::getTmpInstance('Orders','J2StoreModel')->user_email($this->email)->getList();
+			$this->orders =F0FModel::getTmpInstance('Orders','J2StoreModel')->order_type('normal')->user_email($this->email)->getList();
 		}
+		$this->table_fields = F0FModel::getTmpInstance('Customfields','J2StoreModel')->getList();
 		JToolbarHelper::title(JTEXT::_('J2STORE_CUSTOMER_VIEW'));
 		JToolbarHelper::cancel();
 		return parent::display($tpl);
 		//return true;
 	}
+
 }

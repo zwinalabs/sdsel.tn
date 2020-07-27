@@ -65,29 +65,47 @@ class J2StorePaymentPlugin extends J2StorePluginBase
 		return $html;
 	}
 
-	/**
-	 * Processes the payment form
-	 * and returns HTML to be displayed to the user
-	 * generally with a success/failed message
-	 *
-	 * IMPORTANT: It is the responsibility of each payment plugin
-	 * to tell clear the user's cart (if the payment status warrants it) by using:
-	 *
-	 * $this->removeOrderItemsFromCart( $order_id );
-	 *
-	 * @param $data     array       form post data
-	 * @return string   HTML to display
-	 */
-	function _postPayment( $data )
-	{
-		// Process the payment
+    /**
+     * Processes the payment form
+     * and returns HTML to be displayed to the user
+     * generally with a success/failed message
+     *
+     * @param $data     array       form post data
+     * @return string   HTML to display
+     */
+    function _postPayment( $data )
+    {
+        // Process the payment
+        $app = JFactory::getApplication();
+        $paction = $app ->input->getString('paction');
 
-		$vars = new JObject();
-		$vars->message = "Payment processed successfully.  Hooray!";
+        $vars = new JObject();
 
-		$html = $this->_getLayout('postpayment', $vars);
-		return $html;
-	}
+        switch ($paction)
+        {
+            case "display":
+                $vars->message = JText::_($this->params->get('onafterpayment', ''));
+                $html = $this->_getLayout('message', $vars);
+                $html .= $this->_displayArticle();
+                break;
+            case "process":
+                $vars->message = $this->_process();
+                $html = $this->_getLayout('message', $vars);
+                echo $html; // TODO Remove this
+                $app->close();
+                break;
+            case "cancel":
+                $vars->message = JText::_($this->params->get('oncancelpayment', ''));
+                $html = $this->_getLayout('message', $vars);
+                break;
+            default:
+                $vars->message = JText::_($this->params->get('onerrorpayment', ''));
+                $html = $this->_getLayout('message', $vars);
+                break;
+        }
+
+        return $html;
+    }
 
 	/**
 	 * Prepares the 'view' tmpl layout
@@ -109,24 +127,21 @@ class J2StorePaymentPlugin extends J2StorePluginBase
 		return $html;
 	}
 
-	/**
-	 * Prepares variables for the payment form
-	 *
-	 * @param $data     array       form post data for pre-populating form
-	 * @return string   HTML to display
-	 */
-	function _renderForm( $data )
-	{
-		// Render the form for collecting payment info
+    /**
+     * Prepares variables for the payment form
+     *
+     * @param $data     array       form post data for pre-populating form
+     * @return string   HTML to display
+     */
+    function _renderForm( $data )
+    {
+        // Render the form for collecting payment info
 
-		$vars = new JObject();
-		$vars->full_name        = "";
-		$vars->email            = "";
-	//	$vars->payment_method   = $this->_paymentMethods();
-
-		$html = $this->_getLayout('form', $vars);
-		return $html;
-	}
+        $vars = new JObject();
+        $vars->onselection_text = $this->params->get('onselection', '');
+        $html = $this->_getLayout('form', $vars);
+        return $html;
+    }
 
 	/**
 	 * Verifies that all the required form fields are completed
@@ -218,7 +233,7 @@ class J2StorePaymentPlugin extends J2StorePluginBase
 				$query = $db->getQuery(true);
 				$query->select('gz.*,gzr.*')->from('#__j2store_geozones AS gz')
 				->innerJoin('#__j2store_geozonerules AS gzr ON gzr.geozone_id = gz.j2store_geozone_id')
-				->where('gz.j2store_geozone_id='.$geozone_id )
+				->where('gz.j2store_geozone_id='.$db->q($geozone_id ))
 				->where('gzr.country_id='.$db->q($address['country_id']).' AND (gzr.zone_id=0 OR gzr.zone_id='.$db->q($address['zone_id']).')');
 				$db->setQuery($query);
 				$grows = $db->loadObjectList();
@@ -382,5 +397,44 @@ class J2StorePaymentPlugin extends J2StorePluginBase
 	
 		return $results;
 	}
+
+	public function generatHash($order){
+		$secrect_key = J2Store::config ()->get ( 'queue_key','' );
+		$status = $this->params->get ( 'payment_status',4 );
+		$session = JFactory::getSession ();
+		$session_id = $session->getId ();
+		$hash_string = $order->order_id.$secrect_key.$order->orderpayment_type.$secrect_key.$status.$secrect_key.$order->user_email.$secrect_key.$session_id.$secrect_key;
+		return md5 ( $hash_string );
+	}
+
+	public function validateHash($order){
+		$app = JFactory::getApplication ();
+		$hash = $app->input->getString ( 'hash','' );
+		$generator_hash = $this->generatHash($order);
+		$status = true;
+		if($hash != $generator_hash){
+			$status = false;
+		}
+		return $status;
+	}
+
+	/**
+     * Return url for payment gateway
+	*/
+	public function getReturnUrl(){
+        $menus = JMenu::getInstance('site');
+        $url = 'index.php?option=com_j2store&view=checkout&task=confirmPayment&layout=postpayment&orderpayment_type='.$this->_element.'&paction=display';
+        foreach ($menus->getMenu() as $menu){
+            if(isset($menu->type) && isset($menu->component) && isset($menu->query['option']) &&
+                isset($menu->query['view']) && isset($menu->query['layout']) && isset($menu->query['task'])
+                && $menu->type == 'component' && $menu->component == 'com_j2store'
+                && $menu->query['option'] == 'com_j2store' && $menu->query['view'] == 'checkout'
+                && $menu->query['layout'] == 'postpayment' && $menu->query['task'] == 'confirmPayment'){
+                $url = 'index.php?option=com_j2store&view=checkout&task=confirmPayment&layout=postpayment&orderpayment_type='.$this->_element.'&paction=display&Itemid='.$menu->id;
+                break;
+            }
+        }
+        return $url;
+    }
 
 }

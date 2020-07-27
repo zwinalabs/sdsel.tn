@@ -15,7 +15,7 @@ defined('_JEXEC') or die;
 		<?php echo $this->loadTemplate('stock'); ?>
 	<?php endif; ?>
 	<!-- check for catalog mode -->
-	<?php if($this->params->get('catalog_mode', 0) == 0): ?>
+	<?php if( J2Store::product()->canShowCart($this->params) ): ?>
 
 	<form action="<?php echo $this->product->cart_form_action; ?>"
 		method="post" class="j2store-addtocart-form"

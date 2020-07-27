@@ -43,7 +43,7 @@ $product_id = $this->product->j2store_product_id;
             <?php if($this->params->get('product_option_price_prefix', 1)): ?>
             	<?php echo $option_value['product_optionvalue_prefix']; ?>
             <?php endif; ?>
-            <?php  echo J2Store::product()->displayPrice($option_value['product_optionvalue_price'], $this->product, $this->params); ?>
+            <?php  echo J2Store::product()->displayPrice($option_value['product_optionvalue_price'], $this->product, $this->params,'products.view.option'); ?>
             )
             <?php } ?>
             </option>
@@ -86,7 +86,7 @@ $product_id = $this->product->j2store_product_id;
 	         	 <?php if($this->params->get('product_option_price_prefix', 1)): ?>
             		<?php echo $option_value['product_optionvalue_prefix']; ?>
             	<?php endif; ?>
-            	<?php  echo J2Store::product()->displayPrice($option_value['product_optionvalue_price'], $this->product, $this->params); ?>
+            	<?php  echo J2Store::product()->displayPrice($option_value['product_optionvalue_price'], $this->product, $this->params,'products.view.option'); ?>
             	)
 
             <?php } ?>
@@ -113,7 +113,7 @@ $product_id = $this->product->j2store_product_id;
                <?php if($this->params->get('product_option_price_prefix', 1)): ?>
             		<?php echo $option_value['product_optionvalue_prefix']; ?>
             	<?php endif; ?>
-            	<?php  echo J2Store::product()->displayPrice($option_value['product_optionvalue_price'], $this->product, $this->params); ?>
+            	<?php  echo J2Store::product()->displayPrice($option_value['product_optionvalue_price'], $this->product, $this->params,'products.view.option'); ?>
             	)
             	<?php } ?>
           </label>
@@ -139,13 +139,16 @@ $product_id = $this->product->j2store_product_id;
 
 
         <?php if ($option['type'] == 'text') { ?>
+			<?php
+			$text_option_params = new JRegistry($option ['option_params']);
+			?>
          <!-- text -->
         <div id="option-<?php echo $option['productoption_id']; ?>" class="option">
           <?php if ($option['required']) { ?>
           <span class="required">*</span>
           <?php } ?>
           <b><?php echo JText::_($option['option_name']); ?>:</b><br />
-          <input type="text" name="product_option[<?php echo $option['productoption_id']; ?>]" value="<?php echo $option['optionvalue']; ?>" />
+          <input type="text" name="product_option[<?php echo $option['productoption_id']; ?>]" value="<?php echo $option['optionvalue']; ?>" placeholder="<?php echo $text_option_params->get('place_holder','');?>" />
         </div>
         <br />
         <?php } ?>
@@ -252,7 +255,7 @@ $('#product-option-<?php echo $option['productoption_id']; ?>').on('click', func
 	$('body').prepend('<form enctype="multipart/form-data" id="form-upload" style="display: none;"><input type="file" name="file" /></form>');
 	$('#form-upload input[name=\'file\']').trigger('click');
 	timer = setInterval(function() {
-		if ($('#form-upload input[name=\'file\']').val() != '') {
+		if ($('#form-upload input[name=\'file\']').val() != '' && $('#form-upload input[name=\'file\']').val() != undefined) {
 			clearInterval(timer);
 			$.ajax({
 				url: 'index.php?option=com_j2store&view=carts&task=upload&product_id='+<?php echo $this->product->j2store_product_id;?>,
@@ -269,14 +272,14 @@ $('#product-option-<?php echo $option['productoption_id']; ?>').on('click', func
 					$(node).button('reset');
 				},
 				success: function(json) {
-					$('.text-danger, .text-success').remove();
+					$('.j2file-upload-response').remove();
 
 					if (json['error']) {
-						$(node).parent().find('input').after('<span class="text-danger">' + json['error'] + '</span>');
+						$(node).parent().find('input').after('<span class="j2file-upload-response text-danger">' + json['error'] + '</span>');
 					}
 
 					if (json['success']) {
-						$(node).parent().find('input').after('<span class="text-success">' + json['success'] + ' </span>');
+						$(node).parent().find('input').after('<span class="j2file-upload-response text-success">' + json['success'] + ' </span>');
 						$(node).parent().find('input').attr('value', json['code']);
 					}
 				},

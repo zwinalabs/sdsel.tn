@@ -9,10 +9,19 @@
 // No direct access
 defined('_JEXEC') or die;
 JFactory::getDocument()->addScript(JURI::root(true).'/media/j2store/js/filter.js');
-$actionURL = JRoute::_('index.php?option=com_j2store&view=products');
+$item_id = '';
+$active_link = '';
+if(isset($this->active_menu->id)){
+    $item_id = "&Itemid=".$this->active_menu->id;
+    $active_link = JRoute::_($this->active_menu->link.'&Itemid='.$this->active_menu->id);
+}
+if($active_link){
+    $active_link = JRoute::_('index.php?option=com_j2store&view=products'.$item_id);
+}
+$actionURL = JRoute::_('index.php?option=com_j2store&view=producttags'.$item_id);
 $filter_position = $this->params->get('list_filter_position', 'right');
 ?>
-<div itemscope itemtype="http://schema.org/ItemList" class="j2store-product-list bs2"   data-link="<?php echo JRoute::_($this->active_menu->link.'&Itemid='.$this->active_menu->id);?>">
+<div itemscope itemtype="https://schema.org/BreadCrumbList" class="j2store-product-list bs2"   data-link="<?php echo $active_link;?>">
 
 	<?php echo J2Store::plugin()->eventWithHtml('BeforeViewProductListDisplay',array($this->products));?>
 
@@ -55,7 +64,10 @@ $filter_position = $this->params->get('list_filter_position', 'right');
 					$total = count($this->products); $counter = 0;?>
 
 					<?php foreach($this->products as $product):?>
-
+					<?php if(!$product->params instanceof JRegistry) {
+						$product->params = new JRegistry('{}');
+					}
+					?>
 						<!-- Make sure product is enabled and visible @front end -->
 						<?php //  if($product->enabled && $product->visibility):?>
 							<?php $rowcount = ((int) $counter % (int) $col) + 1; ?>
@@ -64,10 +76,10 @@ $filter_position = $this->params->get('list_filter_position', 'right');
 										<div class="j2store-products-row <?php echo 'row-'.$row; ?> row-fluid">
 								<?php endif;?>
 											<div class="span<?php echo round((12 / $col));?>">
-												<div itemprop="itemListElement" itemscope="" itemtype="http://schema.org/Product"
-												     class="j2store-single-product multiple j2store-single-product-<?php echo $product->j2store_product_id; ?> product-<?php echo $product->j2store_product_id; ?> pcolumn-<?php echo $rowcount;?>">
+												<div itemprop="itemListElement" itemscope="" itemtype="https://schema.org/Product"
+												     class="j2store-single-product multiple j2store-single-product-<?php echo $product->j2store_product_id; ?> product-<?php echo $product->j2store_product_id; ?> pcolumn-<?php echo $rowcount;?> <?php echo $product->params->get('product_css_class','');?>">
 													<?php $this->product = $product;
-													 	$this->product_link = JRoute::_('index.php?option=com_j2store&view=product&id='.$this->product->j2store_product_id);
+													 	$this->product_link = JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$this->product->j2store_product_id.$item_id);
 													?>
 													<?php
 													try {
@@ -82,15 +94,11 @@ $filter_position = $this->params->get('list_filter_position', 'right');
 													?>
 
 													<!-- QUICK VIEW OPTION -->
-													<?php if($this->params->get('list_enable_quickview',0)):?>
-													<?php JHTML::_('behavior.modal', 'a.modal'); ?>																									<?php JHTML::_('behavior.modal', 'a.modal'); ?>
-													<a itemprop="url" style="display:inline;position:relative;"
-															class="modal j2store-product-quickview-modal btn btn-default"
-															ref="{handler:'iframe',size:{x: window.innerWidth-180, y: window.innerHeight-180}}"
-															href="<?php echo JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$this->product->j2store_product_id.'&tmpl=component'); ?>">
-															<i class="icon icon-eye"></i> <?php echo JText::_('J2STORE_PRODUCT_QUICKVIEW');?>
-														</a>
-													<?php endif;?>
+                                                    <?php if($this->params->get('list_enable_quickview',0)):?>
+                                                        <a data-fancybox data-type="iframe" class="btn btn-default" data-src="<?php echo JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$this->product->j2store_product_id.'&tmpl=component'); ?>" href="javascript:;">
+                                                            <i class="fa fa-eye"></i> <?php echo JText::_('J2STORE_PRODUCT_QUICKVIEW');?>
+                                                        </a>
+                                                    <?php endif;?>
 												</div>
 											</div>
 									<?php $counter++; ?>
@@ -101,7 +109,7 @@ $filter_position = $this->params->get('list_filter_position', 'right');
 						<?php endforeach;?>
 
 
-					<form id="j2store-pagination" name="j2storepagination" action="<?php echo  JRoute::_('index.php?option=com_j2store&view=products&filter_catid='.$this->filter_catid); ?>" method="post">
+					<form id="j2store-pagination" name="j2storepagination" action="<?php echo  JRoute::_('index.php?option=com_j2store&view=products&filter_catid='.$this->filter_catid.$item_id); ?>" method="post">
 						<?php echo J2Html::hidden('option','com_j2store');?>
 						<?php echo J2Html::hidden('view','products');?>
 						<?php echo J2Html::hidden('task','browse',array('id'=>'task'));?>

@@ -29,7 +29,7 @@ class J2StoreTableCustomfield extends F0FTable
 		$item = clone $this;
 		$item->load($oid);
 
-		if($item->field_core != 1) {
+		if($item->field_core != 1 && $item->field_type != 'customtext') {
 
 				//first delete the column in the address table
 				$query = 'ALTER TABLE #__j2store_addresses DROP '.$item->field_namekey;
@@ -42,6 +42,7 @@ class J2StoreTableCustomfield extends F0FTable
 					$status = false;
 				}
 			}
+
 		return $status;
 
 	}
@@ -54,9 +55,9 @@ class J2StoreTableCustomfield extends F0FTable
 		$query = $this->_db->getQuery(true)
 
 		->update($this->_db->qn($this->_tbl))
-		->set($this->_db->qn('field_required') . ' = ' . (int)$publish);
+		->set($this->_db->qn('field_required') . ' = ' . $this->_db->q((int)$publish));
 
-	     $cids = $this->_db->qn($k) . ' = ' .implode(' OR ' . $this->_db->qn($k) . ' = ', $cid);
+	     $cids = $this->_db->qn($k) . ' = ' .implode(' OR ' . $this->_db->qn($k) . ' = ', $this->_db->q($cid));
 		 $query->where('(' . $cids . ')');
 
 		$this->_db->setQuery((string)$query);

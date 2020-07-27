@@ -24,7 +24,7 @@ class J2StoreViewProducts extends F0FViewHtml
 	 */
 
 	protected function onDisplay($tpl= null) {
-		
+		JFactory::getLanguage ()->load ('com_j2store', JPATH_ADMINISTRATOR);
 		$view = $this->input->getCmd('view', 'cpanel');
 		
 		if (in_array($view, array('cpanel', 'cpanels')))

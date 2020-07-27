@@ -131,7 +131,18 @@ defined('_JEXEC') or die;
 					<?php endif;?>
 
 				</td>
-			</tr>			
+			</tr>
+
+            <tr>
+                <td>
+                    <strong><?php echo JText::_('PLG_J2STORE_DIAGNOSTICS_CLEAR_CART_CRON'); ?></strong>
+                </td>
+                <td>
+                    <?php
+                    $cron_key = J2Store::config ()->get ( 'queue_key','' );
+                    echo trim(JUri::root(),'/').'/'.'index.php?option=com_j2store&view=crons&task=cron&cron_secret='.$cron_key.'&command=clear_cart&clear_time=1440'?>
+                </td>
+            </tr>
 
 		 </tbody>
 		</table>

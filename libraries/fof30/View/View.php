@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -683,13 +683,14 @@ class View
 	 *
 	 * @param   string    $uri          The template path
 	 * @param   array     $forceParams  A hash array of variables to be extracted in the local scope of the template file
-	 * @param   callable  $callback     A method to post-process the evaluated view template
+	 * @param   callable  $callback     A method to post-process the 3ναluα+3d view template (I use leetspeak here because of bad quality hosts with broken scanners)
+	 * @param   bool      $noOverride   If true we will not load Joomla! template overrides
 	 *
 	 * @return  string  The output of the template
 	 *
 	 * @throws  \Exception  When the layout file is not found
 	 */
-	public function loadAnyTemplate($uri = '', $forceParams = array(), $callback = null)
+	public function loadAnyTemplate($uri = '', $forceParams = array(), $callback = null, $noOverride = false)
 	{
 		if (isset($this->viewTemplateAliases[$uri]))
 		{
@@ -706,7 +707,7 @@ class View
 		}
 
 		// First get the raw view template path
-		$path = $this->viewFinder->resolveUriToPath($uri, $layoutTemplate, $extraPaths);
+		$path = $this->viewFinder->resolveUriToPath($uri, $layoutTemplate, $extraPaths, $noOverride);
 
 		// Now get the parsed view template path
 		$this->_tempFilePath = $this->getEngine($path)->get($path, $forceParams);
@@ -716,8 +717,8 @@ class View
 		// clear out the sections for any separate views that may be rendered.
 		$this->incrementRender();
 
-		// Get the evaluated template
-		$contents = $this->evaluateTemplate($forceParams);
+		// Get the processed template
+		$contents = $this->processTemplate($forceParams);
 
 		// Once we've finished rendering the view, we'll decrement the render count
 		// so that each sections get flushed out next time a view is created and
@@ -798,12 +799,17 @@ class View
 		}
 		// If there is no data in the array, we will render the contents of the empty
 		// view. Alternatively, the "empty view" could be a raw string that begins
-		// with "raw|" for convenience and to let this know that it is a string.
+		// with "raw|" for convenience and to let this know that it is a string. Or
+		// a language string starting with text|.
 		else
 		{
 			if (starts_with($empty, 'raw|'))
 			{
 				$result = substr($empty, 4);
+			}
+			elseif (starts_with($empty, 'text|'))
+			{
+				$result = \JText::_(substr($empty, 5));
 			}
 			else
 			{
@@ -975,7 +981,7 @@ class View
 	 * @return string
 	 * @throws \Exception
 	 */
-	protected function evaluateTemplate(array &$forceParams)
+	protected function processTemplate(array &$forceParams)
 	{
 		// If the engine returned raw content, return the raw content immediately
 		if ($this->_tempFilePath['type'] == 'raw')
@@ -992,7 +998,7 @@ class View
 
 		ob_start();
 
-		// We'll evaluate the contents of the view inside a try/catch block so we can
+		// We'll process the contents of the view inside a try/catch block so we can
 		// flush out any stray output that might get out before an error occurs or
 		// an exception is thrown. This prevents any partial views from leaking.
 		try
@@ -1317,6 +1323,8 @@ class View
 	 * that model.
 	 *
 	 * @param   \FOF30\Model\Model  $model  The model object passed from the XML form renderer
+	 *
+	 * @deprecated 3.1  Support for XML forms will be removed in FOF 4
 	 */
 	public function populateFromModel(Model $model)
 	{

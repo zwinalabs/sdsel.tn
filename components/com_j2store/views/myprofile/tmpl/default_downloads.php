@@ -46,6 +46,7 @@ $downloads = $model->getList();
 								<a href="<?php echo JRoute::_('index.php?option=com_j2store&view=myprofile&task=download&token='.$download->token.'&pid='.$file->j2store_productfile_id); ?>">
 									<?php echo JText::_('J2STORE_DOWNLOAD'); ?>
 								</a>
+                                <?php echo J2store::plugin()->eventWithHtml('AfterProfileDownload',array($file,$download));?>
 								<?php endif; ?>
 							</td>
 						</tr>
@@ -57,7 +58,7 @@ $downloads = $model->getList();
 				<?php if($download->access_expires == JFactory::getDbo()->getNullDate()): ?>
 					<?php echo JText::_('J2STORE_NEVER_EXPIRES'); ?>
 				<?php else: ?>
-				<?php echo JHTML::_('date', $download->access_expires, $this->params->get('date_format', JText::_('DATE_FORMAT_LC1'))); ?>
+                    <?php echo JHtml::date($download->access_expires, J2Store::config()->get('date_format', JText::_('DATE_FORMAT_LC1')), false);?>
 				<?php endif;?>
 				
 				</td>

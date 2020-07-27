@@ -28,6 +28,36 @@ class J2StoreControllerCustomers extends F0FController
 		return true;
 	}
 
+
+	/**
+	 * Delete selected item(s)
+	 *
+	 * @return  bool
+	 */
+	public function remove()
+	{
+		// Initialise the App variables
+		$app=JFactory::getApplication();
+		$cids = $app->input->get('cid',array(),'ARRAY');
+		if(!empty( $cids ) && $app->isAdmin() ){
+			foreach ($cids as $cid){
+				// store the table in the variable
+				$address = F0FTable::getInstance('Address', 'J2StoreTable')->getClone ();
+				$address->load($cid);
+				$addresses = F0FModel::getTmpInstance('Addresses','J2StoreModel')->email($address->email)->getList();
+
+				foreach ($addresses as $e_address){
+					$address = F0FTable::getInstance('Address', 'J2StoreTable')->getClone ();
+					$address->load($e_address->j2store_address_id);
+					$address->delete ();
+				}
+			}
+		}
+		$msg = JText::_('J2STORE_ITEMS_DELETED');
+		$link = 'index.php?option=com_j2store&view=customers';
+		$this->setRedirect($link, $msg);
+	}
+
 	/**
 	 * Method to delete customer
 	 */
@@ -56,6 +86,54 @@ class J2StoreControllerCustomers extends F0FController
 
 	}
 
+	function editAddress(){
+		// Initialise the App variables
+		$app = JFactory::getApplication();
+		// Assign the get Id to the Variable
+		$id = $app->input->getInt('id',0);
+		if($id && $app->isAdmin()) {    // store the table in the variable
+			$address = F0FTable::getAnInstance('Address','J2StoreTable');
+			$address->load($id);
+			$address_type = $address->type;
+			if(empty( $address_type )){
+				$address_type = 'billing';
+			}
+			$model = F0FModel::getTmpInstance('Customers','J2StoreModel');
+			$view = $this->getThisView();
+			$view->setModel($model, true);
+			$view->addTemplatePath(JPATH_ADMINISTRATOR.'/components/com_j2store/views/customer/tmpl/');
+			$view->set('address_type',$address_type);
+			$fieldClass  = J2Store::getSelectableBase();
+			$view->set('fieldClass' , $fieldClass);
+			$view->set('address',$address);
+			$view->set('item',$address);
+			$view->setLayout('editaddress');
+			$view->display();
+			//$this->display();
+			return true;
+
+		}else{
+			$this->redirect ('index.php?option=com_j2store&view=customers');
+		}
+
+	}
+
+	function saveCustomer(){
+		$app = JFactory::getApplication ();
+		$data = $app->input->getArray($_POST);
+		$address_id = $app->input->getInt('j2store_address_id');
+		$address = F0FTable::getAnInstance('Address','J2StoreTable');
+		$address->load($address_id);
+		$msg =JText::_('J2STORE_ADDRESS_SAVED_SUCCESSFULLY');
+		$msgType='message';
+		$address->bind($data);
+		if(!$address->save($data)){
+			$msg =JText::_('J2STORE_ADDRESS_SAVED_SUCCESSFULLY');
+			$msgType='warning';
+		}
+		$url = "index.php?option=com_j2store&view=customer&task=editAddress&id=".$address->j2store_address_id."&tmpl=component";
+		$this->setRedirect($url, $msg,$msgType);
+	}
 	function changeEmail(){
 		// Initialise the App variables
 		$app=JFactory::getApplication();

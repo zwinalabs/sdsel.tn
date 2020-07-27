@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -56,7 +56,7 @@ class Configuration extends Controller
 		$profileName = trim($profileName);
 
 		$quickIconValue = $this->input->getCmd('quickicon', '');
-		$quickIcon      = !empty($quickIconValue);
+		$quickIcon      = (int) !empty($quickIconValue);
 
 		$mustSaveProfile = !empty($profileName) && ($profileName != $oldProfileName);
 		$mustSaveProfile = $mustSaveProfile || ($quickIcon != $oldQuickIcon);
@@ -96,16 +96,21 @@ class Configuration extends Controller
 		/** @var Profiles $profile */
 		$profile = $this->container->factory->model('Profiles')->tmpInstance();
 		$profile
+			// Load and clone the record we just saved
 			->findOrFail($profileid)
 			->getClone()
+		;
+		// Must unset ID before save. The ID cannot be bound with bind()/save(), hence the need to do it the hard way.
+		$profile->id = null;
+		$profile
 			->save([
-				'id'          => null,
 				'description' => JText::_('COM_AKEEBA_CONFIG_SAVENEW_DEFAULT_PROFILE_NAME')
-			]);
+			])
+		;
 
 		// Activate and edit the new profile
 		$returnUrl = base64_encode($this->redirect);
-		$token     = JFactory::getSession()->getFormToken();
+		$token     = $this->container->platform->getToken(true);
 		$url       = JUri::base() . 'index.php?option=com_akeeba&task=SwitchProfile&profileid=' . $profile->getId() .
 			'&returnurl=' . $returnUrl . '&' . $token . '=1';
 		$this->setRedirect($url);
@@ -128,6 +133,7 @@ class Configuration extends Controller
 	{
 		/** @var \Akeeba\Backup\Admin\Model\Configuration $model */
 		$model = $this->getModel();
+		$model->setState('isCurl', $this->input->get('isCurl', 0, 'int'));
 		$model->setState('host', $this->input->get('host', '', 'raw', 2));
 		$model->setState('port', $this->input->get('port', 21, 'int'));
 		$model->setState('user', $this->input->get('user', '', 'raw', 2));
@@ -135,6 +141,7 @@ class Configuration extends Controller
 		$model->setState('initdir', $this->input->get('initdir', '', 'raw', 2));
 		$model->setState('usessl', $this->input->get('usessl', '', 'raw', 2) == 'true');
 		$model->setState('passive', $this->input->get('passive', '', 'raw', 2) == 'true');
+		$model->setState('passive_mode_workaround', $this->input->get('passive_mode_workaround', '', 'raw', 2) == 'true');
 
 		try
 		{
@@ -149,7 +156,8 @@ class Configuration extends Controller
 		@ob_end_clean();
 		echo '###' . json_encode($testResult) . '###';
 		flush();
-		JFactory::getApplication()->close();
+
+		$this->container->platform->closeApplication();
 	}
 
 	/**
@@ -159,6 +167,7 @@ class Configuration extends Controller
 	{
 		/** @var \Akeeba\Backup\Admin\Model\Configuration $model */
 		$model = $this->getModel();
+		$model->setState('isCurl', $this->input->get('isCurl', 0, 'int'));
 		$model->setState('host', $this->input->get('host', '', 'raw', 2));
 		$model->setState('port', $this->input->get('port', 21, 'int'));
 		$model->setState('user', $this->input->get('user', '', 'raw', 2));
@@ -180,7 +189,8 @@ class Configuration extends Controller
 		@ob_end_clean();
 		echo '###' . json_encode($testResult) . '###';
 		flush();
-		JFactory::getApplication()->close();
+
+		$this->container->platform->closeApplication();
 	}
 
 	/**
@@ -197,7 +207,7 @@ class Configuration extends Controller
 		$model->dpeOuthOpen();
 		flush();
 
-		JFactory::getApplication()->close();
+		$this->container->platform->closeApplication();
 	}
 
 	/**
@@ -215,7 +225,7 @@ class Configuration extends Controller
 		echo '###' . json_encode($model->dpeCustomAPICall()) . '###';
 		flush();
 
-		JFactory::getApplication()->close();
+		$this->container->platform->closeApplication();
 	}
 
 	/**
@@ -233,6 +243,6 @@ class Configuration extends Controller
 		echo $model->dpeCustomAPICall();
 		flush();
 
-		JFactory::getApplication()->close();
+		$this->container->platform->closeApplication();
 	}
 }

@@ -10,7 +10,21 @@ defined('_JEXEC') or die;
 // get j2Store Params to determine which bootstrap version we're using - Waseem Sadiq (waseem@bulletprooftemplates.com)
 $J2gridRow = ($this->params->get('bootstrap_version', 2) == 2) ? 'row-fluid' : 'row';
 $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
+$app = JFactory::getApplication();
+$active_menu = $app->getMenu()->getActive();
+
+$page_heading = is_object($active_menu) ? $active_menu->params: new JRegistry();
+if(!$page_heading instanceof JRegistry){
+    $page_heading = new JRegistry ();
+}
+$page_heading_enabled = $page_heading->get('show_page_heading',0);
+$page_heading_text = $page_heading->get('page_heading','');
 ?>
+<?php if($page_heading_enabled):?>
+    <div class="page-header">
+        <h1> <?php echo $this->escape($page_heading_text); ?> </h1>
+    </div>
+<?php endif; ?>
 <?php echo J2Store::modules()->loadposition('j2store-cart-top'); ?>
 <div class="j2store">
 	<div class="j2store-cart">

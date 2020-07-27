@@ -224,13 +224,15 @@ class J2Cart {
 
 		$query->update( "#__j2store_carts" );
 		$query->set( $db->qn('session_id')." = ".$db->q($session_id) );
-		$query->where( $db->qn('user_id')." <= ".$db->q($user_id) );
+		$query->where( $db->qn('user_id')." = ".$db->q($user_id) );
 		$db->setQuery( (string) $query );
-		if (!$db->query())
-		{
-			$this->setError( $db->getErrorMsg() );
+		try{
+			$db->execute();
+		}catch (Exception $e){
+			$this->setError( $e->getMessage () );
 			return false;
 		}
+
 		return true;
 	}
 

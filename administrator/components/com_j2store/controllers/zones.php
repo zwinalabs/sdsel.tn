@@ -14,6 +14,10 @@ jimport('joomla.application.component.controllerform');
 
 class J2StoreControllerZones extends F0FController
 {
+    public function __construct($config) {
+        parent::__construct($config);
+        $this->registerTask('apply', 'save');
+    }
 
 	function getZoneList(){
 		$app = JFactory::getApplication();
@@ -82,5 +86,33 @@ class J2StoreControllerZones extends F0FController
 		}
 	}
 
-
+    /**
+     * Save zone
+     *
+     * @return bool|void
+     * @throws Exception
+     */
+    function save(){
+        $app = JFactory::getApplication();
+        $post = $app->input->getArray($_REQUEST);
+        $zone_id = isset($post['j2store_zone_id']) && !empty($post['j2store_zone_id']) ? $post['j2store_zone_id']: 0;
+        $zone_table = F0FTable::getAnInstance('Zone' ,'J2StoreTable');
+        try{
+            $zone_table->load($zone_id);
+            $zone_table->bind($post);
+            $zone_table->store();
+            $zone_id = $zone_table->j2store_zone_id;
+            $msg = JText::_('J2STORE_SAVE_SUCCESS');
+            $type = '';
+        }catch (Exception $e){
+            $msg = $e->getMessage();
+            $type = 'error';
+        }
+        if(isset($post['task']) && $post['task'] == 'apply'){
+            $url = 'index.php?option=com_j2store&view=zone&id='.$zone_id;
+        }else{
+            $url = 'index.php?option=com_j2store&view=zones';
+        }
+        $app->redirect($url,$msg,$type);
+    }
 }

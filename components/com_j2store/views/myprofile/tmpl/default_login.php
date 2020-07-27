@@ -62,9 +62,9 @@ $J2gridCol = ($params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
         				endif; ?>
 
 			<form
-				action="<?php echo JRoute::_( 'index.php?option=com_users&task=user.login', true, $this->params->get('usesecure')); ?>"
+				action="<?php echo JRoute::_( 'index.php?option=com_users&view=login', true, $this->params->get('usesecure')); ?>"
 				method="post" name="login" id="j2storeOrderLoginForm">
-
+                <input type="hidden" name="task" value="user.login">
 				<label for="username" class="j2storeUserName"><?php echo JText::_('J2STORE_USERNAME'); ?>
 
 
@@ -99,6 +99,13 @@ $J2gridCol = ($params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
 							<?php echo JText::_('J2STORE_FORGOT_YOUR_USERNAME'); ?>
 					</a>
 					</li>
+                    <?php $usersConfig = JComponentHelper::getParams('com_users'); ?>
+                    <?php if ($usersConfig->get('allowUserRegistration')) : ?>
+                        <li>
+                            <a href="<?php echo JRoute::_('index.php?option=com_users&view=registration'); ?>">
+                                <?php echo JText::_('J2STORE_LOGIN_REGISTER'); ?></a>
+                        </li>
+                    <?php endif; ?>
 				</ul>
 				<input type="hidden" name="option" value="com_users" /> <input
 					type="hidden" name="task" value="user.login" /> <input
@@ -149,5 +156,6 @@ $J2gridCol = ($params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
 			</form>
 		</div>
 		<?php endif; ?>
+		<?php echo J2Store::plugin()->eventWithHtml('MyProfileLogin', array($this)); ?>
 	</div>
 </div>

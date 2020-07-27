@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -11,7 +11,6 @@ namespace Akeeba\Backup\Admin\Controller;
 defined('_JEXEC') or die();
 
 use Akeeba\Backup\Admin\Controller\Mixin\CustomACL;
-use FOF30\Container\Container;
 use FOF30\Controller\DataController;
 use JText;
 use RuntimeException;
@@ -27,12 +26,13 @@ class Profiles extends DataController
 	{
 		$this->csrfProtection();
 
-		$user = $this->container->platform->getUser();
-
-		if (!$user->authorise('akeeba.configure', 'com_akeeba'))
+		if (!$this->container->platform->authorise('akeeba.configure', 'com_akeeba'))
 		{
 			throw new RuntimeException(JText::_('JERROR_ALERTNOAUTHOR'), 403);
 		}
+
+		/** @var \Akeeba\Backup\Admin\Model\Profiles $model */
+		$model       = $this->getModel();
 
 		// Get some data from the request
 		$file = $this->input->files->get('importfile', array(), 'array');
@@ -41,7 +41,7 @@ class Profiles extends DataController
 		{
 			$this->setRedirect('index.php?option=com_akeeba&view=Profiles', JText::_('MSG_UPLOAD_INVALID_REQUEST'), 'error');
 
-			return ;
+			return;
 		}
 
 		// Load the file data
@@ -51,39 +51,99 @@ class Profiles extends DataController
 		// JSON decode
 		$data = json_decode($data, true);
 
-		// Check for data validity
-		$isValid =
-			is_array($data) &&
-			!empty($data) &&
-			array_key_exists('description', $data) &&
-			array_key_exists('configuration', $data) &&
-			array_key_exists('filters', $data);
+		// Import
+		$message     = JText::_('COM_AKEEBA_PROFILES_MSG_IMPORT_COMPLETE');
+		$messageType = null;
 
-		if (!$isValid)
+		try
 		{
-			$this->setRedirect('index.php?option=com_akeeba&view=Profiles', JText::_('COM_AKEEBA_PROFILES_ERR_IMPORT_INVALID'), 'error');
-
-			return;
+			$model->reset()->import($data);
+		}
+		catch (RuntimeException $e)
+		{
+			$message     = $e->getMessage();
+			$messageType = 'error';
 		}
 
-		// Unset the id, if it exists
-		if (array_key_exists('id', $data))
-		{
-			unset($data['id']);
-		}
+		// Redirect back to the main page
+		$this->setRedirect('index.php?option=com_akeeba&view=Profiles', $message, $messageType);
+	}
 
-		$data['akeeba.flag.confwiz'] = 1;
+	/**
+	 * Enable the Quick Icon for a record
+	 *
+	 * @since   6.1.2
+	 * @throws  \Exception
+	 */
+	public function quickicon_publish()
+	{
+		$this->setQuickIcon(1);
+	}
 
-		// Try saving the profile
+	/**
+	 * Disable the Quick Icon for a record
+	 *
+	 * @since   6.1.2
+	 * @throws  \Exception
+	 */
+	public function quickicon_unpublish()
+	{
+		$this->setQuickIcon(0);
+	}
+
+	/**
+	 * Sets the Quick Icon status for the record.
+	 *
+	 * @param   int|bool  $published  Should this profile have a Quick Icon?
+	 *
+	 * @return  void
+	 * @throws  \Exception
+	 *
+	 * @since   6.1.2
+	 */
+	private function setQuickIcon($published)
+	{
+		// CSRF prevention
+		$this->csrfProtection();
+
 		/** @var \Akeeba\Backup\Admin\Model\Profiles $model */
-		$model  = $this->getModel();
-		$result = $model->save($data);
+		$model = $this->getModel()->savestate(false);
+		$ids   = $this->getIDsFromRequest($model, false);
+		$error = false;
 
-		$this->setRedirect('index.php?option=com_akeeba&view=Profiles', JText::_('COM_AKEEBA_PROFILES_MSG_IMPORT_COMPLETE'));
-
-		if (!$result)
+		try
 		{
-			$this->setRedirect('index.php?option=com_akeeba&view=Profiles', JText::_('COM_AKEEBA_PROFILES_ERR_IMPORT_FAILED'), 'error');
+			$status = true;
+
+			foreach ($ids as $id)
+			{
+				$model->find($id);
+				$model->save([
+					'quickicon' => $published ? 1 : 0
+				]);
+			}
+		}
+		catch (\Exception $e)
+		{
+			$status = false;
+			$error  = $e->getMessage();
+		}
+
+		// Redirect
+		if ($customURL = $this->input->getBase64('returnurl', ''))
+		{
+			$customURL = base64_decode($customURL);
+		}
+
+		$url = !empty($customURL) ? $customURL : 'index.php?option=' . $this->container->componentName . '&view=' . $this->container->inflector->pluralize($this->view) . $this->getItemidURLSuffix();
+
+		if (!$status)
+		{
+			$this->setRedirect($url, $error, 'error');
+		}
+		else
+		{
+			$this->setRedirect($url);
 		}
 	}
 }

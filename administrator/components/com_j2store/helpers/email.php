@@ -50,11 +50,11 @@ class J2Email {
 		// 1. Get all the mail templates related to this order
 		$mail_templates = $this->getEmailTemplates( $order , $receiver_type );
 
+        //load language overrides
+        $this->loadLanguageOverrides($order);
+
 		// filter language
 		$mail_templates = $this->filterByLanguage($order, $mail_templates );
-
-		//load language overrides
-		$this->loadLanguageOverrides($order);
 
 		$is_admin_mail_sent = false;
 
@@ -72,6 +72,7 @@ class J2Email {
 				$admin_emails = $params->get ( 'admin_email' );
 				$admin_emails = explode ( ',', $admin_emails );
 				$template->mailer->addRecipient ( $admin_emails );
+				$template->mailer->addReplyTo ( $order->user_email );
 			}
 		}
 
@@ -89,6 +90,7 @@ class J2Email {
 		$filtered_templates = array();
 		$default_template_group = array();
 		$all_lang_templates = array();
+		$params = J2Store::config();
 
 		// Look for desired languages
 		$jLang = JFactory::getLanguage();
@@ -126,22 +128,28 @@ class J2Email {
 			}
 		} else {
 
-			$standard_template = array('j2store_emailtemplate_id' => 0 ,
-			                          'email_type' => '',
-			                          'receiver_type' => '*' ,
-			                          'receiver' => '*' ,
-			                          'orderstatus_id' => '*' ,
-			                          'group_id' => '',
-			                          'paymentmethod' => '*' ,
-			                          'subject' => JText::_('J2STORE_ORDER_EMAIL_TEMPLATE_STANDARD_SUBJECT'),
-			                          'body' => JText::_('J2STORE_ORDER_EMAIL_TEMPLATE_STANDARD_BODY'),
-			                          'body_source' => 'html' ,
-			                          'body_source_file' => -1 ,
-			                          'language' => '*' ,
-			                          'enabled' => 1 ,
-			                          'ordering' => 1 ,
-			                          'lang_score' => 1 ) ;
-			$default_template_group[] =  (object) $standard_template;
+				$standard_template = array('j2store_emailtemplate_id' => 0 ,
+				                          'email_type' => '',
+				                          'receiver_type' => '*' ,
+				                          'receiver' => '*' ,
+				                          'orderstatus_id' => '*' ,
+				                          'group_id' => '',
+				                          'paymentmethod' => '*' ,
+				                          'subject' => JText::_('J2STORE_ORDER_EMAIL_TEMPLATE_STANDARD_SUBJECT'),
+				                          'body' => JText::_('J2STORE_ORDER_EMAIL_TEMPLATE_STANDARD_BODY'),
+				                          'body_source' => 'html' ,
+				                          'body_source_file' => -1 ,
+				                          'language' => '*' ,
+				                          'enabled' => 1 ,
+				                          'ordering' => 1 ,
+				                          'lang_score' => 1 ) ;
+			if ( J2Store::isPro() == 1 ) {
+				if ($params->get('send_default_email_template',1) == 1) {
+					$default_template_group[] =  (object) $standard_template;	
+				}
+			}else{
+				$default_template_group[] =  (object) $standard_template;
+			}
 		}
 		// sort by language prefernce
 		krsort($filtered_templates);
@@ -154,6 +162,7 @@ class J2Email {
 					continue;
 				}else {
 					$result = $template_group;
+					break;
 				}
 			}
 		}
@@ -195,6 +204,7 @@ class J2Email {
 		$baseURL = str_replace('/administrator', '', JURI::base());
 		//replace administrator string, if present
 		$baseURL = ltrim($baseURL, '/');
+		$image_url = str_replace ( JUri::base (true), '', JUri::base () );
 		$isHTML =true;
 		// Get the mailer
 		$mailer = $this->getMailer($isHTML);
@@ -241,7 +251,8 @@ class J2Email {
 					$ext = strtolower(JFile::getExt($url));
 					if(!JFile::exists($url)) {
 						// Relative path, make absolute
-						$url = $baseURL.ltrim($url,'/');
+						//$url = $baseURL.ltrim($url,'/');
+						$url = $image_url.ltrim($url,'/');
 					}
 					if( !JFile::exists($url) || !in_array($ext, array('jpg','png','gif')) ) {
 						// Not an image or inexistent file
@@ -444,8 +455,8 @@ class J2Email {
 				'[BILLING_ADDRESS_2]'	=> $orderinfo->billing_address_2,
 				'[BILLING_CITY]'		=> $orderinfo->billing_city,
 				'[BILLING_ZIP]'			=> $orderinfo->billing_zip,
-				'[BILLING_COUNTRY]'		=> $orderinfo->billing_country_name,
-				'[BILLING_STATE]'		=> $orderinfo->billing_zone_name,
+				'[BILLING_COUNTRY]'		=> JText::_($orderinfo->billing_country_name),
+				'[BILLING_STATE]'		=> JText::_($orderinfo->billing_zone_name),
 				'[BILLING_COMPANY]'		=> $orderinfo->billing_company,
 				'[BILLING_VATID]'		=> $orderinfo->billing_tax_number,
 				'[BILLING_PHONE]'		=> $orderinfo->billing_phone_1,
@@ -457,8 +468,8 @@ class J2Email {
 				'[SHIPPING_ADDRESS_2]'	=> $orderinfo->shipping_address_2,
 				'[SHIPPING_CITY]'		=> $orderinfo->shipping_city,
 				'[SHIPPING_ZIP]'		=> $orderinfo->shipping_zip,
-				'[SHIPPING_COUNTRY]'	=> $orderinfo->shipping_country_name,
-				'[SHIPPING_STATE]'		=> $orderinfo->shipping_zone_name,
+				'[SHIPPING_COUNTRY]'	=> JText::_($orderinfo->shipping_country_name),
+                '[SHIPPING_STATE]'		=> JText::_($orderinfo->shipping_zone_name),
 				'[SHIPPING_COMPANY]'	=> $orderinfo->shipping_company,
 				'[SHIPPING_VATID]'		=> $orderinfo->shipping_tax_number,
 				'[SHIPPING_PHONE]'		=> $orderinfo->shipping_phone_1,
@@ -474,11 +485,19 @@ class J2Email {
 				'[TOKEN]'				=> $order->token,
 				'[COUPON_CODE]'			=> $coupon_code,
 				'[BANK_TRANSFER_INFORMATION]' => $bank_transfer_info,
-
-				'[ITEMS]'				=> $items
+				'[SHIPPING_TOTAL_WEIGHT]' => $order->getTotalShippingWeight(),
+				'[ITEMS]'				=> $items,
 
 		);
 
+		// get the customer user group
+		if ($order->user_id > 0) {
+			$groupNames = J2Store::user()->getUserGroupNames($order->user_id);
+			$customer_groups = implode(',', $groupNames);
+			$customer_groups = trim($customer_groups, ',');
+			$tags['CUSTOMER_GROUPS'] = $customer_groups;
+		}
+		
 		$tags = array_merge($tags, $extras);
 		foreach ($tags as $key => $value)
 		{
@@ -499,7 +518,9 @@ class J2Email {
 		preg_match_all("^\[(.*?)\]^",$text,$removeFields, PREG_PATTERN_ORDER);
 		if(count($removeFields[1])) {
 			foreach($removeFields[1] as $fieldName) {
-				$text= str_replace('['.$fieldName.']', '', $text);
+			    if(!in_array($fieldName,array('if mso','endif'))){
+                    $text = str_replace('['.$fieldName.']', '', $text);
+                }
 			}
 		}
 		return $text;
@@ -529,11 +550,14 @@ class J2Email {
 		if (! empty ( $row->$field ) && JString::strlen ( $row->$field ) > 0) {
 
 			$custom_fields = $this->getDecodedFields ( $row->$field );
+
 			if (isset ( $custom_fields ) && count ( $custom_fields )) {
 				foreach ( $custom_fields as $namekey => $field ) {
 	
 					if (! property_exists ( $row, $type . '_' . $namekey ) && ! property_exists ( $row, 'user_' . $namekey ) && $namekey != 'country_id' && $namekey != 'zone_id' && $namekey != 'option' && $namekey != 'task' && $namekey != 'view') {
-						
+						if(is_array($field['value'])){
+                            $field['value'] = implode(',',$field['value']);
+                        }
 						$field['value'] = nl2br($field['value']);
 
 						$fields [$namekey] = $field;
@@ -570,6 +594,14 @@ class J2Email {
 					$string = JText::_ ( $field ['value'] );
 				}
 
+				if(isset($field['zone_type']) && !empty($field['value'])){
+				    if($field['zone_type'] == 'zone'){
+                        $string = JText::_($this->getZoneById($field['value'])->zone_name);
+                    }elseif($field['zone_type'] == 'country'){
+                        $string = JText::_($this->getCountryById($field['value'])->country_name);
+                    }
+                }
+
 				$value = JText::_ ( $field ['label'] ) . ' : ' . $string;
 
 				$tag_value = '[CUSTOM_' . strtoupper ( $type ) . '_FIELD:' . strtoupper ( $namekey ) . ']';
@@ -580,7 +612,17 @@ class J2Email {
 
 		return $text;
 	}
+    public function getCountryById($country_id) {
+        $country = F0FTable::getInstance('Country', 'J2StoreTable')->getClone();
+        $country->load($country_id);
+        return $country;
+    }
 
+    public function getZoneById($zone_id) {
+        $zone = F0FTable::getInstance('Zone', 'J2StoreTable')->getClone();
+        $zone->load($zone_id);
+        return $zone;
+    }
 	public function getEmailTemplates($order, $receiver_type='*') {
 
  		$db = JFactory::getDbo();
@@ -589,7 +631,7 @@ class J2Email {
 			->select('*')
 			->from('#__j2store_emailtemplates')
 			->where($db->qn('enabled').'='.$db->q(1))
-			->where(' CASE WHEN orderstatus_id = '.$order->order_state_id .' THEN orderstatus_id = '.$order->order_state_id .'
+			->where(' CASE WHEN orderstatus_id = '.$db->q($order->order_state_id) .' THEN orderstatus_id = '.$db->q($order->order_state_id).'
 							ELSE orderstatus_id ="*" OR orderstatus_id =""
 						END
 					');
@@ -673,7 +715,6 @@ class J2Email {
 		$baseURL = str_replace('/administrator', '', JURI::base());
 		//replace administrator string, if present
 		$baseURL = ltrim($baseURL, '/');
-
 		// Get the mailer
 		$mailer = $this->getMailer($isHTML);
 		$mailer->setSubject($subject);
@@ -859,8 +900,11 @@ class J2Email {
 			}
 
 			// Try to make the template file writable.
-			$user = get_current_user();
-			chown($filePath, $user);
+            if(function_exists('chown')) {
+                $user = get_current_user();
+                chown($filePath, $user);
+            }
+
 			JPath::setPermissions($filePath, '0644');
 
 			if (!is_readable($filePath)) {

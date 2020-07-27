@@ -67,7 +67,7 @@ class J2StoreModelAddresses extends F0FModel {
 		$user = JFactory::getUser();
 		$db = JFactory::getDBO();
 		$where = array();
-		$where[] = 'tbl.user_id='.(int) $user->id;
+		$where[] = 'tbl.user_id='.$db->q((int) $user->id);
 		$query = $this->getAddressQuery($where);
 		$db->setQuery($query);
 		return $db->loadAssocList($key);

@@ -8,6 +8,8 @@
 defined('_JEXEC') or die;
 class J2StoreControllerConfigurations extends F0FController {
 
+	protected $cacheableTasks = array();
+
 	public function __construct($config) {
 
 		parent::__construct($config);
@@ -106,6 +108,7 @@ class J2StoreControllerConfigurations extends F0FController {
 				$url  ='index.php?option=com_j2store&view=cpanels';
 				break;
 		}
+		J2Store::utilities()->clear_cache();
 		$this->setRedirect($url,$msg,$msgType);
 	}
 
@@ -160,6 +163,19 @@ class J2StoreControllerConfigurations extends F0FController {
 		}
 		echo json_encode($json);
 		$app->close();
+	}
+
+	public function regenerateQueuekey(){
+		$app = JFactory::getApplication ();
+		$config = J2Store::config ();
+		$queue_string = JFactory::getConfig ()->get ( 'sitename','' ).time ();
+		$queue_key = md5 ( $queue_string );
+		$config->saveOne ( 'queue_key', $queue_key );
+		$json = array(
+			'queue_key' => $queue_key
+		);
+		echo json_encode ( $json );
+		$app->close ();
 	}
 }
 

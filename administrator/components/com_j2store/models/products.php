@@ -226,7 +226,8 @@ class J2StoreModelProducts extends F0FModel {
     public function updateProduct() {
 
         $result = array();
-        $product_id = $this->input->getInt('product_id', 0);
+        $app = JFactory::getApplication ();
+        $product_id = $app->input->getInt('product_id', 0);
         if(!$product_id) {
             return false;
         }
@@ -471,6 +472,7 @@ class J2StoreModelProducts extends F0FModel {
 
         //generate variant combinations
         $variants = $this->getVariants($product_id);
+        $plugin_helper = J2Store::plugin ();
         if(count($variants)) {
             //we have variants. Start creating a variant product
 
@@ -490,13 +492,15 @@ class J2StoreModelProducts extends F0FModel {
 
 
                 //allow plugins to modify the output
-                $app->triggerEvent('onJ2StoreBeforeVariantGeneration', array(&$variantTable));
+                $plugin_helper->event ( 'BeforeVariantGeneration',array(&$variantTable) );
+                //$app->triggerEvent('onJ2StoreBeforeVariantGeneration', array(&$variantTable));
 
                 //store the data
                 $variantTable->store();
 
                 //allow plugins to modify the output
-                $app->triggerEvent('onJ2StoreAfterVariantGeneration', array(&$variantTable));
+                $plugin_helper->event ( 'AfterVariantGeneration',array(&$variantTable) );
+                //$app->triggerEvent('onJ2StoreAfterVariantGeneration', array(&$variantTable));
 
                 //get the last stored variant id
                 $variant_id = $variantTable->getId();
@@ -532,9 +536,9 @@ class J2StoreModelProducts extends F0FModel {
         if($product_id ) {
 
             $traits = $this->getTraits($product_id);
-
-            $return = $this->getCombinations($traits);
-
+            if(!empty( $traits )){
+                $return = $this->getCombinations($traits);
+            }
             // before returning them, loop through each record and sort them
             $result = array( );
             foreach ( $return as $csv )
@@ -738,7 +742,7 @@ class J2StoreModelProducts extends F0FModel {
         $query->select('#__j2store_variants.availability');
         $query->join('INNER', '#__j2store_variants ON #__j2store_products.j2store_product_id=#__j2store_variants.product_id');
 
-        $query->select('#__j2store_productimages.thumb_image, #__j2store_productimages.main_image, #__j2store_productimages.additional_images');
+        $query->select('#__j2store_productimages.thumb_image, #__j2store_productimages.main_image, #__j2store_productimages.additional_images,#__j2store_productimages.thumb_image_alt,#__j2store_productimages.main_image_alt,#__j2store_productimages.additional_images_alt');
         $query->join('LEFT OUTER', '#__j2store_productimages ON #__j2store_products.j2store_product_id=#__j2store_productimages.product_id');
 
         $query->select('#__j2store_taxprofiles.taxprofile_name');
@@ -772,9 +776,9 @@ class J2StoreModelProducts extends F0FModel {
         $db = $this->_db;
         $state = $this->getFilterValues();
 
-        $query->where(
+        /*$query->where(
             $db->qn('#__j2store_variants').'.'.$db->qn('is_master').' = '.$db->q(1)
-        );
+        );*/
 
         if(!is_null($state->product_ids) && !empty($state->product_ids)) {
             $query->where(
@@ -783,13 +787,22 @@ class J2StoreModelProducts extends F0FModel {
         }
 
         if($state->search){
-            $query->where(
+
+            $where_array_query = J2Store::plugin()->event('AfterProductListWhereQuery', array(&$this));
+            $where_query = '';
+            if(!empty($where_array_query)){
+                $where_query = implode(' OR ',$where_array_query);
+                $where_query .= ' OR ';
+            }
+
+            $query->where('('.
+                $where_query.
                 $db->qn('#__j2store_products').'.'.$db->qn('j2store_product_id').' LIKE '.$db->q('%'.$state->search.'%').'OR '.
                 $db->qn('#__j2store_products').'.'.$db->qn('product_source').' LIKE '.$db->q('%'.$state->search.'%').'OR '.
                 $db->qn('#__j2store_variants').'.'.$db->qn('sku').' LIKE '.$db->q('%'.$state->search.'%').'OR '.
                 $db->qn('#__j2store_variants').'.'.$db->qn('upc').' LIKE '.$db->q('%'.$state->search.'%').'OR '.
                 $db->qn('#__j2store_variants').'.'.$db->qn('price').' LIKE '.$db->q('%'.$state->search.'%').'OR '.
-                $db->qn('#__j2store_products').'.'.$db->qn('product_type').' LIKE '.$db->q('%'.$state->search.'%')
+                $db->qn('#__j2store_products').'.'.$db->qn('product_type').' LIKE '.$db->q('%'.$state->search.'%').')'
             ) ;
 
         }
@@ -865,7 +878,7 @@ class J2StoreModelProducts extends F0FModel {
             $query->where($db->qn('#__j2store_products').'.'.$db->qn('taxprofile_id').'='.$db->q($state->taxprofile_id));
         }
 
-        if(!is_null($state->visible) &&  !empty($state->visible)) {
+        if(!is_null($state->visible) && $state->visible != '') {
             $query->where($db->qn('#__j2store_products').'.'.$db->qn('visibility').'='.$db->q($state->visible));
         }
 
@@ -903,7 +916,7 @@ class J2StoreModelProducts extends F0FModel {
 
 
         if(!is_null($state->productfilter_id) && !empty($state->productfilter_id)){
-            $query->where('FIND_IN_SET ('.$state->productfilter_id.',#__j2store_products.productfilter_ids)' );
+            $query->where('FIND_IN_SET ('.$db->q($state->productfilter_id).',#__j2store_products.productfilter_ids)' );
         }
     }
 
@@ -1058,7 +1071,9 @@ class J2StoreModelProducts extends F0FModel {
             'min_price' => JText::_('J2STORE_PRODUCT_FILTER_SORT_PRICE_ASCENDING'),
             'rmin_price' => JText::_('J2STORE_PRODUCT_FILTER_SORT_PRICE_DESCENDING'),
             'sku' => JText::_('J2STORE_PRODUCT_FILTER_SORT_SKU_ASCENDING'),
-            'rsku' => JText::_('J2STORE_PRODUCT_FILTER_SORT_SKU_DESCENDING')
+            'rsku' => JText::_('J2STORE_PRODUCT_FILTER_SORT_SKU_DESCENDING'),
+            'brand' => JText::_('J2STORE_PRODUCT_FILTER_SORT_BRAND_ASCENDING'),
+            'rbrand' => JText::_('J2STORE_PRODUCT_FILTER_SORT_BRAND_DESCENDING')
         );
     }
 
@@ -1259,6 +1274,10 @@ class J2StoreModelProducts extends F0FModel {
         $query->select('c.title AS category_title, c.path AS category_route, c.access AS category_access, c.alias AS category_alias')
             ->join('LEFT', '#__categories AS c ON c.id = a.catid');
 
+        if ($this->checkTable () ) {
+            $query->select('mc.catid as mc_catid')->join('LEFT', '#__multicats_content_catid AS mc ON mc.item_id = a.id');
+        }
+
         // Join over the users for the author and modified_by names.
         $query->select("CASE WHEN a.created_by_alias > ' ' THEN a.created_by_alias ELSE ua.name END AS author")
             ->select("ua.email AS author_email")
@@ -1291,7 +1310,7 @@ class J2StoreModelProducts extends F0FModel {
 
         $published = 1;
         // Use article state if badcats.id is null, otherwise, force 0 for unpublished
-        $query->where($publishedWhere . ' = ' . (int) $published);
+        $query->where($publishedWhere . ' = ' . $db->q((int) $published));
 
 
         $this->_sfBuildQueryJoins($query);
@@ -1314,7 +1333,7 @@ class J2StoreModelProducts extends F0FModel {
         $query->select('#__j2store_variants.availability');
         $query->join('INNER', '#__j2store_variants ON #__j2store_products.j2store_product_id=#__j2store_variants.product_id');
 
-        $query->select('#__j2store_productimages.thumb_image, #__j2store_productimages.main_image, #__j2store_productimages.additional_images');
+        $query->select('#__j2store_productimages.thumb_image, #__j2store_productimages.main_image, #__j2store_productimages.additional_images,#__j2store_productimages.thumb_image_alt,#__j2store_productimages.main_image_alt,#__j2store_productimages.additional_images_alt');
         $query->join('LEFT OUTER', '#__j2store_productimages ON #__j2store_products.j2store_product_id=#__j2store_productimages.product_id');
 
         $query->select($this->_db->qn('#__j2store_productquantities').'.j2store_productquantity_id ')
@@ -1324,16 +1343,16 @@ class J2StoreModelProducts extends F0FModel {
         //for variable product
         $query->join('LEFT OUTER', '#__j2store_productprice_index ON  #__j2store_products.j2store_product_id=#__j2store_productprice_index.product_id');
 
-        $query->select('CASE #__j2store_products.product_type
-							WHEN "variable" THEN
+        $query->select('CASE 
+							WHEN #__j2store_products.product_type IN ("variable","flexivariable","advancedvariable","variablesubscriptionproduct") THEN
 							  #__j2store_productprice_index.min_price
 							ELSE
 								#__j2store_variants.price
 							END as min_price
 				');
 
-        $query->select('CASE #__j2store_products.product_type
-							WHEN "variable" THEN
+        $query->select('CASE 
+							WHEN #__j2store_products.product_type IN ("variable","flexivariable","advancedvariable","variablesubscriptionproduct") THEN
 							  #__j2store_productprice_index.max_price
 							ELSE
 								#__j2store_variants.price
@@ -1344,9 +1363,12 @@ class J2StoreModelProducts extends F0FModel {
         $query->select('#__j2store_product_filters.filter_id');
         $query->join('LEFT OUTER', '#__j2store_product_filters ON #__j2store_products.j2store_product_id=#__j2store_product_filters.product_id');
 
+        $query->join('LEFT OUTER', '#__j2store_manufacturers ON #__j2store_products.manufacturer_id=#__j2store_manufacturers.j2store_manufacturer_id');
+        $query->select('#__j2store_addresses.company as brand_name');
+        $query->join('LEFT OUTER', '#__j2store_addresses ON #__j2store_manufacturers.address_id=#__j2store_addresses.j2store_address_id');
+//address_id
 
     }
-
 
     /**
      * Method to build where query based on the filters
@@ -1369,8 +1391,12 @@ class J2StoreModelProducts extends F0FModel {
 
             // Add subcategory check
             $includeSubcategories = $this->getState('filter.subcategories', false);
-            $categoryEquals = 'a.catid ' . $type . ' REGEXP BINARY '. $db->q('[[:<:]]'.$categoryId.'[[:>:]]') ;
-
+            //$categoryEquals = 'a.catid ' . $type . ' REGEXP BINARY '. $db->q('[[:<:]]'.$categoryId.'[[:>:]]') ;
+            if ($this->checkTable () ) {
+                $categoryEquals = 'mc.catid ' . $type . ' REGEXP BINARY '. $db->q('[[:<:]]'.$categoryId.'[[:>:]]') ;
+            }else{
+                $categoryEquals = 'a.catid ' . $type . ' REGEXP BINARY '. $db->q('[[:<:]]'.$categoryId.'[[:>:]]') ;
+            }
             if ($includeSubcategories)
             {
                 //TODO: include subcategories does not support multicategory
@@ -1381,20 +1407,30 @@ class J2StoreModelProducts extends F0FModel {
                     ->select('sub.id')
                     ->from('#__categories as sub')
                     ->join('INNER', '#__categories as this ON sub.lft > this.lft AND sub.rgt < this.rgt')
-                    ->where('this.id = ' . (int) $categoryId);
+                    ->where('this.id = ' . $db->q((int) $categoryId));
 
                 if ($levels >= 0)
                 {
-                    $subQuery->where('sub.level <= this.level + ' . $levels);
+                    $subQuery->where('sub.level <= (this.level + ' . $levels.')');
                 }
-
+                $db->setQuery($subQuery);
+                $sub_data = $db->loadAssocList();
+                $sub_cats = array();
+                foreach($sub_data as $k=> $sub_cat){
+                    $sub_cats [] = $sub_cat['id'];
+                }
+                if(count($sub_cats) > 0){
+                    $sub_string = implode(',', $sub_cats) ;
+                    $categoryEquals .= ' OR a.catid IN ('.$sub_string.')';
+                }
                 // Add the subquery to the main query
-                $query->where('(' . $categoryEquals . ' OR a.catid IN (' . $subQuery->__toString() . '))');
+                $query->where('(' . $categoryEquals . ')');
             }
             else
             {
                 $query->where($categoryEquals);
             }
+
         }
         elseif (is_array($categoryId) && (count($categoryId) > 0))
         {
@@ -1407,7 +1443,13 @@ class J2StoreModelProducts extends F0FModel {
                 $levels = (int) $this->getState('filter.max_category_levels', '1');
 
                 $includeSubcategories = $this->getState('filter.subcategories', false);
-                $categoryEquals = 'a.catid ' . $type . ' REGEXP BINARY '. $db->q($categoryIds) ;
+                //$categoryEquals = 'a.catid ' . $type . ' REGEXP BINARY '. $db->q($categoryIds) ;
+
+                if ($this->checkTable () ) {
+                    $categoryEquals = 'mc.catid ' . $type . ' REGEXP BINARY '. $db->q($categoryIds) ;
+                }else{
+                    $categoryEquals = 'a.catid ' . $type . ' REGEXP BINARY '. $db->q($categoryIds) ;
+                }
 
                 if ($includeSubcategories)
                 {
@@ -1424,7 +1466,7 @@ class J2StoreModelProducts extends F0FModel {
                     if ($levels >= 0)
                     {
 
-                        $subQuery->where('sub.level <= (this.level + ' . $db->q($levels).')');
+                        $subQuery->where('sub.level <= (this.level + ' . $levels.')');
                     }
                     $db->setQuery($subQuery);
                     $sub_data = $db->loadAssocList();
@@ -1462,7 +1504,7 @@ class J2StoreModelProducts extends F0FModel {
         $date = JFactory::getDate('now', $tz);
 
         //default to the sql formatted date
-        $nowDate = $db->quote( $date->toSql(true));
+        $nowDate = $db->quote( $date->toSql());
 
         $query	->where('(a.publish_up = '.$nullDate.' OR a.publish_up <= '.$nowDate.')')
             ->where('(a.publish_down = '.$nullDate.' OR a.publish_down >= '.$nowDate.')');
@@ -1470,7 +1512,8 @@ class J2StoreModelProducts extends F0FModel {
         // Filter by language
         if ($this->getState('filter.language'))
         {
-            $query->where('a.language in (' . $db->quote(JFactory::getLanguage()->getTag()) . ',' . $db->quote('*') . ')');
+            $lang_tag = $this->getState('lang_tag', JFactory::getLanguage()->getTag());
+            $query->where('a.language in (' . $db->quote($lang_tag) . ',' . $db->quote('*') . ')');
         }
 
 
@@ -1518,8 +1561,7 @@ class J2StoreModelProducts extends F0FModel {
             }
             // Filter from-to dates
             $query->where(
-                $db->qn('#__j2store_products').'.'.$db->qn('created_on').' >= '.
-                $db->q($since)
+                $db->qn('#__j2store_products').'.'.$db->qn('created_on').' >= '.$since
             );
         }
 
@@ -1540,8 +1582,7 @@ class J2StoreModelProducts extends F0FModel {
                 $until = $jFrom->toSql();
             }
             $query->where(
-                $db->qn('#__j2store_products').'.'.$db->qn('created_on').' <= '.
-                $db->q($until)
+                $db->qn('#__j2store_products').'.'.$db->qn('created_on').' <= '.$until
             );
         }
 
@@ -1574,9 +1615,9 @@ class J2StoreModelProducts extends F0FModel {
         if (!is_null($state->pricefrom ) && ($state->pricefrom >=0 || !empty($state->pricefrom )) && !is_null($state->priceto ) && !empty($state->priceto)  )
         {   
            $variant_pricerange_qry = '';
-           $variant_pricerange_qry .= '(price >= '.( int ) $state->pricefrom.') ' ;
+           $variant_pricerange_qry .= '(price >= '.$db->q(( int ) $state->pricefrom).') ' ;
            $variant_pricerange_qry .= ' AND ';
-           $variant_pricerange_qry .= '(price <= '.( int ) $state->priceto.') ' ;
+           $variant_pricerange_qry .= '(price <= '.$db->q(( int ) $state->priceto).') ' ;
         
            $query->where( '#__j2store_products.j2store_product_id in ( select distinct product_id from #__j2store_variants where '
                                 . $variant_pricerange_qry .' )' );
@@ -1610,6 +1651,18 @@ class J2StoreModelProducts extends F0FModel {
             }
         }
 
+        if(count ( $state->product_types ) > 0){
+            if (! is_array ( $state->product_types )) {
+                $product_types = ( array ) $state->product_types;
+            } else {
+                $product_types = $state->product_types;
+            }
+            $query->where ( '#__j2store_products.product_type IN (\'' . implode ( '\',\'', $product_types ) . '\')' );
+        }
+
+        if(!is_null ( $state->show_feature_only ) && !empty( $state->show_feature_only )){
+            $query->where($db->qn('a').'.'.$db->qn('featured').' = '.$db->q($state->show_feature_only));
+        }
     }
 
     /**
@@ -1623,14 +1676,23 @@ class J2StoreModelProducts extends F0FModel {
         $this->_sfBuildSortQuery($query);
 
         $params = $this->getMergedParams();
-
+        //$article_category_ordering = $params->get('consider_category',0);
         $articleOrderby		= $params->get('orderby_sec', 'rdate');
         $articleOrderDate	= $params->get('order_date');
-        $secondary			= $this->orderbySecondary($articleOrderby, $articleOrderDate) . ', ';
-        $orderby = $secondary . ' a.created ';
-        $this->setState('list.ordering', $orderby);
+        $secondary			= $this->orderbySecondary($articleOrderby, $articleOrderDate,$query);
+        if(empty( $secondary )){
+            $secondary = 'a.ordering';
+        }
+        //else{
+           // $orderby = trim ( $secondary );
+            //if($article_category_ordering){
+                //$query->order('category_title'.' '.$this->getState('list.direction', 'ASC'));
+            //}
+        //}
 
-        $query->order($this->getState('list.ordering', 'a.ordering') . ' ' . $this->getState('list.direction', 'ASC'));
+        $this->setState('list.ordering', $secondary);
+
+        $query->order($this->getState('list.ordering', 'a.ordering').' '.$this->getState('list.direction', 'ASC'));
 
 
     }
@@ -1663,6 +1725,15 @@ class J2StoreModelProducts extends F0FModel {
                 case 'rsku' :
                     $sortby = '#__j2store_variants.sku DESC';
                     break;
+
+                case 'brand' :
+                    $sortby = 'brand_name ASC';
+                    break;
+
+                case 'rbrand' :
+                    $sortby = 'brand_name DESC';
+                    break;
+
             }
             if(!empty($sortby)) {
                 $query->order ( $sortby );
@@ -1671,10 +1742,10 @@ class J2StoreModelProducts extends F0FModel {
     }
 
 
-    public function orderbySecondary($orderby, $orderDate = 'created')
+    public function orderbySecondary($orderby, $orderDate = 'created', $query)
     {
         $queryDate = $this->getQueryDate($orderDate);
-
+        $direction = $this->getState('category_order_direction', 'ASC');
         switch ($orderby)
         {
             case 'date' :
@@ -1682,22 +1753,25 @@ class J2StoreModelProducts extends F0FModel {
                 break;
 
             case 'rdate' :
-                $orderby = $queryDate . ' DESC ';
+                $this->setState('list.direction', 'DESC');
+                $orderby = $queryDate;
                 break;
 
-            case 'alpha' :
+            case 'title' :
                 $orderby = 'a.title';
                 break;
 
             case 'ralpha' :
-                $orderby = 'a.title DESC';
+                $this->setState('list.direction', 'DESC');
+                $orderby = 'a.title';
                 break;
 
             case 'hits' :
-                $orderby = 'a.hits DESC';
+                $orderby = 'a.hits';
                 break;
 
             case 'rhits' :
+                $this->setState('list.direction', 'DESC');
                 $orderby = 'a.hits';
                 break;
 
@@ -1706,17 +1780,22 @@ class J2StoreModelProducts extends F0FModel {
                 break;
 
             case 'author' :
-                $orderby = 'a.author';
+                $orderby = 'a.created_by';
                 break;
 
             case 'rauthor' :
-                $orderby = 'a.author DESC';
+                $this->setState('list.direction', 'DESC');
+                $orderby = 'a.author';
                 break;
 
-            case 'front' :
-                $orderby = 'a.featured DESC';
+            case 'featured' :
+                $orderby = 'a.featured';
                 break;
 
+            case 'cat_order':
+                $query->order('c.lft '.$direction);
+                $orderby = 'a.ordering';
+                break;
 
             default :
                 $orderby = 'a.ordering';
@@ -1821,8 +1900,10 @@ class J2StoreModelProducts extends F0FModel {
         $item = new JObject();
         $item->id = $id;
         $item->text = $description;
+        J2Store::plugin ()->event ( 'ContentPrepare',array ($context, &$item, &$params, 0) );
         //run content plugins for short and long description
         $app->triggerEvent('onContentPrepare', array ($context, &$item, &$params, 0));
+
         return $item->text;
     }
 
@@ -1853,7 +1934,9 @@ class J2StoreModelProducts extends F0FModel {
             'catids'			=>  $this->getState('catids',null,'array'),
             'sortby'			=>  $this->getState('sortby',null,'string'),
             'instock'			=>  $this->getState('instock',null,'int'),
-            'productfilter_id'			=>  $this->getState('productfilter_id',null,'string'),
+            'productfilter_id'	=>  $this->getState('productfilter_id',null,'string'),
+            'product_types'		=>  $this->getState('product_types',array()),
+            'show_feature_only' => $this->getState('show_feature_only',null,'int')
         );
     }
 
@@ -1949,4 +2032,42 @@ class J2StoreModelProducts extends F0FModel {
         return $rows;
     }
 
+    /**
+     * check table is available
+     * @param $string - table name
+     * @param $force - force check
+     * @return boolean
+    */
+    function checkTable($string='multicats_content_catid',$force=false){
+        static $sets;
+
+        if (! is_array ( $sets )) {
+            $sets = array ();
+        }
+        if (! isset ( $sets [$string] ) || $force) {
+
+
+            $db = $this->getDbo();
+            $tables = $db->getTableList ();
+            $prefix = $db->getPrefix ();
+            if (in_array ( $prefix . $string, $tables )) {
+                $sets [$string] = true;
+            }else{
+                $sets [$string] = false;
+            }
+
+            if(JComponentHelper::isInstalled('com_multicats')) {
+
+                if(!JComponentHelper::isEnabled('com_multicats'))
+                {
+                    $sets [ $string ] = false;
+                }
+
+            }else {
+                $sets [ $string ] = false;
+            }
+
+        }
+        return $sets [$string];
+    }
 }

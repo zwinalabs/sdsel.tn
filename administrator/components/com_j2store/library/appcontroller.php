@@ -10,6 +10,7 @@ class J2StoreAppController extends F0FController {
 
 	// the same as the plugin's one!
 	var $_element = '';
+	protected $cacheableTasks = array();
 	
 	function __construct($config = array()) {
 		parent::__construct ( $config );
@@ -44,6 +45,8 @@ class J2StoreAppController extends F0FController {
     	} else {
     		$url = 'index.php?option=com_j2store&view=apps';
     	}
+	    $cache = JFactory::getCache();
+	    $cache->clean();
     	$this->setRedirect ( $url );
     }
 

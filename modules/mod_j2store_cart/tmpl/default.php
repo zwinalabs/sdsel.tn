@@ -19,14 +19,17 @@ $hide = false;
 if($params->get('check_empty',0) && $list['product_count'] < 1) {
 $hide = true;
 }
+$title = $params->get('cart_module_title', '');
 ?>
 
 	<?php if(!$ajax): ?>
-		<div class="j2store_cart_module_<?php echo $module->id; ?>">
+		<div class="j2store_cart_module_<?php echo $module->id; ?> <?php echo $moduleclass_sfx;?>">
 	<?php endif; ?>
 		<?php if(!$hide): ?>
+
+			<h3 class="cart-module-title"><?php echo JText::_($title); ?></h3>
 			<?php if($list['product_count'] > 0): ?>
-				<?php echo JText::sprintf('J2STORE_CART_TOTAL', $list['product_count'], $currency->format($list['total'])); ?>
+				<span class="default_cart_module_text"><?php echo JText::sprintf('J2STORE_CART_TOTAL', $list['product_count'], $currency->format($list['total'])); ?></span>
 			<?php else : ?>
 					<?php echo JText::_('J2STORE_NO_ITEMS_IN_CART'); ?>
 			<?php endif; ?>

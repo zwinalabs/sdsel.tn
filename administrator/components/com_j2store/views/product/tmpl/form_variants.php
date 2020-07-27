@@ -123,7 +123,8 @@ function getVariantList(element){
 						'task' :'getVariantListAjax',
 						'limitstart':limitstart,
 						'product_id' : product_id,
-						'limit' : limit
+						'limit' : limit,
+						'form_prefix' : '<?php echo $this->form_prefix;?>'
 				}
 			}
 		$.ajax(ajOptions)

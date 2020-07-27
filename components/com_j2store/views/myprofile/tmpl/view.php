@@ -15,6 +15,13 @@ defined('_JEXEC') or die('Restricted access');
 $task = JFactory::getApplication()->input->getString('task');
 ?>
 <?php if ($task == 'printOrder') : ?>
+    <style type="text/css" media="print">
+        @page
+        {
+            size:  auto;   /* auto is the initial value */
+            margin: 0mm;  /* this affects the margin in the printer settings */
+        }
+    </style>
     <script type="text/javascript">
            window.print();
     </script>

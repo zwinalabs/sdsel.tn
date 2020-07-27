@@ -19,7 +19,7 @@ defined('_JEXEC') or die('Restricted access');
 </div>
             <div class="j2store">
 						<div id="field">
-							<div class="control-group">
+							<div class="control-group" id="paymill_card_holder">
 									<label class="control-label"><?php echo JText::_('J2STORE_CARDHOLDER_NAME');?></label>
 									<div class="controls"><input class="paymill-card-holdername" name="cardholder" type="text" size="20"
 									value="" />
@@ -31,6 +31,7 @@ defined('_JEXEC') or die('Restricted access');
 										<select id="payment_type" name="paymill_payment_mode" onchange="ChangeDropdowns(this.value);">
 											<option value="cc" selected="true"><?php echo JText::_('J2STORE_CREDITCARD');?></option>
 											<option value="dc"><?php echo JText::_('J2STORE_DEBIT_CARD');?></option>
+                                            <option value="sofort"><?php echo JText::_('J2STORE_PAYMILL_SOFORT');?></option>
 									</select>
 							</div>
 						</div>
@@ -107,6 +108,9 @@ defined('_JEXEC') or die('Restricted access');
 									</div>
 									 -->
                         </div>
+                        <div id="sofort">
+
+                        </div>
                      </div>
 
                 </div>
@@ -137,10 +141,21 @@ defined('_JEXEC') or die('Restricted access');
 		   {
 			   j2store.jQuery("#cc").css("display", "block");
 			   j2store.jQuery("#bank").css("display", "none");
+               j2store.jQuery("#sofort").css("display", "none");
+               j2store.jQuery("#paymill_card_holder").css("display", "block");
 		   }else if(value=="dc")
 		   {
 			   j2store.jQuery("#cc").css("display", "none");
 			   j2store.jQuery("#bank").css("display", "block");
-		   }
+               j2store.jQuery("#sofort").css("display", "none");
+               j2store.jQuery("#paymill_card_holder").css("display", "block");
+		   }else if(value == 'sofort')
+		   {
+               j2store.jQuery("#cc").css("display", "none");
+               j2store.jQuery("#bank").css("display", "none");
+               j2store.jQuery("#sofort").css("display", "block");
+               j2store.jQuery("#paymill_card_holder").css("display", "none");
+
+           }
 		}
         </script>

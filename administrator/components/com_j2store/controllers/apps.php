@@ -10,6 +10,7 @@ defined('_JEXEC') or die;
 
 class J2StoreControllerApps extends F0FController
 {
+	protected $cacheableTasks = array();
 
 	public function execute($task)
 	{

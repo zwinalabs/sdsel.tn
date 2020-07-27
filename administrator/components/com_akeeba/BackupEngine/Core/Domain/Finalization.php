@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Core\Domain;
@@ -506,10 +505,9 @@ class Finalization extends Part
 
 		if ($result === false)
 		{
-			Factory::getLog()->log(LogLevel::WARNING, 'Failed to process file ' . $filename);
-			Factory::getLog()->log(LogLevel::WARNING, 'Error received from the post-processing engine:');
-            Factory::getLog()->log(LogLevel::WARNING, implode("\n", array_merge($this->getWarnings(), $this->getErrors())));
 			$this->setWarning('Failed to process file ' . $filename);
+			Factory::getLog()->log(LogLevel::WARNING, 'Error received from the post-processing engine:');
+			Factory::getLog()->log(LogLevel::WARNING, implode("\n", array_merge($this->getWarnings(), $this->getErrors())));
 		}
 		elseif ($result === true)
 		{
@@ -647,8 +645,6 @@ class Finalization extends Part
 
 		if (!@file_exists($filename) || !is_file($filename))
 		{
-			Factory::getLog()->log(LogLevel::WARNING, "Failed to upload kickstart.php. File $filename is missing");
-
 			$this->setWarning('Failed to upload kickstart.php. Missing file ' . $filename);
 
 			// Indicate we're done.
@@ -660,11 +656,10 @@ class Finalization extends Part
 
 		if ($result === false)
 		{
-			Factory::getLog()->log(LogLevel::WARNING, 'Failed to upload kickstart.php');
+			$this->setWarning('Failed to upload kickstart.php');
+
 			Factory::getLog()->log(LogLevel::WARNING, 'Error received from the post-processing engine:');
 			Factory::getLog()->log(LogLevel::WARNING, implode("\n", $this->getWarnings()));
-
-			$this->setWarning('Failed to upload kickstart.php');
 		}
 		elseif ($result === true)
 		{
@@ -1387,10 +1382,12 @@ class Finalization extends Part
 		$query = $db->getQuery(true)
 					->select(array(
 						$db->qn('id'),
+						$db->qn('tag'),
 						$db->qn('backupid'),
 						$db->qn('absolute_path'),
 					))
 					->from($db->qn($statsTable))
+					->where($db->qn('profile_id') . ' = ' . $db->q(Platform::getInstance()->get_active_profile()))
 					->where($db->qn('status') . ' = ' . $db->q('complete'))
 					->where($db->qn('filesexist') . '=' . $db->q('0'))
 					->order($db->qn('id') . ' DESC');
@@ -1418,7 +1415,11 @@ class Finalization extends Part
 
 			$logFileName = 'akeeba.' . $stat['tag'] . '.' . $stat['backupid'] . '.log';
 			$logPath = dirname($stat['absolute_path']) . '/' . $logFileName;
-			@unlink($logPath);
+
+			if (file_exists($logPath))
+			{
+				@unlink($logPath);
+			}
 		}
 
 		$ids = array();

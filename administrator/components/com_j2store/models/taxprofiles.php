@@ -254,7 +254,7 @@ class J2StoreModelTaxprofiles extends F0FModel {
 			}
 		} */
 		//allow plugins to modify the data
-		J2Store::plugin()->event('AfterGetTaxRates', array(&$tax_rates));		
+		J2Store::plugin()->event('AfterGetTaxRates', array(&$tax_rates,$taxprofile_id));
 		return $tax_rates;
 
 	}
@@ -337,7 +337,7 @@ class J2StoreModelTaxprofiles extends F0FModel {
 			}
 			
 			//allow plugins to modify the data
-			J2Store::plugin()->event('AfterGetTaxRates', array(&$rates));
+			J2Store::plugin()->event('AfterGetTaxRates', array(&$rates,$taxprofile_id));
 			
 			$taxtotal = 0;
 		

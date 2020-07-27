@@ -46,6 +46,7 @@ defined('_JEXEC') or die( 'Restricted access' );
 		<h4><?php echo JText::_('J2STORE_ADDRESS_LIST');?></h4>
 		<?php
 		if($this->addresses && !empty($this->addresses)):
+            echo J2Store::plugin()->eventWithHtml('BeforeCustomerAddressList',array($this->addresses));
 			foreach($this->addresses as $item):
 			$this->item = $item;
 		?>

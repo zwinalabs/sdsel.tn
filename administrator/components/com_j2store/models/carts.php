@@ -29,24 +29,32 @@ class J2StoreModelCarts extends F0FModel {
 		$json = new JObject();
 
 		//first check if it has product id.
-		$product_id = $this->input->get('product_id');
+		$product_id = $app->input->get('product_id');
 
 		if(!isset($product_id)) {
-			$errors['error'] = JText::_('J2STORE_PRODUCT_NOT_FOUND');
+			$errors['error'] =  array('general'=>JText::_('J2STORE_PRODUCT_NOT_FOUND'));
 			return $errors;
 		}
+
+		//check negative quantity... Customers should not be able to add a negative quantity
+		$quantity = $app->input->get('product_qty', 1);
+		if($quantity <= 0) {
+			$errors['error'] = array('general'=>JText::_('J2STORE_PRODUCT_INVALID_QUANTITY'));
+			return $errors;
+		}
+
 
 		//product found. Load it
 		$product = F0FModel::getTmpInstance('Products', 'J2StoreModel')->getItem($product_id);
 
 		if(($product->visibility !=1) || ($product->enabled !=1) ) {
-			$errors['error'] = array('error'=>JText::_('J2STORE_PRODUCT_NOT_ENABLED_CANNOT_ADDTOCART'));
+			$errors['error'] = array('general'=>JText::_('J2STORE_PRODUCT_NOT_ENABLED_CANNOT_ADDTOCART'));
 			return $errors;
 		}
 
 		if($product->j2store_product_id != $product_id) {
 			//so sorry. Data fetched does not match the product id
-			$errors['error'] = JText::_('J2STORE_PRODUCT_NOT_FOUND');
+			$errors['error'] =  array('general'=>JText::_('J2STORE_PRODUCT_NOT_FOUND'));
 			return $errors;
 		}
 
@@ -101,6 +109,8 @@ class J2StoreModelCarts extends F0FModel {
 				}
 			}
 			$item->cartitem_params = $item_params->toString('JSON');
+
+			J2Store::plugin()->event("BeforeLoadCartItemForAdd", array( &$keynames, $item ) );
 
 			if ($table->load ( $keynames )) {
 				// if an item exists, we just add the quantity. Even if it does not
@@ -171,12 +181,12 @@ class J2StoreModelCarts extends F0FModel {
 
 		if (strlen($filter_date_from))
 		{
-			$query->where("tbl.created_on >= '".$filter_date_from."'");
+			$query->where("tbl.created_on >= ".$filter_date_from);
 		}
 
 		if (strlen($filter_date_to))
 		{
-			$query->where("tbl.created_on <= '".$filter_date_to."'");
+			$query->where("tbl.created_on <= ".$filter_date_to);
 		}
 
 		if (strlen($filter_cart_type))
@@ -292,7 +302,7 @@ class J2StoreModelCarts extends F0FModel {
 
 	}
 
-	public function getItems() {
+	public function getItems($focrce = false) {
 
 		$app = JFactory::getApplication();
 		$session = JFactory::getSession ();
@@ -302,7 +312,9 @@ class J2StoreModelCarts extends F0FModel {
 			// now process the items
 			static $cartsets;
 			if(!is_array($cartsets)) $cartsets = array();
-			
+			if($focrce){
+                $cartsets = array();
+            }
 			if(!isset($cartsets[$cart->j2store_cart_id])) {
 				//we have the cart. Now get items for this cart
 				$cartitem_model = F0FModel::getTmpInstance('Cartitems', 'J2StoreModel');
@@ -330,7 +342,7 @@ class J2StoreModelCarts extends F0FModel {
 					{
 						// Oops, an exception occured!
 						$this->setError($e->getMessage());
-						return false;
+						return array();
 					}
 	
 				} // cart item loops
@@ -408,6 +420,7 @@ class J2StoreModelCarts extends F0FModel {
 			$item->product_id = $cartitem->product_id;
 			$item->variant_id = $cartitem->variant_id;
 			$item->product_options = $cartitem->product_options;
+			$item->j2store_cartitem_id = $cartitem->j2store_cartitem_id;
 
 			if ($cartitem->delete ( $cartitem_id )) {
 				J2Store::plugin()->event( 'RemoveFromCart', array (
@@ -453,7 +466,7 @@ class J2StoreModelCarts extends F0FModel {
 
 	function getCartUrl() {
 
-		$url = JRoute::_('index.php?option=com_j2store&view=carts');
+		$url = JRoute::_('index.php?option=com_j2store&view=carts',false);
 		//allow plugins to alter the cart link.
 		//This allows 3rd-party developers to create different checkout steps for j2store
 		//Example. The plugin can return a completely different link: index.php?option=com_example&view=myview
@@ -463,7 +476,7 @@ class J2StoreModelCarts extends F0FModel {
 
 	function getCheckoutUrl() {
 
-		$url = JRoute::_('index.php?option=com_j2store&view=checkout');
+		$url = JRoute::_('index.php?option=com_j2store&view=checkout',false);
 		//allow plugins to alter the checkout link.
 		//This allows 3rd-party developers to create different checkout steps for j2store
 		//Example. The plugin can return a completely different link: index.php?option=com_example&view=myview
@@ -564,22 +577,23 @@ class J2StoreModelCarts extends F0FModel {
 		if($upload_result == false) {
 			$json['error'] = $this->getError();
 		} else {
+            J2Store::plugin()->event('AfterValidateFiles',array(&$json,&$upload_result));
+            if(!$json){
+                $upload = F0FTable::getInstance('Upload', 'J2StoreTable');
+                $upload->reset();
+                $upload->j2store_upload_id = null;
 
-			$upload = F0FTable::getInstance('Upload', 'J2StoreTable');
-			$upload->reset();
-			$upload->j2store_upload_id = null;
 
+                $jdate = new JDate();
 
-			$jdate = new JDate();
+                $upload_result['created_by'] = JFactory::getUser()->id;
+                $upload_result['created_on'] = $jdate->toSql();
+                $upload_result['enabled']    = 1;
 
-			$upload_result['created_by'] = JFactory::getUser()->id;
-			$upload_result['created_on'] = $jdate->toSql();
-			$upload_result['enabled']    = 1;
-
-			if(!$upload->save($upload_result)) {
-				$json['error'] = JText::sprintf('J2STORE_UPLOAD_ERR_GENERIC_ERROR');
-			}
-
+                if(!$upload->save($upload_result)) {
+                    $json['error'] = JText::sprintf('J2STORE_UPLOAD_ERR_GENERIC_ERROR');
+                }
+            }
 		}
 
 		if (!$json) {

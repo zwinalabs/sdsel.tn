@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -39,11 +39,10 @@ class Transfer extends Controller
 	 */
 	public function reset()
 	{
-		$session = $this->container->session;
-		$session->set('transfer', null, 'akeeba');
-		$session->set('transfer.url', null, 'akeeba');
-		$session->set('transfer.url_status', null, 'akeeba');
-		$session->set('transfer.ftpsupport', null, 'akeeba');
+		$this->container->platform->setSessionVar('transfer', null, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.url', null, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.url_status', null, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpsupport', null, 'akeeba');
 
 		/** @var \Akeeba\Backup\Admin\Model\Transfer $model */
 		$model = $this->getModel();
@@ -66,9 +65,8 @@ class Transfer extends Controller
 		$model->savestate(true);
 		$result = $model->checkAndCleanUrl($url);
 
-		$session = $this->container->session;
-		$session->set('transfer.url', $result['url'], 'akeeba');
-		$session->set('transfer.url_status', $result['status'], 'akeeba');
+		$this->container->platform->setSessionVar('transfer.url', $result['url'], 'akeeba');
+		$this->container->platform->setSessionVar('transfer.url_status', $result['status'], 'akeeba');
 
 		@ob_end_clean();
 		echo '###' . json_encode($result) . '###';
@@ -98,7 +96,10 @@ class Transfer extends Controller
 		$ftpPubKey      = $this->input->get('public', '', 'raw', 2);
 		$ftpPrivateKey  = $this->input->get('private', '', 'raw', 2);
 		$ftpPassive     = $this->input->getInt('passive', 1);
+		$ftpPassiveFix  = $this->input->getInt('passive_fix', 1);
 		$ftpDirectory   = $this->input->get('directory', '', 'raw', 2);
+		$chunkMode      = $this->input->getCmd('chunkMode', 'chunked');
+		$chunkSize      = $this->input->getInt('chunkSize', '5242880');
 
 		// Fix the port if it's missing
 		if (empty($ftpPort))
@@ -106,32 +107,36 @@ class Transfer extends Controller
 			switch ($transferOption)
 			{
 				case 'ftp':
+				case 'ftpcurl':
 					$ftpPort = 21;
 					break;
 
 				case 'ftps':
+				case 'ftpscurl':
 					$ftpPort = 990;
 					break;
 
 				case 'sftp':
+				case 'sftpcurl':
 					$ftpPort = 22;
 					break;
 			}
 		}
 
 		// Store everything in the session
-		$session = $this->container->session;
-
-		$session->set('transfer.transferOption', $transferOption, 'akeeba');
-		$session->set('transfer.force', $force, 'akeeba');
-		$session->set('transfer.ftpHost', $ftpHost, 'akeeba');
-		$session->set('transfer.ftpPort', $ftpPort, 'akeeba');
-		$session->set('transfer.ftpUsername', $ftpUsername, 'akeeba');
-		$session->set('transfer.ftpPassword', $ftpPassword, 'akeeba');
-		$session->set('transfer.ftpPubKey', $ftpPubKey, 'akeeba');
-		$session->set('transfer.ftpPrivateKey', $ftpPrivateKey, 'akeeba');
-		$session->set('transfer.ftpDirectory', $ftpDirectory, 'akeeba');
-		$session->set('transfer.ftpPassive', $ftpPassive ? 1 : 0, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.transferOption', $transferOption, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.force', $force, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpHost', $ftpHost, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpPort', $ftpPort, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpUsername', $ftpUsername, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpPassword', $ftpPassword, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpPubKey', $ftpPubKey, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpPrivateKey', $ftpPrivateKey, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpDirectory', $ftpDirectory, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpPassive', $ftpPassive ? 1 : 0, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.ftpPassiveFix', $ftpPassiveFix ? 1 : 0, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.chunkMode', $chunkMode, 'akeeba');
+		$this->container->platform->setSessionVar('transfer.chunkSize', $chunkSize, 'akeeba');
 
 		/** @var \Akeeba\Backup\Admin\Model\Transfer $model */
 		$model = $this->getModel();
@@ -143,7 +148,7 @@ class Transfer extends Controller
 		}
 		catch (TransferIgnorableError $e)
 		{
-			$result = (object)[
+			$result = (object) [
 				'status'    => false,
 				'ignorable' => true,
 				'message'   => $e->getMessage(),
@@ -151,7 +156,7 @@ class Transfer extends Controller
 		}
 		catch (Exception $e)
 		{
-			$result = (object)[
+			$result = (object) [
 				'status'    => false,
 				'message'   => $e->getMessage(),
 				'ignorable' => false,
@@ -173,6 +178,7 @@ class Transfer extends Controller
 		$result = (object)[
 			'status'    => true,
 			'message'   => '',
+			'ignorable' => false,
 		];
 
 		/** @var \Akeeba\Backup\Admin\Model\Transfer $model */
@@ -183,11 +189,20 @@ class Transfer extends Controller
 			$config = $model->getFtpConfig();
 			$model->initialiseUpload($config);
 		}
+		catch (TransferIgnorableError $e)
+		{
+			$result = (object) [
+				'status'    => false,
+				'message'   => $e->getMessage(),
+				'ignorable' => true,
+			];
+		}
 		catch (Exception $e)
 		{
 			$result = (object)[
 				'status'    => false,
 				'message'   => $e->getMessage(),
+				'ignorable' => false,
 			];
 		}
 

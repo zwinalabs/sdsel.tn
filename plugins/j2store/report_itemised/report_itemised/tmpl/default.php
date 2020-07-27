@@ -28,7 +28,6 @@ $listDirn = $state->get('filter_order_Dir');
 		<?php echo J2Html::hidden('filter_order',$listOrder);?>
 		<?php echo J2Html::hidden('filter_order_Dir',$listDirn);?>
 		<?php echo JHtml::_('form.token'); ?>
-
 	<table class="adminlist table table-striped ">
 		<tr>
 			<td>
@@ -48,10 +47,24 @@ $listDirn = $state->get('filter_order_Dir');
 		</tr>
 			<tr>
 				<td>
-					<?php echo JText::_( 'J2STORE_FILTER_SEARCH' ); ?>:
-					<input type="text" name="filter_search" id="search" value="<?php echo htmlspecialchars($state->get('filter_search'));?>" class="text_area" onchange="document.adminForm.submit();" />
-					<button class="btn btn-success" onclick="this.form.submit();"><?php echo JText::_( 'J2STORE_FILTER_GO' ); ?></button>
-					<button class="btn btn-inverse" onclick="document.getElementById('search').value='';this.form.submit();"><?php echo JText::_( 'J2STORE_FILTER_RESET' ); ?></button>
+					<div>
+						<span class="span6">
+							<?php echo JText::_( 'J2STORE_FILTER_SEARCH' ); ?>:
+							<input type="text" name="filter_search" id="search" value="<?php echo htmlspecialchars($state->get('filter_search'));?>" class="text_area" onchange="document.adminForm.submit();" />
+							<button class="btn btn-success" onclick="this.form.submit();"><?php echo JText::_( 'J2STORE_FILTER_GO' ); ?></button>
+							<button class="btn btn-inverse" onclick="document.getElementById('search').value='';this.form.submit();"><?php echo JText::_( 'J2STORE_FILTER_RESET' ); ?></button>
+						</span>
+						<span>
+							<label> <strong><?php echo JText::_('J2STORE_FILTER_DURATION');?></strong></label>
+							<?php
+								$attribs = array (
+									'class' => 'input',
+									'onchange' => 'this.form.submit();'
+								);
+								echo JHtml::_ ( 'select.genericlist', $vars->orderDateType, 'filter_datetype', $attribs, 'value', 'text', $state->get ( 'filter_datetype' ) );
+							?>
+						</span>
+					</div>
 				</td>
 				<td>
 					<?php  echo $vars->pagination->getLimitBox();?>

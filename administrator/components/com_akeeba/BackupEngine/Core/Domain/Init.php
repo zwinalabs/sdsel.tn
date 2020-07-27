@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Core\Domain;
@@ -183,7 +182,7 @@ class Init extends Part
 
 			if (isset($_SERVER['HTTP_USER_AGENT']))
 			{
-				Factory::getLog()->log(LogLevel::INFO, "User agent         :" . phpversion() <= "4.2.1" ? getenv("HTTP_USER_AGENT") : $_SERVER['HTTP_USER_AGENT']);
+				Factory::getLog()->log(LogLevel::INFO, "User agent         :" . $_SERVER['HTTP_USER_AGENT']);
 			}
 
 			Factory::getLog()->log(LogLevel::INFO, "Safe mode          :" . ini_get("safe_mode"));
@@ -230,6 +229,11 @@ class Init extends Part
 				}
 			}
 
+			$min_time = $registry->get('akeeba.tuning.min_exec_time');
+			$max_time = $registry->get('akeeba.tuning.max_exec_time');
+			$bias	  = $registry->get('akeeba.tuning.run_time_bias');
+
+			Factory::getLog()->log(LogLevel::INFO, "Min/Max/Bias       :" . $min_time.'/'.$max_time.'/'.$bias);
 			Factory::getLog()->log(LogLevel::INFO, "Output directory   :" . $registry->get('akeeba.basic.output_directory'));
 			Factory::getLog()->log(LogLevel::INFO, "Part size (bytes)  :" . $registry->get('engine.archiver.common.part_size', 0));
 			Factory::getLog()->log(LogLevel::INFO, "--------------------------------------------------------------------------------");
@@ -251,9 +255,11 @@ class Init extends Part
 			Factory::getLog()->log(LogLevel::INFO, "--------------------------------------------------------------------------------");
 		}
 
-		if (!version_compare(PHP_VERSION, '5.4.0', 'ge'))
+		$phpVersion = PHP_VERSION;
+
+		if (version_compare($phpVersion, '5.6.0', 'lt'))
 		{
-			Factory::getLog()->log(LogLevel::WARNING, "You are using an outdated version of PHP. Akeeba Engine may not work properly. Please upgrade to PHP 5.4.0 or later.");
+			$this->setWarning("You are using PHP $phpVersion which is officially End of Life. We recommend using PHP 7.0 or later for best results. Your version of PHP, $phpVersion, will stop being supported by this backup software in the future.");
 		}
 
 		// Report profile ID

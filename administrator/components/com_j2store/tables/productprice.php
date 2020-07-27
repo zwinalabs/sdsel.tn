@@ -29,5 +29,11 @@ class J2StoreTableProductprice extends F0FTable
 		return parent::check();
 	}
 
+    public function store($updateNulls = false)
+    {
+        J2Store::plugin()->event( 'BeforeProductPriceStore', array($this, $updateNulls));
+        $isSuccess = parent::store($updateNulls);
+        J2Store::plugin()->event( 'AfterProductPriceStore',  array($this, $updateNulls, $isSuccess));
+    }
 
 }

@@ -41,16 +41,32 @@ class JFormFieldOrderstatusList extends JFormFieldList {
 
 		$model = F0FModel::getTmpInstance('Orderstatuses','J2StoreModel');
 		$orderlist = $model->getItemList();
-		$attr = '';
+		$attr = array();
 		// Get the field options.
 				// Initialize some field attributes.
-		$attr['class']= !empty($this->class) ? $this->class: '';
-		$attr ['size']= !empty($this->size) ?$this->size : '';
-		$attr ['multiple']= $this->multiple ? 'multiple': '';
-		$attr ['required']= $this->required ? true:false;
-		$attr ['autofocus']= $this->autofocus ? 'autofocus' : '';
+        if($this->class){
+            $attr['class']= !empty($this->class) ? $this->class: '';
+        }
+
+        if($this->size){
+            $attr ['size']= !empty($this->size) ?$this->size : '';
+        }
+
+		if($this->multiple){
+            $attr ['multiple']= $this->multiple ? 'multiple': '';
+        }
+        if($this->required){
+            $attr ['required']= $this->required ? true:false;
+        }
+
+        if($this->autofocus){
+            $attr ['autofocus']= $this->autofocus ? 'autofocus' : '';
+        }
+
 		// Initialize JavaScript field attributes.
-		$attr ['onchange']= $this->onchange ?  $this->onchange : '';
+        if($this->onchange){
+            $attr ['onchange']= $this->onchange ?  $this->onchange : '';
+        }
 
 		//generate country filter list
 		$orderstatus_options = array();

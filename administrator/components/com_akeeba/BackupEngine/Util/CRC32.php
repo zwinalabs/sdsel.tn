@@ -1,11 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * The PHP-only site backup engine
+ *
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Util;
@@ -13,7 +13,7 @@ namespace Akeeba\Engine\Util;
 // Protection against direct access
 defined('AKEEBAENGINE') or die();
 
-use Akeeba\Engine\Base\Object;
+use Akeeba\Engine\Base\BaseObject;
 use Akeeba\Engine\Factory;
 use Psr\Log\LogLevel;
 
@@ -21,7 +21,7 @@ use Psr\Log\LogLevel;
  * A handy class to abstract the calculation of CRC32 of files under various
  * server conditions and versions of PHP.
  */
-class CRC32 extends Object
+class CRC32 extends BaseObject
 {
 	/**
 	 * Returns the CRC32 of a file, selecting the more appropriate algorithm.
@@ -78,10 +78,12 @@ class CRC32 extends Object
 	{
 		// Detection of buggy PHP hosts
 		static $mustInvert = null;
+
 		if (is_null($mustInvert))
 		{
 			$test_crc = @hash('crc32b', 'test', false);
 			$mustInvert = (strtolower($test_crc) == '0c7e7fd8'); // Normally, it's D87F7E0C :)
+
 			if ($mustInvert)
 			{
 				Factory::getLog()->log(LogLevel::WARNING, 'Your server has a buggy PHP version which produces inverted CRC32 values. Attempting a workaround. ZIP files may appear as corrupt.');
@@ -89,6 +91,7 @@ class CRC32 extends Object
 		}
 
 		$res = @hash_file('crc32b', $filename, false);
+
 		if ($mustInvert)
 		{
 			// Workaround for buggy PHP versions (I think before 5.1.8) which produce inverted CRC32 sums

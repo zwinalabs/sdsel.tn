@@ -53,6 +53,10 @@ class J2StoreModelProductsBehaviorConfigurable extends F0FModelBehavior {
 		if(!isset($data['product_type']) || $data['product_type'] != 'configurable') return;
 		$utility_helper = J2Store::utilities();
 
+		if(!isset( $data['visibility'] )){
+			$data['visibility'] = 1;
+		}
+		
 		if(isset($data['cross_sells'])) {
 			$data['cross_sells'] = $utility_helper->to_csv($data['cross_sells']);
 		}else{
@@ -142,16 +146,21 @@ class J2StoreModelProductsBehaviorConfigurable extends F0FModelBehavior {
 				}else{
 					$this->_rawData['additional_images'] = json_encode($this->_rawData['additional_images']);
 				}
+                if(is_object($this->_rawData['additional_images_alt'])){
+                    $this->_rawData['additional_images_alt'] = json_encode(JArrayHelper::fromObject($this->_rawData['additional_images_alt']));
+                }else{
+                    $this->_rawData['additional_images_alt'] = json_encode($this->_rawData['additional_images_alt']);
+                }
 			}
 			$this->_rawData['product_id'] = $table->j2store_product_id;
 
 			//just make sure that we do not have a double entry there
 			$images->load(array('product_id'=>$table->j2store_product_id));
 			$images->save($this->_rawData);
-
-			//save product filters
-			F0FTable::getAnInstance('ProductFilter', 'J2StoreTable' )->addFilterToProduct ( $this->_rawData ['productfilter_ids'], $table->j2store_product_id );
-
+            if(isset($this->_rawData ['productfilter_ids'])){
+                //save product filters
+                F0FTable::getAnInstance('ProductFilter', 'J2StoreTable' )->addFilterToProduct ( $this->_rawData ['productfilter_ids'], $table->j2store_product_id );
+            }
 		}
 
 	}
@@ -197,6 +206,10 @@ class J2StoreModelProductsBehaviorConfigurable extends F0FModelBehavior {
 		$product_helper->getAddtocartAction ( $product );
 		$product_helper->getCheckoutLink ( $product );
 		$product_helper->getProductLink( $product );
+
+		$registry = new JRegistry ();
+		$registry->loadString ( $product->params, 'JSON' );
+		$product->params = $registry;
 
 		// process variant
 		$product->variant = $product->variants;
@@ -267,6 +280,7 @@ class J2StoreModelProductsBehaviorConfigurable extends F0FModelBehavior {
 		$pov_id = $app->input->getInt ( 'pov_id', 0 );
 
 		$html = '';
+		$response_option = array();
 		if ($po_id && $pov_id) {
 			// ~ now get the children for the above two
 			$attributes = array ();
@@ -294,9 +308,13 @@ class J2StoreModelProductsBehaviorConfigurable extends F0FModelBehavior {
 					}
 				}
 				$product->options = $options;
-
-				$controller = F0FController::getTmpInstance ( 'com_j2store', 'Products' );
+				$response_option = $options;
+				$controller = F0FController::getTmpInstance ( 'com_j2store', 'Products');
 				$view = $controller->getView ( 'Product', 'Html', 'J2StoreView' );
+				if(!defined('DS')) define('DS', DIRECTORY_SEPARATOR);
+
+				// Look for template files in component folders
+				$view->addTemplatePath(JPATH_SITE.DS.'components'.DS.'com_j2store'.DS.'views'.DS.'product'.DS.'tmpl');
 
 				if ($model = $controller->getModel ( 'Products', 'J2StoreModel' )) {
 					// Push the model into the view (as default)
@@ -344,12 +362,17 @@ class J2StoreModelProductsBehaviorConfigurable extends F0FModelBehavior {
 			$base_price = $pricing->base_price;
 			$price = $pricing->price;
 		}
-
+        J2Store::plugin()->event('BeforeUpdateProductReturn',array(&$params,$product));
 		$return = array ();
 		$return ['pricing'] = array ();
 		$return ['pricing'] ['base_price'] = J2Store::product ()->displayPrice ( $base_price, $product, $params );
 		$return ['pricing'] ['price'] = J2Store::product ()->displayPrice ( $price, $product, $params );
+		$return ['child_options'] = $response_option;
 		$return ['optionhtml'] = $html;
+		$return ['pricing'] ['orginal'] = array();
+		$return ['pricing'] ['orginal']['base_price'] = $base_price;
+		$return ['pricing'] ['orginal']['price'] = $price;
+        J2Store::plugin()->event('AfterUpdateProductReturn',array(&$return,$product,$params));
 		return $return;
 	}
 }

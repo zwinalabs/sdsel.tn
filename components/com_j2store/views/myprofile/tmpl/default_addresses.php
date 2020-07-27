@@ -98,11 +98,11 @@ $J2gridCol = ($config->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
 										if(property_exists($addressTable, $fieldName)) {
 											$label = '<strong>'.JText::_($oneExtraField->field_name).'</strong> : ';
 											if($fieldName == 'country_id') {
-												$value = $orderinfo->country_name;
+												$value = JText::_($orderinfo->country_name);
 											}elseif($fieldName == 'zone_id') {
-												$value = $orderinfo->zone_name;
+												$value = JText::_($orderinfo->zone_name);
 											}else {
-												$value =$addressTable->$fieldName;
+												$value = $addressTable->$fieldName;
 											}
 										 	$uhtml .= str_replace('['.$fieldName.']',$label.$value.'</br>', $uhtml);
 										}
@@ -134,7 +134,8 @@ $J2gridCol = ($config->get('bootstrap_version', 2) == 2) ? 'span' : 'col-md-';
 			$('#system-message-container').html('');
 			var c=confirm('<?php echo JText::_("J2STORE_MYPROFILE_DELETE_CONFIRM_MESSAGE");?>');
 			if (c){
-				window.location = '<?php echo JRoute::_('index.php?option=com_j2store&view=myprofile');?>&task=deleteAddress&address_id='+id;
+				$delete_url = '<?php echo JRoute::_("index.php?option=com_j2store&view=myprofile&task=deleteAddress&address_id=");?>'+id;
+				window.location = $delete_url;
 			}
 		})(j2store.jQuery);
 	}

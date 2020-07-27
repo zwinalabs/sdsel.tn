@@ -10,6 +10,7 @@ defined('_JEXEC') or die;
 class J2StoreControllerCarts extends F0FController
 {
 
+	protected $cacheableTasks = array();
 
 	public function execute($task) {
 		if(in_array($task, array('add', 'edit', 'read'))) {
@@ -122,7 +123,11 @@ class J2StoreControllerCarts extends F0FController
 		$items = $model->getItems();
 		foreach ($items as $item){
 			$cartitem = F0FTable::getInstance ( 'Cartitem', 'J2StoreTable' )->getClone();
-			$cartitem->delete ( $item->j2store_cartitem_id );
+            if ($cartitem->delete ( $item->j2store_cartitem_id )) {
+                J2Store::plugin()->event('RemoveFromCart', array(
+                    $item
+                ));
+            }
 		}
 		$msg = JText::_('J2STORE_CART_CLEAR_SUCCESSFULLY');
 		$url = $model->getCartUrl();
@@ -152,13 +157,13 @@ class J2StoreControllerCarts extends F0FController
 		$language = JFactory::getLanguage()->getTag();
 		$query = $db->getQuery(true);
 		$query->select('*')->from('#__modules')->where('module='.$db->q('mod_j2store_cart'))->where('published=1')
-		->where('language='.$db->q($language));
+            ->where('(language="*" OR language='.$db->q($language).')');
 		$db->setQuery($query);
 		$modules = $db->loadObjectList();
 		if(count($modules) < 1) {
 			$query = $db->getQuery(true);
 			$query->select('*')->from('#__modules')->where('module='.$db->q('mod_j2store_cart'))->where('published=1')
-			->where('language="*" OR language="en-GB"');
+			->where('(language="*" OR language="en-GB")');
 			$db->setQuery($query);
 			$modules = $db->loadObjectList();
 		}
@@ -209,13 +214,12 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 		
-		$session = JFactory::getSession();
 		$model = F0FModel::getTmpInstance('Carts', 'J2StoreModel');
 		//coupon
 		$post_coupon = $this->input->getString('coupon', '');
 		//first time applying? then set coupon to session
 		if (isset($post_coupon) && !empty($post_coupon)) {
-			$session->set('coupon', $post_coupon, 'j2store');
+			F0FModel::getTmpInstance ( 'Coupons', 'J2StoreModel' )->set_coupon($post_coupon);
 		}
 
 		//check if we have a redirect
@@ -236,9 +240,9 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->clear_cache();
 		$model = $this->getModel('Carts' ,'J2StoreModel');
 		//coupon
-		$session = JFactory::getSession();
-		if($session->has('coupon', 'j2store')) {
-			$session->clear('coupon', 'j2store');
+		$coupon_model = F0FModel::getTmpInstance ( 'Coupons', 'J2StoreModel' );
+		if($coupon_model->has_coupon()) {
+			$coupon_model->remove_coupon();
 			$msg = JText::_('J2STORE_COUPON_REMOVED_SUCCESSFULLY');
 			$msgType = 'success';
 		}else {
@@ -255,16 +259,23 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 		
-		$session = JFactory::getSession();
+
 		$model = F0FModel::getTmpInstance('Carts', 'J2StoreModel');
 		//coupon
 		$voucher = $this->input->getString('voucher', '');
+
 		//first time applying? then set coupon to session
 		if (isset($voucher) && !empty($voucher)) {
-				$session->set('voucher', $voucher, 'j2store');
+			F0FModel::getTmpInstance ( 'Vouchers', 'J2StoreModel' )->set_voucher($voucher);
 		}
 
-		$url = $model->getCartUrl();
+        //check if we have a redirect
+        $redirect = JFactory::getApplication()->input->getBase64('redirect', '');
+        if(!empty($redirect)) {
+            $url = JRoute::_(base64_decode($redirect));
+        }else {
+            $url = $model->getCartUrl();
+        }
 		$this->setRedirect($url);
 	}
 
@@ -273,12 +284,13 @@ class J2StoreControllerCarts extends F0FController
 		//first clear cache
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
-		
+		J2Store::plugin()->event('BeforeRemoveVoucher');
 		$model = $this->getModel('Carts' ,'J2StoreModel');
 		//coupon
 		$session = JFactory::getSession();
-		if($session->has('voucher', 'j2store')) {
-			$session->clear('voucher', 'j2store');
+		$voucher_model = F0FModel::getTmpInstance ( 'Vouchers', 'J2StoreModel' );
+		if($voucher_model->has_voucher()) {
+			$voucher_model->remove_voucher();
 			$msg = JText::_('J2STORE_VOUCHER_REMOVED_SUCCESSFULLY');
 			$msgType = 'success';
 		}else {
@@ -381,32 +393,46 @@ class J2StoreControllerCarts extends F0FController
 		$app->close();
 	}
 
-	public function getCountry() {
+	public function getCountry()
+    {
+        $session = JFactory::getSession();
+        $set = $session->get('j2store_country_zone',array(),'j2store');
+        $app = JFactory::getApplication();
+        $country_id = $app->input->getInt('country_id');
+        if (!isset($set[$country_id])) {
 
-		$app = JFactory::getApplication();
-		$country_id =$this->input->getInt('country_id');
-		$country_info = F0FModel::getTmpInstance('Countries', 'J2StoreModel')->getItem($country_id);
-		$json = array();
-		if ($country_info) {
-			$zones = F0FModel::getTmpInstance('Zones', 'J2StoreModel')
-								->enabled(1)
-								->country_id($country_id)
-								->getList();
+            $country_info = F0FModel::getTmpInstance('Countries', 'J2StoreModel')->getItem($country_id);
+            $json = array();
+            if ($country_info) {
 
-			foreach($zones as &$zone) {
-				$zone->zone_name = JText::_($zone->zone_name);
-			}
-			if(isset($zones) && is_array($zones)) {
-				$json = array(
-					'country_id'        => $country_info->j2store_country_id,
-					'name'              => $country_info->country_name,
-					'iso_code_2'        => $country_info->country_isocode_2,
-					'iso_code_3'        => $country_info->country_isocode_3,
-					'zone'              => $zones
-				);
-			}
-		}
-		echo json_encode($json);
+                $model = F0FModel::getTmpInstance('Zones', 'J2StoreModel')
+                    ->enabled(1)
+                    ->country_id($country_id);
+
+                $model->setState('filter_order', "zone_name");
+                $model->setState('filter_order_Dir', "ASC");
+                $zones = $model->getList();
+
+            }
+
+            foreach ($zones as &$zone) {
+                $zone->zone_name = JText::_($zone->zone_name);
+            }
+            if (isset($zones) && is_array($zones)) {
+                $json = array(
+                    'country_id' => $country_info->j2store_country_id,
+                    'name' => $country_info->country_name,
+                    'iso_code_2' => $country_info->country_isocode_2,
+                    'iso_code_3' => $country_info->country_isocode_3,
+                    'zone' => $zones
+                );
+            }
+
+            $set[$country_id] = $json;
+            $session->set('j2store_country_zone',$set,'j2store');
+        }
+
+		echo json_encode($set[$country_id]);
 		$app->close();
 	}
 

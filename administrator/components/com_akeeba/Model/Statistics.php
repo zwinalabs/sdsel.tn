@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -14,9 +14,9 @@ use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform;
 use Exception;
 use FOF30\Container\Container;
+use FOF30\Date\Date;
 use FOF30\Model\DataModel\Exception\RecordNotLoaded;
 use FOF30\Model\Model;
-use JDate;
 use JFactory;
 use JFile;
 use JLoader;
@@ -56,8 +56,17 @@ class Statistics extends Model
 
 		$platform     = $this->container->platform;
 		$defaultLimit = $platform->getConfig()->get('list_limit', 10);
-		$limit        = $platform->getUserStateFromRequest('global.list.limit', 'limit', $this->input, $defaultLimit);
-		$limitstart   = $platform->getUserStateFromRequest('com_akeeba.stats.limitstart', 'limitstart', $this->input, 0);
+
+		if ($platform->isCli())
+		{
+			$limit      = $this->input->getInt('limit', $defaultLimit);
+			$limitstart = $this->input->getInt('limitstart', 0);
+		}
+		else
+		{
+			$limit      = $platform->getUserStateFromRequest('global.list.limit', 'limit', $this->input, $defaultLimit);
+			$limitstart = $platform->getUserStateFromRequest('com_akeeba.stats.limitstart', 'limitstart', $this->input, 0);
+		}
 
 		if ($platform->isFrontend())
 		{
@@ -90,6 +99,14 @@ class Statistics extends Model
 			$limitstart = 0;
 			$limit      = 0;
 			$filters    = null;
+		}
+
+		if (is_array($order) && isset($order['order']))
+		{
+			if (strtoupper($order['order']) != 'ASC')
+			{
+				$order['order'] = 'desc';
+			}
 		}
 
 		$allStats = Platform::getInstance()->get_statistics_list(array(
@@ -149,7 +166,8 @@ class Statistics extends Model
 			if (in_array($stat['id'], $validRecords))
 			{
 				$archives     = Factory::getStatistics()->get_all_filenames($stat);
-				$stat['meta'] = (count($archives) > 0) ? 'ok' : 'obsolete';
+				$count        = is_array($archives) ? count($archives) : 0;
+				$stat['meta'] = ($count > 0) ? 'ok' : 'obsolete';
 
 				// The archives exist. Set $stat['size'] to the total size of the backup archives.
 				if ($stat['meta'] == 'ok')
@@ -263,11 +281,12 @@ class Statistics extends Model
 
 		foreach ($failed as $fail)
 		{
-			$string = "Description : " . $fail['description'] . "\n";
+			$string  = "Description : " . $fail['description'] . "\n";
 			$string .= "Start time  : " . $fail['backupstart'] . "\n";
 			$string .= "Origin      : " . $fail['origin'] . "\n";
 			$string .= "Type        : " . $fail['type'] . "\n";
-			$string .= "Profile ID  : " . $fail['profile_id'];
+			$string .= "Profile ID  : " . $fail['profile_id'] . "\n";
+			$string .= "Backup ID   : " . $fail['id'];
 
 			$failedReport[] = $string;
 		}
@@ -319,7 +338,7 @@ This email is sent to you by your own site, [SITENAME]
 ENDBODY;
 		}
 
-		$jconfig = JFactory::getConfig();
+		$jconfig = $this->container->platform->getConfig();
 
 		$mailfrom = $jconfig->get('mailfrom');
 		$fromname = $jconfig->get('fromname');
@@ -403,7 +422,7 @@ ENDBODY;
 		}
 
 		// Get the backup statistics record and the files to delete
-		$stat     = Platform::getInstance()->get_statistics($id);
+		$stat     = (array) Platform::getInstance()->get_statistics($id);
 		$allFiles = Factory::getStatistics()->get_all_filenames($stat, false);
 
 		// Remove the custom log file if necessary
@@ -630,7 +649,7 @@ ENDBODY;
 	{
 		$db = $this->container->db;
 
-		$now = new JDate();
+		$now = new Date();
 		$nowToSql = $now->toSql();
 
 		$query = $db->getQuery(true)

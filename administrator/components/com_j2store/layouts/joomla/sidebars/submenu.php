@@ -83,6 +83,11 @@ $menus = array (
 				'icon' => 'fa fa-wrench',
 				'active' => 0
 		),
+        array (
+            'name' => 'AppStore',
+            'icon' => 'fa fa-archive',
+            'active' => 0
+        ),
 
 		array (
 				'name' => 'Reporting',
@@ -92,6 +97,8 @@ $menus = array (
 				)
 		)
 );
+$j2StorePlugin = \J2Store::plugin();
+$j2StorePlugin->event('AddDashboardMenuInJ2Store',array(&$menus));
 // Get installed version
 $db = JFactory::getDbo();
 $query = $db->getQuery(true);
@@ -169,8 +176,8 @@ $view = JFactory::getApplication()->input->getString('view','cpanels');
 	<div class="sidebar-nav">
 		<ul id="sidemenu" class="menu-content nav nav-list">
 			<?php
-
-				$view = JFactory::getApplication()->input->getString('view');
+				$app = JFactory::getApplication();
+				$view = $app->input->getString('view');
 			foreach($menus as $key => $value):
 			// $emptyClass = empty($value['active']) ? 'parent' : '';
 			?>
@@ -189,18 +196,32 @@ $view = JFactory::getApplication()->input->getString('view','cpanels');
 					id="dropdown-<?php echo str_replace(" ", "-", $value['name']);?>">
 	                        <?php foreach($value['submenu'] as $key => $value):?>
 	                        	<?php
-	                        		$class =  '';
-	                        		if($view == $key){
-	                        			$class =  'active';
-	                        			$collapse = 'in';
-	                        		}
-
-	                        	?>
-	                            <li class="<?php echo $class?>"><a
-						href="<?php echo 'index.php?option=com_j2store&view='.strtolower($key);?>">
-							<span class="<?php echo isset($value) ? $value : '';?>"> <span><?php echo JText::_('COM_J2STORE_TITLE_'.JString::strtoupper($key));?></span>
+								if(is_array ( $value )): ?>
+									<?php $class =  '';
+									$appTask = $app->input->get('appTask','');
+									if($view == 'apps' && $appTask == $key){
+										$class =  'active';
+										$collapse = 'in';
+									}
+									$link_url = isset( $value['link'] ) ? $value['link']: 'index.php?option=com_j2store&view='.strtolower($key);
+									$sub_menu_span_class = isset( $value['icon'] ) ? $value['icon']:'';
+									?>
+									<?php else: ?>
+									<?php
+									$class =  '';
+									if($view == $key){
+										$class =  'active';
+										$collapse = 'in';
+									}
+									$link_url = 'index.php?option=com_j2store&view='.strtolower($key);
+									$sub_menu_span_class = isset( $value ) ? $value:'';
+									?>
+							<?php endif;?>
+								<li class="<?php echo $class?>"><a
+										href="<?php echo $link_url;?>">
+							<span class="<?php echo $sub_menu_span_class;?>"> <span><?php echo JText::_('COM_J2STORE_TITLE_'.JString::strtoupper($key));?></span>
 						</span>
-					</a></li>
+									</a></li>
 	                          <?php endforeach;?>
 	                        </ul></li>
 				<?php else:?>
@@ -215,12 +236,20 @@ $view = JFactory::getApplication()->input->getString('view','cpanels');
             	<li class="<?php echo $active_class; ?>"><i
 				class="<?php echo isset($value['icon']) ? $value['icon'] : '';?>"></i>
 	           	 		<?php
+						if(isset($value['link']) && $value['link'] != ''):
+						?>
+							<a href="<?php echo $value['link'];?>">
+							<?php
+						else :
 	           	 		if($value['name']=='Dashboard'):?>
 							<a href="<?php echo 'index.php?option=com_j2store&view=cpanels';?>">
 						<?php elseif($value['name']=='Apps'): ?>
 							<a href="<?php echo 'index.php?option=com_j2store&view=apps';?>">
+                        <?php elseif($value['name']=='AppStore'): ?>
+                           <a href="<?php echo 'index.php?option=com_j2store&view=appstores';?>">
 						<?php else:?>
 							<a href="javascript:void(0);">
+						<?php endif;?>
 						<?php endif;?>
 
     	       				<?php echo JText::_('COM_J2STORE_MAINMENU_'.JString::strtoupper($value['name']));?>

@@ -54,6 +54,10 @@ class J2StoreModelProductsBehaviorDownloadable extends F0FModelBehavior {
 
 		$utility_helper = J2Store::utilities();
 
+		if(!isset( $data['visibility'] )){
+			$data['visibility'] = 1;
+		}
+		
 		if(isset($data['cross_sells'])) {
 			$data['cross_sells'] = $utility_helper->to_csv($data['cross_sells']);
 		}else{
@@ -140,15 +144,22 @@ class J2StoreModelProductsBehaviorDownloadable extends F0FModelBehavior {
 				}else{
 					$this->_rawData['additional_images'] = json_encode($this->_rawData['additional_images']);
 				}
+                if(is_object($this->_rawData['additional_images_alt'])){
+                    $this->_rawData['additional_images_alt'] = json_encode(JArrayHelper::fromObject($this->_rawData['additional_images_alt']));
+                }else{
+                    $this->_rawData['additional_images_alt'] = json_encode($this->_rawData['additional_images_alt']);
+                }
 			}
 			$this->_rawData['product_id'] = $table->j2store_product_id;
 
 			//just make sure that we do not have a double entry there
 			$images->load(array('product_id'=>$table->j2store_product_id));
 			$images->save($this->_rawData);
+            if(isset($this->_rawData ['productfilter_ids'])){
+                //save product filters
+                F0FTable::getAnInstance('ProductFilter', 'J2StoreTable' )->addFilterToProduct ( $this->_rawData ['productfilter_ids'], $table->j2store_product_id );
+            }
 
-			//save product filters
-			F0FTable::getAnInstance('ProductFilter', 'J2StoreTable' )->addFilterToProduct ( $this->_rawData ['productfilter_ids'], $table->j2store_product_id );
 
 		}
 
@@ -289,11 +300,15 @@ class J2StoreModelProductsBehaviorDownloadable extends F0FModelBehavior {
 			$base_price = $pricing->base_price;
 			$price = $pricing->price;
 		}
-
+        J2Store::plugin()->event('BeforeUpdateProductReturn',array(&$params,$product));
 		$return = array ();
 		$return ['pricing'] = array ();
 		$return ['pricing'] ['base_price'] = $product_helper->displayPrice ( $base_price, $product, $params );
 		$return ['pricing'] ['price'] = $product_helper->displayPrice ( $price, $product, $params );
+		$return ['pricing'] ['orginal'] = array();
+		$return ['pricing'] ['orginal']['base_price'] = $base_price;
+		$return ['pricing'] ['orginal']['price'] = $price;
+        J2Store::plugin()->event('AfterUpdateProductReturn',array(&$return,$product,$params));
 		return $return;
 	}
 

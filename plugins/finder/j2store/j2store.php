@@ -107,10 +107,11 @@ class PlgFinderJ2Store extends FinderIndexerAdapter
 		* published state so we need to look up all published states
 		* before we change anything.
 		*/
+		$db = JFactory::getDbo();
 		foreach ($pks as $pk)
 		{
 			$query = clone($this->getStateQuery());
-			$query->where('c.id = ' . (int) $pk);
+			$query->where('c.id = ' . $db->q((int) $pk));
 			$query->select('#__j2store_products.*');
 			$query->join('INNER', '#__j2store_products ON #__j2store_products.product_source='.$db->q('com_content').' AND #__j2store_products.product_source_id = c.id AND #__j2store_products.enabled=1');
 			// Get the published states.
@@ -162,7 +163,7 @@ class PlgFinderJ2Store extends FinderIndexerAdapter
 		// Update the content items.
 		$query = $this->db->getQuery(true)
 		->update($this->db->quoteName('#__finder_links'))
-		->set($this->db->quoteName($property) . ' = ' . (int) $value)
+		->set($this->db->quoteName($property) . ' = ' . $this->db->q((int) $value))
 		->where($this->db->quoteName('url') . ' = ' . $item);
 		$this->db->setQuery($query);
 		$this->db->execute();

@@ -60,7 +60,12 @@ defined('_JEXEC') or die;
 			<tr class="j2store_a_options">
 				<td colspan="3">
 					<?php echo J2Html::label(JText::_('J2STORE_SEARCH_AND_ADD_VARIANT_OPTION')); ?>
-					<?php echo J2Html::text('Selectoption' ,'',array('id'=>'optionselector'));?>
+                    <select name="option_select_id" id="option_select_id">
+                        <?php foreach ($this->product_option_list as $option_list):?>
+                            <option value="<?php echo $option_list->j2store_option_id?>"><?php echo $option_list->option_name .' ('.$option_list->option_unique_name.')';?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <a onclick="addOption()" class="btn btn-success"> <?php echo JText::_('J2STORE_ADD_OPTIONS')?></a>
 				</td>
 			</tr>
 
@@ -74,46 +79,19 @@ defined('_JEXEC') or die;
 	</div>
 </div>
 <script type="text/javascript">
-(function($) {
-		$(document).ready(function() {
-			$('#optionselector').autocomplete({
-				source : function(request, response) {
-					var variable_option = {
-						option: 'com_j2store',
-						view: 'options',
-						task: 'getOptions',
-						product_type: '<?php echo $this->item->product_type;?>',
-						q: request.term
-					};
-					$.ajax({
-						type : 'post',
-						url  : '<?php echo JRoute::_('index.php');?>',
-						data : variable_option,
-						dataType : 'json',
-						success : function(data) {
-							$('#optionselector').removeClass('optionsLoading');
-							response($.map(data, function(item) {
-								return {
-									label: item.option_name+' ('+item.option_unique_name+')',
-									value: item.j2store_option_id
-								}
-							}));
-						}
-					});
-				},
-				minLength : 2,
-				select : function(event, ui) {
-					$('<tr><td class=\"addedOption\">' + ui.item.label+ '</td><td><input class=\"input-small\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ ui.item.value+'][ordering]\" value=\"0\"></td><td><span class=\"optionRemove\" onclick=\"j2store.jQuery(this).parent().parent().remove();\">x</span><input type=\"hidden\" value=\"' + ui.item.value+ '\" name=\"<?php echo $this->form_prefix; ?>[item_options]['+ ui.item.value+'][option_id]\" /><input type=\"hidden\" value="" name=\"<?php echo $this->form_prefix; ?>[item_options]['+ ui.item.value+'][j2store_productoption_id]\" /></td></tr>').insertBefore('.j2store_a_options');
-					this.value = '';
-					return false;
-				},
-				search : function(event, ui) {
-					$('#optionselector').addClass('optionsLoading');
-				}
-			});
 
-		});
-})(j2store.jQuery);
+
+function addOption() {
+    (function ($) {
+        var option_value = $('#option_select_id').val();
+        var option_name = $('#option_select_id option[value='+option_value+']').html();
+        console.log(option_value);
+        console.log(option_name);
+        $('<tr><td class=\"addedOption\">' + option_name+ '</td><td><input class=\"input-small\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ option_value+'][ordering]\" value=\"0\"></td><td><span class=\"optionRemove\" onclick=\"j2store.jQuery(this).parent().parent().remove();\">x</span><input type=\"hidden\" value=\"' + option_value+ '\" name=\"<?php echo $this->form_prefix; ?>[item_options]['+ option_value+'][option_id]\" /><input type=\"hidden\" value="" name=\"<?php echo $this->form_prefix; ?>[item_options]['+ option_value+'][j2store_productoption_id]\" /></td></tr>').insertBefore('.j2store_a_options');
+    })(j2store.jQuery);
+
+}
+
 /**
  * Method to remove
  */

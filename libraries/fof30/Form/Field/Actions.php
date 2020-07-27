@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -13,7 +13,7 @@ use FOF30\Form\FieldInterface;
 use FOF30\Form\Form;
 use FOF30\Model\DataModel;
 use FOF30\Utils\StringHelper;
-use \JHtml;
+use JHtml;
 
 defined('_JEXEC') or die;
 
@@ -22,6 +22,8 @@ defined('_JEXEC') or die;
 /**
  * Form Field class for FOF
  * Supports a generic list of options.
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
  */
 class Actions extends \JFormFieldList implements FieldInterface
 {

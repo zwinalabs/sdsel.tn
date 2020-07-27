@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -9,6 +9,8 @@ namespace FOF30\Factory\Scaffolding\Layout;
 
 use FOF30\Container\Container;
 use SimpleXMLElement;
+
+defined('_JEXEC') or die;
 
 /**
  * Scaffolding Builder
@@ -18,6 +20,8 @@ use SimpleXMLElement;
  * and get started really fast with FOF development.
  *
  * @package FOF30\Factory\Scaffolding
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
  */
 class Builder
 {

@@ -22,6 +22,7 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 		$parent_option_array[$parentopvalue->j2store_product_optionvalue_id] = $parentopvalue->optionvalue_name;
 	}
 }
+$con_span = 0;
 ?>
 <div class="j2store">
 	<h1><?php echo JText::_( 'J2STORE_PAO_SET_OPTIONS_FOR' ); ?>: <?php echo $this->product_option->option_name; ?></h1>
@@ -41,32 +42,32 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 		<table class="adminlist table table-striped">
 			<thead>
 				<tr>
-					<th></th>
-					<th><?php echo JText::_( "J2STORE_PAO_NAME" ); ?></th>
-					<?php if($this->product->product_type =='variable'):?>
-					<th><?php echo JText::_( "J2STORE_PAO_FIELDATTRIBS" ); ?></th>
+					<th><?php $con_span += 1;?></th>
+					<th><?php echo JText::_( "J2STORE_PAO_NAME" ); $con_span += 1;?></th>
+					<?php if($this->product->product_type =='variable' || $this->product->product_type =='variablesubscriptionproduct'):?>
+					<th><?php echo JText::_( "J2STORE_PAO_FIELDATTRIBS" ); $con_span += 1;?> </th>
 					<?php endif;?>
 					<?php if($this->product_option->is_variant != 1 ):?>
-					<?php if($this->product->product_type !='variable'):?>
+					<?php if($this->product->product_type !='variable' && $this->product->product_type !='variablesubscriptionproduct'):?>
 					<?php if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues) ):  ?>
                     <th>
-                    	<?php echo JText::_( "J2STORE_PAO_PARENT_OPTION_NAME" ); ?>
+                    	<?php echo JText::_( "J2STORE_PAO_PARENT_OPTION_NAME" ); $con_span += 1;?>
                     </th>
                     <?php endif; ?>
 
 					<th style="width: 15px;">
-						<?php echo JText::_( "J2STORE_PAO_PREFIX" ); ?>
+						<?php echo JText::_( "J2STORE_PAO_PREFIX" ); $con_span += 1;?>
 					</th>
-					<th><?php echo JText::_( "J2STORE_PAO_PRICE" ); ?></th>
-					<th style="width: 15px;"><?php echo JText::_( "J2STORE_PAO_WEIGHT_PREFIX" ); ?>
+					<th><?php echo JText::_( "J2STORE_PAO_PRICE" ); $con_span += 1;?></th>
+					<th style="width: 15px;"><?php echo JText::_( "J2STORE_PAO_WEIGHT_PREFIX" ); $con_span += 1;?>
 					</th>
-					<th><?php echo JText::_( "J2STORE_PAO_WEIGHT" ); ?></th>					
+					<th><?php echo JText::_( "J2STORE_PAO_WEIGHT" ); $con_span += 1;?></th>
 					<!-- <th><?php // echo JText::_( "J2STORE_SKU" ); ?></th>-->
 					<?php endif;?>
 
 					<?php endif;?>
-					<th><?php echo JText::_('J2STORE_OPTION_ORDERING');?></th>
-					<th></th>
+					<th><?php echo JText::_('J2STORE_OPTION_ORDERING');$con_span += 1;?></th>
+					<th><?php $con_span += 1;?></th>
 				</tr>
 			</thead>
 			<tbody>
@@ -83,7 +84,7 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 											->getHtml();
 						?>
 					</td>
-					<?php if($this->product->product_type =='variable' ):?>
+					<?php if($this->product->product_type =='variable' || $this->product->product_type =='variablesubscriptionproduct'):?>
 					<td>
 
 						<?php echo J2Html::textarea('product_optionvalue_attribs' ,'');?>
@@ -95,7 +96,7 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 
 
 
-					<?php if($this->product->product_type !='variable'):?>
+					<?php if($this->product->product_type !='variable' && $this->product->product_type !='variablesubscriptionproduct'):?>
 
 					<?php if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues) ):  ?>
 					<td>
@@ -147,6 +148,11 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 					</td>
 				</tr>
 			</tbody>
+			<tfoot>
+				<tr>
+					<td colspan="<?php echo $con_span+1;?>"><a class="btn btn-primary" id="add_all_option_value" onclick="addAllOptionValue()"><?php echo JText::_ ( 'J2STORE_ADD_ALL_OPTION_VALUE' )?></a></td>
+				</tr>
+			</tfoot>
 		</table>
 
 	</div>
@@ -167,10 +173,10 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
                 		</th>
 
 						<th><?php echo JText::_( "J2STORE_PAO_NAME" ); ?></th>
-						<?php if($this->product->product_type =='variable' ):?>
+						<?php if($this->product->product_type =='variable' || $this->product->product_type =='variablesubscriptionproduct'):?>
 						<th><?php echo JText::_( "J2STORE_PAO_FIELDATTRIBS" ); ?></th>
 						<?php endif; ?>
-						<?php if($this->product->product_type !='variable' ):?>
+						<?php if($this->product->product_type !='variable' && $this->product->product_type !='variablesubscriptionproduct'):?>
 
 						 <?php if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues) ):  ?>
                     	<th>
@@ -184,16 +190,17 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 						<th><?php echo JText::_( "J2STORE_PAO_PRICE" ); ?></th>
 						<th><?php echo JText::_( "J2STORE_PAO_WEIGHT_PREFIX" ); ?>
 						</th>
-						<th><?php echo JText::_( "J2STORE_PAO_WEIGHT" ); ?></th>												
-						<?php if($this->product->product_type =='simple'):?>
+						<th><?php echo JText::_( "J2STORE_PAO_WEIGHT" ); ?></th>
+						<?php if( in_array ( $this->product->product_type, array('simple','advancedvariable', 'booking'))): ?>
 						<th><?php echo JText::_( "J2STORE_DEFAULT" ); ?></th>
-						<?php endif;?>
+						<?php endif; ?>
 
 						<?php endif;?>
 						<?php endif;?>
 						<th><?php echo JText::_('J2STORE_OPTION_ORDERING');?></th>
-						<th>
+                        <?php echo J2Store::plugin()->eventWithHtml('ProductOptionValueTableHead',array($this->product)); ?>
 
+						<th>
 						</th>
 					</tr>
 				</thead>
@@ -222,13 +229,13 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 											->getHtml();
 							?>
 						</td>
-						<?php if($this->product->product_type =='variable' ):?>
+						<?php if($this->product->product_type =='variable' || $this->product->product_type =='variablesubscriptionproduct'):?>
 						<td>
 							<?php echo J2Html::textarea($this->prefix.'['.$poptionvalue->j2store_product_optionvalue_id.'][product_optionvalue_attribs]' ,$poptionvalue->product_optionvalue_attribs);?>
 							<p><?php echo JText::_('J2STORE_PAO_FIELD_ATTRIBS_STYLE_HELP');?></p>
 						</td>
 						<?php endif;?>
-						<?php if($this->product->product_type !='variable' ):?>
+						<?php if($this->product->product_type !='variable' && $this->product->product_type !='variablesubscriptionproduct'):?>
 
 						<?php if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues) ):  ?>
 						<td>
@@ -268,8 +275,8 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 							</td>							
 							<td>
 								<?php echo J2Html::text( $this->prefix.'['.$poptionvalue->j2store_product_optionvalue_id.'][product_optionvalue_weight]' ,$poptionvalue->product_optionvalue_weight,array('id'=>'product_optionvalue_weight' ,'class'=>'input-small'));?>
-							</td>							
-					<?php if($this->product->product_type =='simple'):?>
+							</td>
+						<?php if( in_array ( $this->product->product_type, array('simple','advancedvariable', 'booking'))): ?>
 						<td>
 								<?php  echo JHtml::_('jgrid.isdefault',$poptionvalue->product_optionvalue_default,$key,"",$canChange,'cb');?>
 							</td>
@@ -277,6 +284,7 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 							<?php endif;?>
 						<?php endif;?>
 						<td><?php echo J2Html::text($this->prefix.'['.$poptionvalue->j2store_product_optionvalue_id.'][ordering]',$poptionvalue->ordering,array('id'=>'ordering' ,'class'=>'input-small'));?></td>
+                            <?php echo J2Store::plugin()->eventWithHtml('ProductOptionValueTableBody',array($this->product,$poptionvalue)); ?>
 							<td>
 								<?php $deleteUrl = JRoute::_('index.php?option=com_j2store&view=products&task=deleteProductOptionvalues&product_id='.$this->product_id.'&productoption_id='.$poptionvalue->productoption_id.'&cid[]='.$poptionvalue->j2store_product_optionvalue_id, false); ?>
 								 <a class="btn btn-danger" href="<?php echo $deleteUrl; ?>" >
@@ -294,6 +302,46 @@ if(isset($this->parent_optionvalues) && !empty($this->parent_optionvalues)){
 	</form>
 </div>
 <script type="text/javascript">
+	if(typeof(j2store) == 'undefined') {
+		var j2store = {};
+	}
+	if(typeof(j2store.jQuery) == 'undefined') {
+		j2store.jQuery = jQuery.noConflict();
+	}
+
+	if(typeof(j2storeURL) == 'undefined') {
+		var j2storeURL = '';
+	}
+	function addAllOptionValue() {
+		(function ($) {
+			var data={
+				option: 'com_j2store',
+				view: 'products',
+				task: 'addAllOptionValue',
+				product_id: '<?php echo $this->product_id;?>',
+				productoption_id: '<?php echo $this->productoption_id;?>'
+			};
+			$.ajax({
+				url:'index.php',
+				method:'post',
+				dataType:'json',
+				data: data,
+				beforeSend: function() {
+					$('.j2error').remove();
+					$('#add_all_option_value').after('<span class="wait"><img src="'+j2storeURL+'media/j2store/images/loader.gif" alt="" /></span>');
+					$('#add_all_option_value').attr('disabled',true);
+				},
+				success:function(json){
+					$('.wait,.j2error').remove();
+					$('#add_all_option_value').attr('disabled',false);
+					if(json['success']){
+						location.reload();
+					}
+				}
+			});
+		})(jQuery);
+
+	}
 function listItemTask( id, task ) {
       var f = document.adminForm;
       jQuery("#optiontask").attr('value',task);

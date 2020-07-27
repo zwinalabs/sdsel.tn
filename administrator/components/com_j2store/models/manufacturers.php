@@ -45,13 +45,19 @@ class J2StoreModelManufacturers extends F0FModel {
 	public function buildOrderbyQuery(&$query){
 		$state = $this->getState();
 		$app = JFactory::getApplication();
+        $db = JFactory::getDbo();
+
 		$filter_order_Dir = $app->input->getString('filter_order_Dir','asc');
 		$filter_order = $app->input->getString('filter_order','company');
+        $search = $app->input->getString('company','');
+
 		if($filter_order =='j2store_manufacturer_id' || $filter_order =='enabled' || $filter_order =='ordering'){
 			$query->order('#__j2store_manufacturers.'.$filter_order.' '.$filter_order_Dir);
 		}elseif(in_array($filter_order ,array('company' ,'city'))){
 			$query->order('#__j2store_addresses.'.$filter_order.' '.$filter_order_Dir);
-		}
+		}elseif ($search){
+            $query->where('#__j2store_addresses.company LIKE '.$db->q('%'.$search.'%'));
+        }
 	}
 
 	public function onBeforeSave(&$data, &$table){

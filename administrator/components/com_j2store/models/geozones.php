@@ -49,7 +49,7 @@ class J2StoreModelGeozones extends F0FModel {
 		$query->join('LEFT','#__j2store_countries AS c ON c.j2store_country_id=gr.country_id');
 		$query->join('LEFT','#__j2store_zones AS z ON z.j2store_zone_id=gr.zone_id');
 
-		$query->where('gr.geozone_id='.$geozone_id);
+		$query->where('gr.geozone_id='.$db->q($geozone_id));
 
 		//$query->order('gr.ordering');
 		$db->setQuery($query);

@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -10,9 +10,11 @@ namespace Akeeba\Backup\Admin\Model;
 // Protect from unauthorized access
 defined('_JEXEC') or die();
 
+use Akeeba\Backup\Admin\Helper\SecretWord;
 use Akeeba\Backup\Admin\Model\Mixin\Chmod;
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform;
+use Akeeba\Engine\Util\RandomValue;
 use FOF30\Database\Installer;
 use FOF30\Model\Model;
 use JFactory;
@@ -256,6 +258,10 @@ class ControlPanel extends Model
 			$db->execute();
 		}
 
+		// Decrypt the Secret Word settings in the database
+		$params = $this->container->params;
+		SecretWord::enforceDecrypted($params, 'frontend_secret_word', $key);
+
 		// Finally, remove the key file
 		if (!@unlink($filename))
 		{
@@ -306,18 +312,9 @@ class ControlPanel extends Model
 	 */
 	private function createSettingsKey()
 	{
-		$seedA = md5(file_get_contents(JPATH_ROOT . '/configuration.php'));
-		$seedB = md5(microtime());
-		$seed  = $seedA . $seedB;
-
-		$md5 = md5($seed);
-
-		for ($i = 0; $i < 1000; $i++)
-		{
-			$md5 = md5($md5 . md5(rand(0, 2147483647)));
-		}
-
-		$key = base64_encode($md5);
+		$randVal = new RandomValue();
+		$rawKey  = $randVal->generate(64);
+		$key     = base64_encode($rawKey);
 
 		$filecontents = "<?php defined('AKEEBAENGINE') or die(); define('AKEEBA_SERVERKEY', '$key'); ?>";
 		$filename     = $this->container->backEndPath . '/BackupEngine/serverkey.php';
@@ -330,7 +327,7 @@ class ControlPanel extends Model
 			return false;
 		}
 
-		return base64_decode($key);
+		return $rawKey;
 	}
 
 	/**
@@ -467,8 +464,7 @@ class ControlPanel extends Model
 		$profiles = $db->loadColumn();
 
 		// Save the current profile number
-		$session    = $this->container->session;
-		$oldProfile = $session->get('profile', 1, 'akeeba');
+		$oldProfile = $this->container->platform->getSessionVar('profile', 1, 'akeeba');
 
 		// Update all profiles
 		foreach ($profiles as $profile_id)
@@ -510,14 +506,13 @@ class ControlPanel extends Model
 		catch (RuntimeException $e)
 		{
 			// Ah, the current Secret Word is bad. Create a new one if necessary.
-			$session   = JFactory::getSession();
-			$newSecret = $session->get('newSecretWord', null, 'akeeba.cpanel');
+			$newSecret = $this->container->platform->getSessionVar('newSecretWord', null, 'akeeba.cpanel');
 
 			if (empty($newSecret))
 			{
 				$random    = new \Akeeba\Engine\Util\RandomValue();
 				$newSecret = $random->generateString(32);
-				$session->set('newSecretWord', $newSecret, 'akeeba.cpanel');
+				$this->container->platform->setSessionVar('newSecretWord', $newSecret, 'akeeba.cpanel');
 			}
 
 			return $e->getMessage();

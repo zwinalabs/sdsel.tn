@@ -852,3 +852,10 @@ top: -1.0em;
 .inline-content a.btn {
     font-weight:bold;
 }
+
+.optionRemove
+{
+    cursor: pointer;
+    color: #ff0000;
+    font-weight: bold;
+}

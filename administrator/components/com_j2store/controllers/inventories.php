@@ -10,8 +10,10 @@ class J2StoreControllerInventories extends F0FController
 	public function getFilterStates() {
 		$app = JFactory::getApplication();
 		$state = array();
+        $state['search']= $app->input->getString('search','');
 		$state['filter_order']= $app->input->getString('filter_order','j2store_productquantity_id');
 		$state['filter_order_Dir']= $app->input->getString('filter_order_Dir','ASC');
+		$state['inventry_stock']= $app->input->getString('inventry_stock','');
 		return $state;
 	}
 
@@ -29,6 +31,7 @@ class J2StoreControllerInventories extends F0FController
 		$product_helper =J2Store::product();
 		foreach ($products as $product){
 			$product->product = $product_helper->setId($product->j2store_product_id)->getProduct();
+            F0FModel::getTmpInstance('Products', 'J2StoreModel')->runMyBehaviorFlag(true)->getProduct($product->product);
 		}
 		$view = $this->getThisView();
 		$view->setModel($model);
@@ -52,14 +55,14 @@ class J2StoreControllerInventories extends F0FController
 			$productquantities->variant_id = $variant_id;
 			$productquantities->quantity = $quantity;
 			if(!$productquantities->store()){
-				$json['error'] = "Problem in Save";
+				$json['error'] = JText::_ ( 'J2STORE_INVENTRY_SAVE_PROBLEM' );
 			}
 			$variants_table = F0FTable::getInstance('Variant', 'J2StoreTable')->getClone ();
 			$variants_table->load($variant_id);
 			$variants_table->availability = $availability;
 			$variants_table->manage_stock = $manage_stock;
 			if(!$variants_table->store()){
-				$json['error'] = "Problem in Save";
+				$json['error'] = JText::_ ( 'J2STORE_INVENTRY_SAVE_PROBLEM' );
 			}
 			if(!$json){
 				J2Store::plugin()->event('AfterUpdateInventry',array($variants_table));
@@ -68,6 +71,39 @@ class J2StoreControllerInventories extends F0FController
 		}
 		if(!$json){
 
+			$json['success'] = 'index.php?option=com_j2store&view=inventories';
+		}
+		echo json_encode($json);
+		$app->close();
+	}
+
+	public function saveAllVariantInventory(){
+		$app = JFactory::getApplication();
+		$variant_list = $app->input->get('list',array(),'ARRAY');
+		$json = array();
+		foreach ($variant_list as $variant_data){
+			if( isset( $variant_data['j2store_variant_id'] ) && $variant_data['j2store_variant_id'] > 0){
+				F0FTable::addIncludePath(JPATH_ADMINISTRATOR.'/components/com_j2store/tables');
+				$productquantities = F0FTable::getInstance('Productquantity', 'J2StoreTable')->getClone ();
+				$productquantities->load(array('variant_id'=> $variant_data['j2store_variant_id'] ));
+				$productquantities->variant_id = $variant_data['j2store_variant_id'];
+				$productquantities->quantity = isset( $variant_data['quantity'] ) ? $variant_data['quantity']: 0;
+				if(!$productquantities->store()){
+					$json['error'] = JText::_ ( 'J2STORE_INVENTRY_SAVE_PROBLEM' );
+				}
+				$variants_table = F0FTable::getInstance('Variant', 'J2StoreTable')->getClone ();
+				$variants_table->load($variant_data['j2store_variant_id']);
+				$variants_table->availability = isset( $variant_data['availability'] ) ? $variant_data['availability']: 0;
+				$variants_table->manage_stock = isset( $variant_data['manage_stock'] ) ? $variant_data['manage_stock']: 0;
+				if(!$variants_table->store()){
+					$json['error'] = JText::_ ( 'J2STORE_INVENTRY_SAVE_PROBLEM' );
+				}
+				if(!$json){
+					J2Store::plugin()->event('AfterUpdateInventry',array($variants_table));
+				}
+			}
+		}
+		if(!$json){
 			$json['success'] = 'index.php?option=com_j2store&view=inventories';
 		}
 		echo json_encode($json);

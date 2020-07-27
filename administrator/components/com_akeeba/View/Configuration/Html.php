@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -14,7 +14,6 @@ use Akeeba\Backup\Admin\View\ViewTraits\ProfileIdAndName;
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform;
 use FOF30\View\DataView\Html as BaseView;
-use JHtml;
 use JText;
 
 class Html extends BaseView
@@ -48,8 +47,6 @@ class Html extends BaseView
 	public function onBeforeMain()
 	{
 		$this->addJavascriptFile('media://com_akeeba/js/Configuration.min.js');
-
-		JHtml::_('behavior.modal');
 
 		// Get a JSON representation of GUI data
 		$json       = Factory::getEngineParamsProvider()->getJsonGuiDefinition();

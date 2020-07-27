@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -9,10 +9,14 @@ namespace FOF30\Factory\Scaffolding\Layout;
 
 use FOF30\Model\DataModel;
 
+defined('_JEXEC') or die;
+
 /**
  * Erects a scaffolding XML for edit views
  *
  * @package FOF30\Factory\Scaffolding
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
  */
 class FormErector extends BaseErector implements ErectorInterface
 {
@@ -327,8 +331,8 @@ class FormErector extends BaseErector implements ErectorInterface
 					$this->applyIntegerField($model, $fieldSet, $fieldName);
 					break;
 
-				case 'Numeric':
-					$this->applyNumericField($model, $fieldSet, $fieldName);
+				case 'Number':
+					$this->applyNumberField($model, $fieldSet, $fieldName);
 					break;
 
 				case 'GenericList':
@@ -409,9 +413,9 @@ class FormErector extends BaseErector implements ErectorInterface
 		$this->applyFieldOfType($model, $fieldSet, $fieldName, 'Text');
 	}
 
-	private function applyNumericField(DataModel $model, \SimpleXMLElement &$fieldSet, $fieldName)
+	private function applyNumberField(DataModel $model, \SimpleXMLElement &$fieldSet, $fieldName)
 	{
-		$this->applyFieldOfType($model, $fieldSet, $fieldName, 'Numeric');
+		$this->applyFieldOfType($model, $fieldSet, $fieldName, 'Number');
 	}
 
 	private function applyMediaField(DataModel $model, \SimpleXMLElement &$fieldSet, $fieldName)
@@ -482,7 +486,7 @@ class FormErector extends BaseErector implements ErectorInterface
 	private function applyModelField(DataModel $model, \SimpleXMLElement &$fieldSet, $fieldName, $modelName)
 	{
 		// This will fail if the model is invalid, e.g. we have example_foobar_id but no #__example_foobars table. The
-		// error will balloon up the stack and the field will be rendered as simple numeric field instead of a Model
+		// error will balloon up the stack and the field will be rendered as simple number field instead of a Model
 		// field.
 		/** @var DataModel $foreignModel */
 		$foreignModel = $model->getContainer()->factory->model($modelName);

@@ -20,6 +20,9 @@ $session_vendor_ids = $session->get('vendor_ids',array(), 'j2store');
 $session_productfilter_ids = $session->get('productfilter_ids',array(), 'j2store');
 
 $currency = $this->currency->getSymbol();
+$thousand = $this->currency->getThousandSysmbol();
+$decimal_place = $this->currency->getDecimalPlace();
+
 $catid = JFactory::getApplication()->input->get('catid',array(),'Array');?>
 <?php
 		$default_catid ='';
@@ -50,7 +53,8 @@ $filter_catid = isset($this->filter_catid) ? $this->filter_catid : '';
 		$range = $this->filters['pricefilters']['range'];
 		$pricefrom = isset($this->state->pricefrom) && $this->state->pricefrom ? $this->state->pricefrom : $min_price;
 		$priceto = isset($this->state->priceto) && $this->state->priceto ? $this->state->priceto : $max_price;
-
+		$d_pricefrom = $this->currency->format($pricefrom,$this->currency->getCode(),$this->currency->getValue(),false);
+		$d_priceto = $this->currency->format($priceto,$this->currency->getCode(),$this->currency->getValue(),false);
 		?>
 		<div id="j2store-price-filter-container" class="j2store-product-filters price-filters"  >
 			<h4 class="product-filter-heading"><?php echo JText::_('J2STORE_PRODUCT_FILTER_PRICE_TITTLE'); ?></h4>
@@ -60,9 +64,11 @@ $filter_catid = isset($this->filter_catid) ? $this->filter_catid : '';
 			<div id="j2store-slider-range-box" class="price-input-box" >
 				<input class="btn btn-success" type="submit"   id="filterProductsBtn"  value="<?php echo JText::_('J2STORE_FILTER_GO');?>" />
 					<div class="pull-right">
-						<?php if($currency_position == 'pre') echo $currency;?><span id="min_price"><?php echo $pricefrom;?></span> <?php if($currency_position == 'post') echo $currency; ?>
+						<span id="min_price" class="hide"><?php echo $d_pricefrom;?></span>
+						<span id="max_price" class="hide"><?php echo $d_priceto;?></span>
+						<?php if($currency_position == 'pre') echo $currency;?><span id="min_price_display"><?php echo $d_pricefrom;?></span> <?php if($currency_position == 'post') echo $currency; ?>
 						<?php echo JText::_('J2STORE_TO_PRICE');?>
-						<?php if($currency_position == 'pre') echo $currency;?><span id="max_price"><?php echo $priceto;?></span><?php if($currency_position == 'post') echo $currency; ?>
+						<?php if($currency_position == 'pre') echo $currency;?><span id="max_price_display"><?php echo $d_priceto;?></span><?php if($currency_position == 'post') echo $currency; ?>
 						<?php echo J2Html::hidden('pricefrom',$pricefrom ,array('id'=>'min_price_input'));?>
 						<?php echo J2Html::hidden('priceto',$priceto,array('id'=>'max_price_input'));?>
 					</div>
@@ -204,17 +210,17 @@ $filter_catid = isset($this->filter_catid) ? $this->filter_catid : '';
 	<div class="j2store-product-filters productfilters-list">
 			<?php $active_class='';?>
 
-			<?php foreach ($this->filters['productfilters'] as $filtergroup):?>
-				<?php $filter_script_id = J2Store::utilities ()->generateId ( $filtergroup['group_name'] );?>
+			<?php foreach ($this->filters['productfilters'] as $pf_key => $filtergroup):?>
+				<?php $filter_script_id = J2Store::utilities ()->generateId ( $filtergroup['group_name'] ).'_'.$pf_key;?>
 				<div class="product-filter-group <?php echo $filter_script_id;?>">
-						<h4 class="product-filter-heading"><?php echo $filtergroup['group_name'];?></h4>
+						<h4 class="product-filter-heading"><?php echo JText::_($filtergroup['group_name']);?></h4>
 						<span>
 							<?php if($this->params->get('list_filter_productfilter_toggle',1)==1):?>
-								<a href="javascript:void(0);" id="pf-filter-icon-minus-<?php echo $filter_script_id;?>"   onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');"><i class="icon-minus"></i></a>
-								<a href="javascript:void(0);" id="pf-filter-icon-plus-<?php echo $filter_script_id;?>" onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');" style="display:none;" ><i class="icon-plus"></i></a>
+								<span id="pf-filter-icon-minus-<?php echo $filter_script_id;?>"   onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');"><i class="icon-minus"></i></span>
+								<span id="pf-filter-icon-plus-<?php echo $filter_script_id;?>" onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');" style="display:none;" ><i class="icon-plus"></i></span>
 							<?php elseif($this->params->get('list_filter_productfilter_toggle',1)==2):?>
-								<a href="javascript:void(0);" id="pf-filter-icon-plus-<?php echo $filter_script_id;?>"  onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');" ><i class="icon-plus"></i></a>
-								<a href="javascript:void(0);" id="pf-filter-icon-minus-<?php echo $filter_script_id;?>"   onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');" style="display:none;" ><i class="icon-minus"></i></a>
+								<span  id="pf-filter-icon-plus-<?php echo $filter_script_id;?>"  onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');" ><i class="icon-plus"></i></span>
+								<span  id="pf-filter-icon-minus-<?php echo $filter_script_id;?>"   onclick="getPFFilterToggle('<?php echo $filter_script_id;?>');" style="display:none;" ><i class="icon-minus"></i></span>
 							<?php endif;?>
 						<?php if(!empty($session_productfilter_ids) ):?>
 							<a href="javascript:void(0);"
@@ -251,7 +257,7 @@ $filter_catid = isset($this->filter_catid) ? $this->filter_catid : '';
 								<?php echo $checked;?>
 						value="<?php echo $filter->filter_id ;?>"  />
 						<!-- onclick="document.getElementById('j2store-product-loading').style.display='block';document.getElementById('productsideFilters').submit()" -->
-							<?php echo $filter->filter_name; ?>
+							<?php echo JText::_($filter->filter_name); ?>
 					</label>
 					<?php endforeach; ?>
 				</div>
@@ -276,8 +282,8 @@ jQuery("#filterProductsBtn").on('click',function(){
 }) ;
 
 jQuery('document').ready(function (){
-	<?php foreach ($this->filters['productfilters'] as $filtergroup):?>
-	<?php $filter_script_id = J2Store::utilities ()->generateId ( $filtergroup['group_name'] );?>
+	<?php foreach ($this->filters['productfilters'] as $pf_key => $filtergroup):?>
+	<?php $filter_script_id = J2Store::utilities ()->generateId ( $filtergroup['group_name'] ).'_'.$pf_key;?>
 	<?php foreach($filtergroup['filters'] as $i =>$filter):?>
 	var size = jQuery('.j2store-pfilter-checkboxes-<?php echo $filter_script_id;?>:checked').length;
 		if(size > 0){
@@ -296,6 +302,35 @@ jQuery('document').ready(function (){
 //assign the values for price filters
 var min_value = jQuery( "#min_price" ).html();
 var max_value = jQuery( "#max_price" ).html();
+function formatCurrency(format_amount) {
+	if(format_amount < 0) {
+		format_amount = Math.abs(format_amount);
+	}
+
+	var decimal_place = '<?php echo $decimal_place;?>';
+	if(decimal_place == 0){
+		format_amount = format_amount+".";
+	}
+
+	if(format_amount == ''){
+		format_amount = 0.0;
+	}
+
+	format_amount = parseFloat(format_amount);
+	format_amount = format_amount.toFixed(decimal_place);
+	format_amount = format_amount.toString();
+	var replace_string = "$1<?php echo $thousand;?>";
+	format_amount = format_amount.replace(/(\d)(?=(\d{3})+\.)/g, replace_string).toString();
+	format_amount = format_amount.substring(0,format_amount.length);
+
+	//format_amount = format_amount.toFloat();
+
+	return format_amount;
+}
+
+jQuery( "#max_price_display" ).html(formatCurrency(max_value));
+jQuery( "#min_price_display" ).html(formatCurrency(min_value));
+
 (function($) {
 	$( "#j2store-slider-range" ).slider({
 		range: true,
@@ -303,13 +338,15 @@ var max_value = jQuery( "#max_price" ).html();
 		max: <?php echo $max_price;?>,
 		values: [ min_value,max_value],
 		slide: function( event, ui ) {
-		$( "#amount1" ).val( "<?php if($currency_position == 'pre') echo $currency;?>" + ui.values[ 0 ] + " <?php if($currency_position == 'post') echo $currency;?>  - <?php if($currency_position == 'pre') echo $currency;?>" + ui.values[ 1 ] + " <?php if($currency_position == 'post') echo $currency;?>" );
+		$( "#amount1" ).val( '<?php if($currency_position == 'pre') echo $currency;?>' + ui.values[ 0 ] + ' <?php if($currency_position == 'post') echo $currency;?>  - <?php if($currency_position == 'pre') echo $currency;?>' + ui.values[ 1 ] + ' <?php if($currency_position == 'post') echo $currency;?>' );
 			$( "#min_price" ).html(ui.values[ 0 ]);
 			$( "#max_price" ).html(  ui.values[ 1 ] );
 
 			$( "#min_price_input" ).attr('value', ui.values[ 0 ]);
 			$( "#max_price_input" ).attr('value',  ui.values[ 1 ] );
 
+			$( "#min_price_display" ).html(formatCurrency(ui.values[ 0 ]));
+			$( "#max_price_display" ).html(formatCurrency(ui.values[ 1 ]));
 		}
 	});
 

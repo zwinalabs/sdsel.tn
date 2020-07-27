@@ -3949,3 +3949,12 @@ INSERT INTO `#__j2store_zones` (`j2store_zone_id`, `country_id`, `zone_code`, `z
 (3985, 222, 'FER', 'Fermanagh', 1, 0),
 (3986, 222, 'DGN', 'Dungannon and South Tyrone', 1, 0),
 (3987, 222, 'DRY', 'Derry', 1, 0);
+INSERT INTO `#__j2store_zones` (`j2store_zone_id`, `country_id`, `zone_code`, `zone_name`, `enabled`, `ordering`) VALUES
+(3988, 118, 'AK', 'Akkar', 1, 0),
+(3989, 118, 'BH', 'Baalbek-Hermel', 1, 0),
+(3990, 118, 'BA', 'Beirut', 1, 0),
+(3991, 118, 'BI', 'Beqaa', 1, 0),
+(3992, 118, 'JL', 'Mount Lebanon', 1, 0),
+(3993, 118, 'NA', 'Nabatieh', 1, 0),
+(3994, 118, 'AS', 'North', 1, 0),
+(3995, 118, 'JA', 'South', 1, 0);

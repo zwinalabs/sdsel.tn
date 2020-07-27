@@ -58,17 +58,18 @@ class plgJ2StoreReport_itemised extends J2StoreReportPlugin
     	$model->setState('limitstart',$app->input->getInt('limitstart',0));
     	$model->setState('filter_search', $app->input->getString('filter_search'));
     	$model->setState('filter_orderstatus', $app->input->getString('filter_orderstatus'));
-    	$model->setState('filter_order', $app->input->getString('filter_order'));
+    	$model->setState('filter_order', $app->input->getString('filter_order','oi.j2store_orderitem_id'));
     	$model->setState('filter_order_Dir', $app->input->getString('filter_order_Dir'));
-
+		$model->setState('filter_datetype', $app->input->getString('filter_datetype'));
 
     	$list = $model->getData();
     	//$list = $model->getList();
-		$vars->state=$model->getState();
+		$vars->state = $model->getState();
     	$vars->list = $list;
     	$vars->total = $model->getTotal();
     	$vars->pagination = $model->getPagination();
     	$vars->orderStatus =F0FModel::getTmpInstance('OrderStatuses','J2StoreModel')->enabled(1)->getList();
+		$vars->orderDateType = $this->getOrderDateType ();
     	$id = $app->input->getInt('id', '0');
     	$vars->id = $id;
     	$form = array();
@@ -78,6 +79,20 @@ class plgJ2StoreReport_itemised extends J2StoreReportPlugin
     	return $html;
     }
 
+	//search order by days type
+	public function getOrderDateType(){
+		$data = array(
+			'select' =>JText::_('J2STORE_DAY_TYPES'),
+			'today' => JText::_('J2STORE_TODAY'),
+			'this_week' => JText::_('J2STORE_THIS_WEEK'),
+			'this_month' => JText::_('J2STORE_THIS_MONTH'),
+			'this_year' => JText::_('J2STORE_THIS_YEAR'),
+			'last_7day' => JText::_('J2STORE_LAST_7_DAYS'),
+			'last_month' => JText::_('J2STORE_LAST_MONTH'),
+			'last_year' => JText::_('J2STORE_LAST_YEAR')
+		);
+		return $data;
+	}
 
     function onJ2StoreGetReportExported($row){
     	$app = JFactory::getApplication();

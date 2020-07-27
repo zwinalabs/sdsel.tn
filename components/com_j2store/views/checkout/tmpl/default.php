@@ -16,7 +16,21 @@
 defined( '_JEXEC' ) or die( 'Restricted access' );
 $action = JRoute::_('index.php?option=com_j2store&view=checkout');
 $ajax_base_url = JRoute::_('index.php');
+$app = JFactory::getApplication();
+$active_menu = $app->getMenu()->getActive();
+
+$page_heading = is_object($active_menu->params) ? $active_menu->params: new JRegistry();
+if(!$page_heading instanceof JRegistry){
+    $page_heading = new JRegistry ();
+}
+$page_heading_enabled = $page_heading->get('show_page_heading',0);
+$page_heading_text = $page_heading->get('page_heading','');
 ?>
+<?php if($page_heading_enabled):?>
+    <div class="page-header">
+        <h1> <?php echo $this->escape($page_heading_text); ?> </h1>
+    </div>
+<?php endif; ?>
 <?php echo J2Store::modules()->loadposition('j2store-checkout-top'); ?>
 <div id="j2store-checkout" class="j2store checkout">
 <div id="j2store-checkout-content">
@@ -33,7 +47,7 @@ $ajax_base_url = JRoute::_('index.php');
     </div>
     <?php } else { ?>
     <div id="billing-address">
-      <div class="checkout-heading"><span><?php echo JText::_('J2STORE_CHECKOUT_BILLING_ADDRESS');; ?></span></div>
+      <div class="checkout-heading"><span><?php echo JText::_('J2STORE_CHECKOUT_BILLING_ADDRESS'); ?></span></div>
       <div class="checkout-content"></div>
     </div>
     <?php } ?>
@@ -69,7 +83,15 @@ query['view']='checkout';
 //force utf
 (function($) {
 	$(document).ready(function() {
-		$.ajaxSetup({ 'beforeSend' : function(xhr) { xhr.overrideMimeType('text/html; charset=UTF-8'); }});
+		$.ajaxSetup({
+			cache: false,
+			headers: {
+				'Cache-Control': 'no-cache, no-store, must-revalidate',
+				'Pragma': 'no-cache',
+				'Expires': '0'
+			},
+			'beforeSend' : function(xhr) { xhr.overrideMimeType('text/html; charset=UTF-8'); }
+		});
 	});
 })(j2store.jQuery);
 
@@ -133,6 +155,7 @@ $(document).ready(function() {
 			$('#checkout .checkout-content').html(html);
 
 			$('#checkout .checkout-content').slideDown('slow');
+			$( 'body' ).trigger( 'after_login_response' );
 		},
 		error: function(xhr, ajaxOptions, thrownError) {
 			//alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
@@ -232,7 +255,7 @@ $(document).on('click', '#button-login', function() {
 
 			if (json['redirect']) {
 				//it is sufficient to just reload the page
-				location.reload(true);
+				window.location.href  = json['redirect'];
 			} else if (json['error']) {
 				$('#checkout .checkout-content').prepend('<div class="warning alert alert-danger" style="display: none;">' + json['error']['warning'] + '<button data-dismiss="alert" class="close" type="button">×</button></div>');
 

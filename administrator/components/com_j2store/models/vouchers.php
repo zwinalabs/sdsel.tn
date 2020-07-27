@@ -13,25 +13,46 @@ class J2StoreModelVouchers extends F0FModel {
 	public $voucher = false;
 	public $history = array();
 	
-	public function init() {
+	public function init($voucher_code = '') {
 	
 		//get the coupon from the session and assign it to the coupon variable
-		$session = JFactory::getSession();
-		$this->code = $session->get('voucher', '', 'j2store');
+        if(empty($voucher_code)){
+            $this->code = $this->get_voucher ();
+        }else{
+            $this->code = $voucher_code;
+        }
+
 		if(empty($this->code)) return false;
 	
 		//load the coupon
-		$table = F0FTable::getInstance('Voucher', 'J2StoreTable');
+		$table = F0FTable::getInstance('Voucher', 'J2StoreTable')->getClone();
 		$table->load(array('voucher_code'=>$this->code));
-		$this->voucher = $table; 
-		return true;
+		$status = false;
+		if($table->enabled){
+			$this->voucher = $table;
+			$status = true;
+		}
+		if(!$status) {
+			JFactory::getApplication()->enqueueMessage(JText::_('J2STORE_VOUCHER_DOES_NOT_EXIST'),'warning');
+			$this->remove_voucher();
+		}
+		return $status;
 	}
 	
 	public function get_voucher_history($voucher_id) {
 	
 		if(!isset($this->history[$voucher_id])) {
-			$db = JFactory::getDbo();			
-			$query = $db->getQuery(true)->select('SUM(discount_amount) as total')->from('#__j2store_orderdiscounts')
+			$db = JFactory::getDbo();
+			$query = $db->getQuery (true);
+			$j2config = J2Store::config ();
+			if($j2config->get('config_including_tax', 0)) {
+				$query->select('ROUND(SUM(discount_amount) + SUM(discount_tax), 2) AS total');
+			}else {
+				$query->select('ROUND(SUM(discount_amount), 2) AS total');
+			}
+			$query->from('#__j2store_orderdiscounts')
+			->join('LEFT','#__j2store_orders o on #__j2store_orderdiscounts.order_id = o.order_id')
+			-> where(' o.order_state_id!=5 ')
 			-> where('discount_entity_id='.$db->q($voucher_id))
 			->group('discount_entity_id');
 			$query->where('discount_type ='.$db->q('voucher'));
@@ -45,7 +66,8 @@ class J2StoreModelVouchers extends F0FModel {
 		try {
 			$this->validate_enabled();
 			$this->validate_exists();
-			$this->validate_usage_limit();			
+			$this->validate_usage_limit();
+			$this->validate_expiry_date();
 			//allo plugins to run their own course.
 			$results = J2Store::plugin()->eventWithArray('VoucherIsValid', array($this));
 			if (in_array(false, $results, false)) {
@@ -88,6 +110,27 @@ class J2StoreModelVouchers extends F0FModel {
 		}
 	
 	}
+
+    /**
+     * Ensure voucher date is valid or throw exception
+     */
+    private function validate_expiry_date() {
+        $db = JFactory::getDbo();
+        $nullDate = $db->getNullDate();
+        $tz = JFactory::getConfig()->get('offset');
+        $now = JFactory::getDate('now', $tz)->format('Y-m-d', true);
+        $valid_from = JFactory::getDate($this->voucher->valid_from, $tz)->format('Y-m-d', true);
+        $valid_to = JFactory::getDate($this->voucher->valid_to, $tz)->format('Y-m-d', true);
+
+        if(
+            ($this->voucher->valid_from == $nullDate || $valid_from <= $now) &&
+            ($this->voucher->valid_to == $nullDate || $valid_to >= $now)
+        ){
+            return true;
+        }else {
+            throw new Exception( JText::_('J2STORE_VOUCHER_EXPIRED'));
+        }
+    }
 	
 	public function get_discount_amount($price, $cartitem, $order, $single=true)  {
 		
@@ -124,7 +167,23 @@ class J2StoreModelVouchers extends F0FModel {
 		J2Store::plugin()->event('GetVoucherDiscountAmount', array($discount, $price, $cartitem, $order, $this, $single));
 		return $discount;
 	}
-	
+
+	function get_admin_discount_amount($price){
+		$voucher_history_total = $this->get_voucher_history($this->voucher->j2store_voucher_id);
+		if ($voucher_history_total) {
+			$amount = $this->voucher->voucher_value - $voucher_history_total;
+		} else {
+			$amount = $this->voucher->voucher_value;
+		}
+		if($price > $amount){
+			$discount = $amount;
+		}else{
+			$discount = $amount - $price;
+		}
+		return $discount;
+	}
+
+
 	public function getVoucherByCode($code) {
 		$db = JFactory::getDbo ();
 		$query = $db->getQuery ( true );
@@ -152,13 +211,14 @@ class J2StoreModelVouchers extends F0FModel {
 			$params = J2Store::config();
 
 			//sum of voucher history
-			$query = $db->getQuery(true)->select('SUM(discount_amount) as total')->from('#__j2store_orderdiscounts')
+			/*$query = $db->getQuery(true)->select('SUM(discount_amount) as total')->from('#__j2store_orderdiscounts')
 														-> where('discount_entity_id='.$db->q($voucher->j2store_voucher_id))
 														->group('discount_entity_id');
 			$query->where('discount_type ='.$db->q('voucher'));
-			$voucher_history = $db->setQuery($query)->loadAssoc();			
-			if ($voucher_history) {
-				$amount = $voucher->voucher_value - $voucher_history['total'];
+			$voucher_history = $db->setQuery($query)->loadAssoc();*/
+			$voucher_total = $this->get_voucher_history ( $voucher->j2store_voucher_id );
+			if ($voucher_total) {
+				$amount = $voucher->voucher_value - $voucher_total;
 			} else {
 				$amount = $voucher->voucher_value;
 			}
@@ -239,13 +299,19 @@ class J2StoreModelVouchers extends F0FModel {
 		
 		$voucher_history_model = F0FModel::getTmpInstance('Orderdiscounts', 'J2StoreModel');
 		$items = $voucher_history_model->discount_entity_id($id)->discount_type('voucher')->getList();
+
 		if(count($items)) {
-			foreach($items as &$item) {
+			foreach($items as $k => &$item) {
 				$order = F0FTable::getAnInstance('Order', 'J2StoreTable')->getClone();
 				$order->load(array('order_id'=>$item->order_id));
+				
+				if( $order->order_state_id == 5 ) {
+					// skip new order discounts
+					unset($items[$k]); continue;	
+				}
 				$item->order = $order;
 			}
-		}	
+		}
 		return $items;
 	}
 
@@ -254,5 +320,53 @@ class J2StoreModelVouchers extends F0FModel {
 	 * */
 	public function remove_voucher() {
 		JFactory::getSession()->clear('voucher', 'j2store');
+		$cart_model = F0FModel::getTmpInstance('Carts', 'J2StoreModel');
+		$cart_table = $cart_model->getCart();
+		if(isset( $cart_table->j2store_cart_id ) && !empty( $cart_table->j2store_cart_id )){
+			$cart_table->cart_voucher = '';
+			$cart_table->store();
+			
+		}
+
+	}
+
+	public function set_voucher($post_voucher){
+        J2Store::plugin()->event('BeforeSetVoucher',array(&$post_voucher));
+		$session = JFactory::getSession ();
+		$session->set('voucher', $post_voucher, 'j2store');
+
+		$cart_model = F0FModel::getTmpInstance('Carts', 'J2StoreModel');
+		$cart_table = $cart_model->getCart();
+		if(isset( $cart_table->j2store_cart_id ) && !empty( $cart_table->j2store_cart_id )){
+			$cart_table->cart_voucher = $post_voucher;
+			$cart_table->store();
+
+		}
+        J2Store::plugin()->event('AfterSetVoucher',array(&$post_voucher,&$cart_table));
+	}
+
+	public function get_voucher(){
+		$cart_model = F0FModel::getTmpInstance('Carts', 'J2StoreModel');
+		$cart_table = $cart_model->getCart();
+		if(isset( $cart_table->cart_voucher ) && !empty( $cart_table->cart_voucher ) ){
+			$session = JFactory::getSession ();
+			$session->set('voucher', $cart_table->cart_voucher, 'j2store');
+			$voucher_code = $cart_table->cart_voucher;
+
+		}else{
+			$session = JFactory::getSession ();
+			$voucher_code = $session->get ( 'voucher', '', 'j2store' );
+		}
+		return $voucher_code;
+	}
+
+	public function has_voucher(){
+		$session = JFactory::getSession ();
+		$cart_model = F0FModel::getTmpInstance('Carts', 'J2StoreModel');
+		$cart_table = $cart_model->getCart();
+		if(isset( $cart_table->cart_voucher ) && !empty( $cart_table->cart_voucher ) ){
+			$session->set('voucher', $cart_table->cart_voucher, 'j2store');
+		}
+		return $session->has ( 'voucher', 'j2store' );
 	}
 }

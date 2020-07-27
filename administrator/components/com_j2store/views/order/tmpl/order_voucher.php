@@ -10,12 +10,8 @@ defined('_JEXEC') or die;
 <?php if($this->params->get('enable_voucher', 0)):?>
 <div class="voucher">
 	    <!-- <form action="index.php" method="post" enctype="multipart/form-data"> -->
-	    
 	    <?php
-	    $voucher = '';
-	    if(JFactory::getSession()->has('voucher', 'j2store')) {
-			$voucher =JFactory::getSession()->get('voucher', '', 'j2store');
-	    }
+		$voucher = F0FModel::getTmpInstance ( 'Vouchers', 'J2StoreModel' )->get_voucher();
 	    ?>
 		<!--  <input type="hidden" name="oid" value="<?php echo $this->order->j2store_order_id;?>" />-->
 		<input type="text" name="voucher" value="<?php echo $voucher; ?>" />

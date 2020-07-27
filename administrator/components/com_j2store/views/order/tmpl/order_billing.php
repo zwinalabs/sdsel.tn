@@ -23,11 +23,11 @@ $this->address_type='billing';
 				    <?php foreach ($this->addresses as $address) :  ?>
 				    <?php if ($address->j2store_address_id == $this->billing_address_id) : ?>
 				    	<option value="<?php echo $address->j2store_address_id; ?>" selected="selected">
-				    		<?php echo $address->first_name; ?> 	<?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo $address->zone_name; ?>, <?php echo $address->country_name; ?>
+				    		<?php echo $address->first_name; ?> 	<?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo JText::_($address->zone_name); ?>, <?php echo JText::_($address->country_name); ?>
 				    	</option>
 				    <?php else: ?>
 				    	<option value="<?php echo $address->j2store_address_id; ?>">
-				    		<?php echo $address->first_name; ?> <?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo $address->zone_name; ?>, <?php echo $address->country_name; ?>
+				    		<?php echo $address->first_name; ?> <?php echo $address->last_name; ?>, <?php echo $address->address_1; ?>, <?php echo $address->city; ?>, <?php echo $address->zip; ?>, <?php echo JText::_($address->zone_name); ?>, <?php echo JText::_($address->country_name); ?>
 				    	</option>
 				    <?php endif; ?>
 				    <?php endforeach; ?>

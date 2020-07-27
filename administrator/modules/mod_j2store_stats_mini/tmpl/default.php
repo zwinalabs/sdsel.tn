@@ -16,16 +16,16 @@ $order_status = $params->get('order_status',array('*'));
 			<div class="span3">
 			<div class="j2store-stats-mini-badge j2store-stats-mini-today">
 			<?php
-			$date = new DateTime();
-			$expiry = clone $date;
-			$expiry->modify('+1 day');
+			$tz = JFactory::getConfig()->get('offset');
+			$today = JFactory::getDate ('now',$tz)->format ( 'Y-m-d' );
+			$tommorow = JFactory::getDate ('now +1 days',$tz)->format ( 'Y-m-d' );
 			?>
 			<span class="j2store-mini-price">
 			<?php
 			echo $currency->format(
 				F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
-									->since( $date->format("Y-m-d") )
-									->until( $expiry->format("Y-m-d") )
+									->since( $today )
+									->until( $tommorow )
 									->orderstatus($order_status)
 									->nozero(1)
 									->moneysum(1)
@@ -40,27 +40,14 @@ $order_status = $params->get('order_status',array('*'));
 		<div class="span3">
 			<div class="j2store-stats-mini-badge j2store-stats-mini-yesterday">
 				<?php
-				$date = new DateTime();
-				$date->setDate(gmdate('Y'), gmdate('m'), gmdate('d'));
-				$date->modify("-1 day");
-				$yesterday = $date->format("Y-m-d");
-				$date->modify("+1 day")
+				$yesterday = JFactory::getDate ('now -1 days',$tz)->format ( 'Y-m-d' );
 				?>
-				<?php
-					/* echo F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
-									->since( $yesterday )
-									->until( $date->format("Y-m-d") )
-									->orderstatus($order_status)
-									->nozero(1)
-									->getOrdersTotal(); */
-			?>
-
 			<span class="j2store-mini-price">
 			<?php
 			echo $currency->format(
 				F0FModel::getTmpInstance('Orders', 'J2StoreModel')->clearState()
 									->since( $yesterday )
-									->until( $date->format("Y-m-d") )
+									->until( $yesterday )
 									->orderstatus($order_status)
 									->nozero(1)
 									->moneysum(1)

@@ -143,14 +143,53 @@ class J2StoreModelReportItemised extends F0FModel
 
 	function _buildContentWhere($query)
 	{
+		// To load only the Normal order items
+		$query->where('oi.orderitem_type <> \'subscription\'');
+		
 		$mainframe = JFactory::getApplication();
 		$option = 'com_j2store';
 		$ns = $option.'.report';
 		$db					=JFactory::getDBO();
-		$filter_order		= $mainframe->getUserStateFromRequest( $ns.'filter_order',		'filter_order',		'oi.order_id',	'cmd' );
-		$filter_order_Dir	= $mainframe->getUserStateFromRequest( $ns.'filter_order_Dir',	'filter_order_Dir',	'ASC',				'word' );
+		$filter_order		= $this->getState('filter_order');//$mainframe->getUserStateFromRequest( $ns.'filter_order',		'filter_order',		'oi.order_id',	'cmd' );
+		$filter_order_Dir	= $this->getState('filter_order_Dir','ASC');//$mainframe->getUserStateFromRequest( $ns.'filter_order_Dir',	'filter_order_Dir',	'ASC',				'word' );
 		$filter_orderstate	= $mainframe->getUserStateFromRequest( $ns.'filter_orderstate',	'filter_orderstate',	'',			'word' );
 		$search				= $mainframe->getUserStateFromRequest( $ns.'filter_search',			'filter_search',			'',				'string' );
+		$filter_datetype  = $this->getState('filter_datetype');
+		if($filter_datetype){
+			if($filter_datetype=='today'){
+				$query->where('oi.created_on LIKE '.$this->_db->q(date("Y-m-d").'%'));
+			}
+			if($filter_datetype=='this_week'){
+				$weekdate = $this->getWeekdate();
+
+				$query->where('oi.created_on BETWEEN'.$this->_db->q($weekdate['start'].'%').' AND '.$this->_db->q($weekdate['end'].'%'));
+			}
+			if($filter_datetype == 'this_month'){
+				$start = date('Y-m-01',strtotime('this month'));
+				$end = date('Y-m-t',strtotime('this month'));
+				$query->where('oi.created_on BETWEEN'.$this->_db->q($start.'%').' AND '.$this->_db->q($end.'%'));
+			}
+			if($filter_datetype == 'this_year'){
+				$start = date('Y');
+				$query->where('oi.created_on LIKE '.$this->_db->q($start.'%'));
+			}
+			if($filter_datetype == 'last_7day'){
+				$start = date('Y-m-d', strtotime('-7 days'));
+				$end = date("Y-m-d");
+				$query->where('oi.created_on BETWEEN'.$this->_db->q($start.'%').' AND '.$this->_db->q($end.'%'));
+			}
+			if($filter_datetype == 'last_month'){
+				$start = date('Y-m-d', strtotime('first day of last month'));
+				$end = date('Y-m-d', strtotime('last day of last month'));
+				$query->where('oi.created_on BETWEEN'.$this->_db->q($start.'%').' AND '.$this->_db->q($end.'%'));
+			}
+			if($filter_datetype == 'last_year'){
+				$start = date('Y')-1;
+				$query->where('oi.created_on LIKE '.$this->_db->q($start.'%'));
+			}
+
+		}
+
 		if (strpos($search, '"') !== false) {
 			$search = str_replace(array('=', '<'), '', $search);
 		}
@@ -160,7 +199,8 @@ class J2StoreModelReportItemised extends F0FModel
 
 		if ($search) {
 			$where[] = 'LOWER(oi.orderitem_name) LIKE '.$db->Quote( '%'.$db->escape( $search, true ).'%', false ).
-			           'OR LOWER(oi.product_id) LIKE '.$db->Quote( '%'.$db->escape( $search, true ).'%', false );
+			           'OR LOWER(oi.product_id) LIKE '.$db->Quote( '%'.$db->escape( $search, true ).'%', false ).
+                ' OR LOWER(oi.orderitem_sku) LIKE '.$db->Quote( '%'.$db->escape( $search, true ).'%', false );
 		}
 
 		if($filter_orderstate) {
@@ -175,11 +215,28 @@ class J2StoreModelReportItemised extends F0FModel
 		foreach($where as $w) {
 			$query->where($w);
 		}
+
 		if(!empty($filter_order))
 		$query->order($filter_order.'  '.$filter_order_Dir);
 
 		$query->order('oi.order_id');
 		return;
+	}
+
+	function getWeekdate(){
+		$ddate = date('Y-m-d'); // Change to whatever date you need
+		$year=date('Y');
+		$date = new DateTime($ddate);
+		$week = $date->format("W");
+
+		$week=$week -1;
+		$time = strtotime("1 January $year", time());
+		$day = date('w', $time);
+		$time += ((7*$week)+1-$day)*24*3600;
+		$ret['start'] = date('Y-n-j', $time);
+		$time += 6*24*3600;
+		$ret['end'] = date('Y-n-j', $time);
+		return $ret;
 	}
 
 	function _getOrderID($id) {
@@ -209,7 +266,6 @@ class J2StoreModelReportItemised extends F0FModel
 	 * return array
 	 */
 	public function export($data){
-		$status;
 		$export_data = array();
 		foreach($data as $i => $item){
 			$export_data[$i]['product_id']= $item->product_id;

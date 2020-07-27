@@ -35,7 +35,12 @@ $allFields = $this->fields;
 	$onWhat='onchange'; if($oneExtraField->field_type=='radio') $onWhat='onclick';
 	//echo $this->fieldsClass->display($oneExtraField,@$this->address->$fieldName,$fieldName,false);
 	if(property_exists($this->address, $fieldName)) {
-		$html = str_replace('['.$fieldName.']',$this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $options = '', $test = false, $allFields, $allValues = null).'<br />',$html);
+        $placeholder =  (isset($oneExtraField->field_options['placeholder']) ? $oneExtraField->field_options['placeholder'] : "");
+        $field_options = '';
+        if($placeholder){
+            $field_options .= ' placeholder="'.$placeholder.'" ';
+        }
+		$html = str_replace('['.$fieldName.']',$this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $field_options, $test = false, $allFields, $allValues = null).'<br />',$html);
 	}
 	?>
 <?php endforeach; ?>
@@ -51,7 +56,9 @@ foreach($this->fields as $fieldName => $oneExtraField) {
 //now we have unprocessed fields. remove any other square brackets found.
 preg_match_all("^\[(.*?)\]^",$html,$removeFields, PREG_PATTERN_ORDER);
 foreach($removeFields[1] as $fieldName) {
-	$html = str_replace('['.$fieldName.']', '', $html);
+    if(!empty($fieldName)){
+        $html = str_replace('['.$fieldName.']', '', $html);
+    }
 }
 
 ?>
@@ -67,7 +74,12 @@ foreach($removeFields[1] as $fieldName) {
 				$onWhat='onchange'; if($oneExtraField->field_type=='radio') $onWhat='onclick';
 				//echo $this->fieldsClass->display($oneExtraField,@$this->address->$fieldName,$fieldName,false);
 				if(property_exists($this->address, $fieldName)) {
-					$uhtml .= $this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $options = '', $test = false, $allFields, $allValues = null);
+                    $placeholder =  (isset($oneExtraField->field_options['placeholder']) ? $oneExtraField->field_options['placeholder'] : "");
+                    $field_options = '';
+                    if($placeholder){
+                        $field_options .= ' placeholder="'.$placeholder.'" ';
+                    }
+					$uhtml .= $this->fieldsClass->getFormatedDisplay($oneExtraField,$this->address->$fieldName, $fieldName,false, $field_options, $test = false, $allFields, $allValues = null);
 					$uhtml .='<br />';
 				}
 				?>
@@ -108,10 +120,11 @@ foreach($removeFields[1] as $fieldName) {
 					html = '<option value=""><?php echo JText::_('J2STORE_SELECT_OPTION'); ?></option>';
 
 					if (json['zone'] != '') {
+						default_zone_id = $('#shipping-address #zone_id_default_value').val();
 						for (i = 0; i < json['zone'].length; i++) {
 							html += '<option value="' + json['zone'][i]['j2store_zone_id'] + '"';
 
-							if (json['zone'][i]['j2store_zone_id'] == '<?php echo $this->address->zone_id; ?>') {
+							if (json['zone'][i]['j2store_zone_id'] == default_zone_id) {
 								html += ' selected="selected"';
 							}
 

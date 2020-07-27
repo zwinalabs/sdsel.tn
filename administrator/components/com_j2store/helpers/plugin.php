@@ -53,6 +53,9 @@ public function getPluginsWithEvent( $eventName, $folder='J2Store' )
 				}
 			}
 		}
+        JPluginHelper::importPlugin('j2store');
+        $app = JFactory::getApplication();
+        $app->triggerEvent('onJ2StoreAfterGetPluginsWithEvent', array(&$return));
 		return $return;
 	}
 

@@ -1,11 +1,10 @@
 <?php
 /**
- * @package angifw
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer Framework
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 /**
@@ -20,10 +19,70 @@ class AUtilsSerialisedEncodingException extends Exception {};
 
 /**
  * A class to manipulate PHP serialised data without using unserialise(). This is useful if the serialised data contains
- * references to classes which are not present in the PHP code whcih
+ * references to classes which are not present in the PHP code which replaces the data.
  */
 class AUtilsSerialised
 {
+	/**
+	 * The simplest and fastest approach, as of September 2018. We use regular expressions to split the serialized
+	 * data at the string boundaries, then replace the strings and adjust the length.
+	 *
+	 * @param $serialized
+	 * @param $from
+	 * @param $to
+	 *
+	 * @return string
+	 */
+	public function replaceWithRegEx($serialized, $from, $to)
+	{
+		$pattern  = '/s:(\d{1,}):\"/iU';
+		$exploded = preg_split($pattern, $serialized, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+		$lastLen = null;
+
+		$exploded = array_map(function ($piece) use (&$lastLen, $from, $to) {
+			// Numeric pieces are the string lengths
+			if (is_numeric($piece))
+			{
+				$lastLen = (int) $piece;
+
+				return '';
+			}
+
+			// If we have not encountered a string length we are processing the first chunk of the serialised data
+			if (is_null($lastLen))
+			{
+				return $piece;
+			}
+
+			// I expect $lastLen + 2 characters (double quote, string, double quote). Break the piece in two parts.
+			$toReplace   = substr($piece, 0, $lastLen);
+			$theRestOfIt = substr($piece, $lastLen + 1);
+			$isInception = $this->isSerialised($toReplace);
+
+			/**
+			 * Replace data in the first part.
+			 *
+			 * If the string contains serialized data we recurse. Otherwise we do a straight up string replacements.
+			 * Serialized data inside a string in serialized data (much like the dream-world-inside-a-dream-world
+			 * depicted in the movie Inception) is something that reeks of horrid architecture and quite common in the
+			 * WordPress world.
+			 */
+			$toReplace = $isInception ? $this->replaceWithRegEx($toReplace, $from, $to) : str_replace($from, $to, $toReplace);
+
+			// Get the new piece's length
+			$newLength = function_exists('mb_strlen') ? mb_strlen($toReplace, 'ASCII') : strlen($toReplace);
+
+			// New piece is s:newLength:"replacedString"TheRestOfIt
+			$lastLen = null;
+
+			return 's:' . $newLength . ':"' . $toReplace . '"' . $theRestOfIt;
+		}, $exploded);
+
+		// Remove the empty strings
+		return implode("", $exploded);
+	}
+
 	/**
 	 * Does this string look like PHP serialised data? Please note that this is a quick pre-test. You cannot be sure
 	 * that it's valid serialised data until you try decoding it.
@@ -34,7 +93,7 @@ class AUtilsSerialised
 	 */
 	public function isSerialised($string)
 	{
-		$scalar = array('s:', 'i:', 'b:', 'd:');
+		$scalar = array('s:', 'i:', 'b:', 'd:', 'r:');
 		$structured = array('a:', 'O:');
 
 		// Is it null?
@@ -75,361 +134,5 @@ class AUtilsSerialised
 		$length = substr($string, $semicolonPos + 1, $secondPos - $semicolonPos - 1);
 
 		return (int)$length == $length;
-	}
-
-	/**
-	 * Checks whether a given array looks like a proper decoded serialiased value
-	 *
-	 * @param array $arr The array to check
-	 *
-	 * @return bool True if it looks like a proper decoded serialiased value
-	 */
-	public function isDecoded(array $arr)
-	{
-		if (empty($arr))
-		{
-			return false;
-		}
-
-		$keys = array_keys($arr);
-		$properKeys = array('type', 'class', 'length', 'value');
-
-		// Make sure all contained keys are expected
-		foreach ($keys as $k)
-		{
-			if (!in_array($k, $properKeys))
-			{
-				return false;
-			}
-		}
-
-		// Make sure all expected keys are present
-		foreach ($properKeys as $k)
-		{
-			if (!in_array($k, $keys))
-			{
-				return false;
-			}
-		}
-
-		return true;
-	}
-
-	/**
-	 * Decodes a serialised string into a structured array. The array keys are:
-	 * - type            s (string), i (integer), d (decimal), b (bool), N (null), O (object), a (array)
-	 * - class            Class name, only for type O
-	 * - length            Length, only for types s (string length), O (number of properties), a (number of elements)
-	 * - value            Scalar value for types s, i, d, b; null for type N; array of 2 * length elements for types O, a
-	 *
-	 * @param string $string
-	 *
-	 * @return array See above
-	 *
-	 * @throws AUtilsSerialisedDecodingException When the serialised data cannot be decoded
-	 */
-	public function decode($string)
-	{
-		if (!$this->isSerialised($string))
-		{
-			throw new AUtilsSerialisedDecodingException('String is not serialised data');
-		}
-
-		$charCount = 0;
-		$temp = $this->decodeString($string, $charCount);
-
-		return array_shift($temp);
-	}
-
-	/**
-	 * Encodes an array with serialised data into a serialised string.
-	 *
-	 * @param array $arr The array of serialised decoded data @see decode()
-	 *
-	 * @return string
-	 *
-	 * @throws AUtilsSerialisedEncodingException
-	 */
-	public function encode(array $arr)
-	{
-		if (!$this->isDecoded($arr))
-		{
-			throw new AUtilsSerialisedEncodingException('Array is not decoded serialised data');
-		}
-
-		$charCount = 0;
-		return $this->encodeArray(array($arr));
-	}
-
-	public function replaceText($serialised, $from, $to)
-	{
-		$decoded = $this->decode($serialised);
-
-		$this->replaceTextInDecoded($decoded, $from, $to);
-
-		return $this->encode($decoded);
-	}
-
-	public function replaceTextInDecoded(&$decoded, &$from, &$to)
-	{
-		switch ($decoded['type'])
-		{
-			case 's':
-				$decoded['value'] = str_replace($from, $to, $decoded['value']);
-				$decoded['length'] = strlen($decoded['value']);
-				break;
-
-			case 'a':
-			case 'O':
-				foreach($decoded['value'] as $k => $element)
-				{
-					if (in_array($element['type'], array('s', 'a', 'O')))
-					{
-						$this->replaceTextInDecoded($element, $from, $to);
-						$decoded['value'][$k] = $element;
-					}
-				}
-				break;
-
-			default:
-				break;
-		}
-	}
-
-	/**
-	 * Recursive function to decode serialised / partial serialised strings
-	 *
-	 * @param string $string
-	 * @param int $characterCount
-	 *
-	 * @return array
-	 *
-	 * @throws AUtilsSerialisedDecodingException
-	 */
-	protected function decodeString(&$string, &$characterCount = 0)
-	{
-		$ret = array();
-
-		// Repeat while we have string data to process
-		while (strlen($string))
-		{
-			$element = array(
-				'type'   => 'N',
-				'class'  => null,
-				'length' => 0,
-				'value'  => null,
-			);
-
-			$type = substr($string, 0, 1);
-
-			// If we have an end of structure (}) break the loop
-			if ($type == '}')
-			{
-				$string = substr($string, 1);
-				break;
-			}
-
-			$colon = substr($string, 1, 1);
-
-			// Parse null values
-			if ($type == 'N')
-			{
-				// A null value type MUST end with a semicolon
-				if ($colon != ';')
-				{
-					throw new AUtilsSerialisedDecodingException("Invalid token {$type}{$colon} at $characterCount");
-				}
-
-				$string = substr($string, 2);
-				$characterCount += 2;
-
-				$ret[] = $element;
-
-				continue;
-			}
-
-			// All other types MUST be followed by a colon
-			if ($colon != ':')
-			{
-				throw new AUtilsSerialisedDecodingException("Invalid token {$type}{$colon} at $characterCount");
-			}
-
-			// Set the element type
-			$element['type'] = $type;
-
-			$characterCount += 2;
-			$string = substr($string, 2);
-
-			// Objects are followed by class length and class name
-			if ($type == 'O')
-			{
-				$colonPos = strpos($string, ':');
-
-				if ($colonPos === false)
-				{
-					throw new AUtilsSerialisedDecodingException("Expected colon at $characterCount");
-				}
-
-				$classLength = (int)substr($string, 0, $colonPos + 1);
-
-				$characterCount += $colonPos + 1;
-				$string = substr($string, $colonPos + 1);
-
-				$className = substr($string, 0, $classLength + 3);
-
-				if ((substr($className, 0, 1) != '"') || (substr($className, -2) != '":'))
-				{
-					throw new AUtilsSerialisedDecodingException("Expected class name in double quotes at $characterCount");
-				}
-
-				$element['class'] = substr($className, 1, -2);
-				$characterCount += $classLength + 3;
-				$string = substr($string, $classLength + 3);
-			}
-
-			// Types s, O, a are followed by a length
-			if (in_array($type, array('s', 'O', 'a')))
-			{
-				$colonPos = strpos($string, ':');
-
-				if ($colonPos === false)
-				{
-					throw new AUtilsSerialisedDecodingException("Expected colon at $characterCount");
-				}
-
-				$element['length'] = (int)substr($string, 0, $colonPos);
-
-				$characterCount += $colonPos + 1;
-				$string = substr($string, $colonPos + 1);
-			}
-
-			switch ($type)
-			{
-				// Simple scalars. Look for end of data and parse value
-				case 'i':
-				case 'b':
-				case 'd':
-					$endOfData = strpos($string, ';');
-
-					if ($endOfData === false)
-					{
-						throw new AUtilsSerialisedDecodingException("End-of-data not found for {$type} at $characterCount");
-					}
-
-					$element['value'] = substr($string, 0, $endOfData);
-					$characterCount += $endOfData + 1;
-					$string = substr($string, $endOfData + 1);
-
-					$ret[] = $element;
-					continue;
-
-					break;
-
-				// Strings. We expect "string"; where string is $element['length'] characters long
-				case 's':
-					$rawString = substr($string, 0, $element['length'] + 3);
-
-					if ((substr($rawString, 0, 1) != '"') || substr($rawString, -2) != '";')
-					{
-						throw new AUtilsSerialisedDecodingException("Invalid string data at $characterCount");
-					}
-
-					$element['value'] = substr($rawString, 1, -2);
-
-					$characterCount += $element['length'] + 3;
-					$string = substr($string, $element['length'] + 3);
-
-					$ret[] = $element;
-					continue;
-
-					break;
-
-				// Structures. We have a start-of-structure ({) followed by serialised data. Recurse.
-				case 'a':
-				case 'O':
-					$startOfStructure = substr($string, 0, 1);
-
-					if ($startOfStructure != '{')
-					{
-						throw new AUtilsSerialisedDecodingException("Invalid start of structured data at $characterCount");
-					}
-
-					$characterCount++;
-					$string = substr($string, 1);
-
-					$element['value'] = $this->decodeString($string, $characterCount);
-
-					$num = count($element['value']);
-					$exp = 2 * $element['length'];
-
-					if ($num != $exp)
-					{
-						throw new AUtilsSerialisedDecodingException("Invalid number of structured data at $characterCount. Got $num, expected $exp");
-					}
-
-					$ret[] = $element;
-					continue;
-
-					break;
-
-				default:
-					throw new AUtilsSerialisedDecodingException("Unknown data type $type at $characterCount");
-					break;
-			}
-		}
-
-		return $ret;
-	}
-
-	/**
-	 * Encodes the serialised decoded array back to a serialised string
-	 *
-	 * @param array $arr The array to encode
-	 *
-	 * @return string Encoded serialised data
-	 *
-	 * @throws AUtilsSerialisedEncodingException
-	 */
-	protected function encodeArray($arr)
-	{
-		$ret = '';
-
-		foreach ($arr as $element)
-		{
-			switch ($element['type'])
-			{
-				case 'N':
-					$ret .= 'N;';
-					break;
-
-				case 'b':
-					$element['value'] = $element['value'] ? '1' : '0';
-					$ret .= $element['type'] . ':' . $element['value'] . ';';
-					break;
-
-				case 'i':
-				case 'd':
-					$ret .= $element['type'] . ':' . $element['value'] . ';';
-					break;
-
-				case 's':
-					$ret .= 's:' . $element['length'] . ':"' . $element['value'] . '";';
-					break;
-
-				case 'O':
-					$ret .= 'O:' . strlen($element['class']) . ':"' . $element['class'] . '":' .
-						$element['length'] . ':{' . $this->encodeArray($element['value']) . '}';
-					break;
-
-				case 'a':
-					$ret .= 'a:' . $element['length'] . ':{' . $this->encodeArray($element['value']) . '}';
-					break;
-
-				default:
-					throw new AUtilsSerialisedEncodingException("Unknown data type {$element['type']}");
-			}
-		}
-
-		return $ret;
 	}
 }

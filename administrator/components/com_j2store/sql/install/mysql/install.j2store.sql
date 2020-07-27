@@ -212,8 +212,8 @@ CREATE TABLE IF NOT EXISTS `#__j2store_emailtemplates` (
 -- Dumping data for table `#__j2store_emailtemplates`
 --
 
-INSERT IGNORE INTO `#__j2store_emailtemplates` (`j2store_emailtemplate_id`, `email_type`, `receiver_type`, `orderstatus_id`, `group_id`, `paymentmethod`, `subject`, `body`, `language`, `enabled`, `ordering`) VALUES
-(1, '', '*', '*',  '', '*', 'Hello [BILLING_FIRSTNAME] [BILLING_LASTNAME], your order has been placed with [SITENAME]', '<table style="width: 100%;" border="0" cellspacing="0" cellpadding="2">\r\n<tbody>\r\n<tr valign="top">\r\n<td colspan="2" rowspan="1">\r\n<p>Hello [BILLING_FIRSTNAME] [BILLING_LASTNAME], we thank you for placing an order with [SITENAME]. Your Order ID is:<strong>[ORDERID]</strong>. We have now started processing your order. The details of your order are as follows:</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td>\r\n<h3>Order Information</h3>\r\n<p><strong>Order ID: </strong>[ORDERID]</p>\r\n<p><strong>Invoice Number: </strong>[INVOICENO]</p>\r\n<p><strong>Date: </strong>[ORDERDATE]</p>\r\n<p><strong>Order Amount: </strong>[ORDERAMOUNT]</p>\r\n<p><strong>Order Status: </strong>[ORDERSTATUS]</p>\r\n<p> </p>\r\n</td>\r\n<td>\r\n<h3>Customer Information</h3>\r\n<p>[BILLING_FIRSTNAME] [BILLING_LASTNAME]</p>\r\n<p>[BILLING_ADDRESS_1] [BILLING_ADDRESS_2]</p>\r\n<p>[BILLING_CITY], [BILLING_ZIP]</p>\r\n<p>[BILLING_STATE] [BILLING_COUNTRY]</p>\r\n<p>[BILLING_PHONE] [BILLING_MOBILE]</p>\r\n<p>[BILLING_COMPANY]</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td>\r\n<h3>Payment Information</h3>\r\n<p><strong>Payment Type: </strong>[PAYMENT_TYPE]</p>\r\n</td>\r\n<td>\r\n<h3>Shipping Information</h3>\r\n<p>[SHIPPING_FIRSTNAME] [SHIPPING_LASTNAME]</p>\r\n<p>[SHIPPING_ADDRESS_1] [SHIPPING_ADDRESS_2]</p>\r\n<p>[SHIPPING_CITY], [SHIPPING_ZIP]</p>\r\n<p>[SHIPPING_STATE] [SHIPPING_COUNTRY]</p>\r\n<p>[SHIPPING_PHONE] [SHIPPING_MOBILE]</p>\r\n<p>[SHIPPING_COMPANY]</p>\r\n<p>[SHIPPING_METHOD]</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td colspan="2" rowspan="1">\r\n<p>[ITEMS]</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td colspan="2">\r\n<p>For any queries and details please get in touch with us. We will be glad to be of service. You can also view the order details by visiting [INVOICE_URL]</p>\r\n<p>You can use your email address and the following token to view the order [ORDER_TOKEN]</p>\r\n</td>\r\n</tr>\r\n</tbody>\r\n</table>', '*', 1, 1);
+INSERT IGNORE INTO `#__j2store_emailtemplates` (`j2store_emailtemplate_id`, `email_type`,  `orderstatus_id`, `group_id`, `paymentmethod`, `subject`, `body`, `language`, `enabled`, `ordering`) VALUES
+(1, '', '*',  '', '*', 'Hello [BILLING_FIRSTNAME] [BILLING_LASTNAME], your order has been placed with [SITENAME]', '<table style="width: 100%;" border="0" cellspacing="0" cellpadding="2">\r\n<tbody>\r\n<tr valign="top">\r\n<td colspan="2" rowspan="1">\r\n<p>Hello [BILLING_FIRSTNAME] [BILLING_LASTNAME], we thank you for placing an order with [SITENAME]. Your Order ID is:<strong>[ORDERID]</strong>. We have now started processing your order. The details of your order are as follows:</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td>\r\n<h3>Order Information</h3>\r\n<p><strong>Order ID: </strong>[ORDERID]</p>\r\n<p><strong>Invoice Number: </strong>[INVOICENO]</p>\r\n<p><strong>Date: </strong>[ORDERDATE]</p>\r\n<p><strong>Order Amount: </strong>[ORDERAMOUNT]</p>\r\n<p><strong>Order Status: </strong>[ORDERSTATUS]</p>\r\n<p> </p>\r\n</td>\r\n<td>\r\n<h3>Customer Information</h3>\r\n<p>[BILLING_FIRSTNAME] [BILLING_LASTNAME]</p>\r\n<p>[BILLING_ADDRESS_1] [BILLING_ADDRESS_2]</p>\r\n<p>[BILLING_CITY], [BILLING_ZIP]</p>\r\n<p>[BILLING_STATE] [BILLING_COUNTRY]</p>\r\n<p>[BILLING_PHONE] [BILLING_MOBILE]</p>\r\n<p>[BILLING_COMPANY]</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td>\r\n<h3>Payment Information</h3>\r\n<p><strong>Payment Type: </strong>[PAYMENT_TYPE]</p>\r\n</td>\r\n<td>\r\n<h3>Shipping Information</h3>\r\n<p>[SHIPPING_FIRSTNAME] [SHIPPING_LASTNAME]</p>\r\n<p>[SHIPPING_ADDRESS_1] [SHIPPING_ADDRESS_2]</p>\r\n<p>[SHIPPING_CITY], [SHIPPING_ZIP]</p>\r\n<p>[SHIPPING_STATE] [SHIPPING_COUNTRY]</p>\r\n<p>[SHIPPING_PHONE] [SHIPPING_MOBILE]</p>\r\n<p>[SHIPPING_COMPANY]</p>\r\n<p>[SHIPPING_METHOD]</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td colspan="2" rowspan="1">\r\n<p>[ITEMS]</p>\r\n</td>\r\n</tr>\r\n<tr valign="top">\r\n<td colspan="2">\r\n<p>For any queries and details please get in touch with us. We will be glad to be of service. You can also view the order details by visiting [INVOICE_URL]</p>\r\n<p>You can use your email address and the following token to view the order [ORDER_TOKEN]</p>\r\n</td>\r\n</tr>\r\n</tbody>\r\n</table>', '*', 1, 1);
 
 
 CREATE TABLE IF NOT EXISTS `#__j2store_geozonerules` (
@@ -591,8 +591,11 @@ CREATE TABLE IF NOT EXISTS `#__j2store_productimages` (
 `j2store_productimage_id` int(11) NOT NULL AUTO_INCREMENT,
   `product_id` int(11) DEFAULT NULL,
   `main_image` text,
+  `main_image_alt` varchar(255) NOT NULL,
   `thumb_image` text,
+  `thumb_image_alt` varchar(255) NOT NULL,
   `additional_images` longtext,
+  `additional_images_alt` longtext,
    PRIMARY KEY (`j2store_productimage_id`),
    KEY `productimage_product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ;
@@ -921,3 +924,53 @@ CREATE TABLE IF NOT EXISTS `#__j2store_zones` (
   `ordering` int(11) NOT NULL,
    PRIMARY KEY (`j2store_zone_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 ;
+
+CREATE TABLE IF NOT EXISTS `#__j2store_orderdiscounts` (
+	`j2store_orderdiscount_id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+	`order_id` varchar(255) NOT NULL,
+	`discount_type` varchar(255) NOT NULL,
+	`discount_entity_id` int(11) unsigned NOT NULL,
+	`discount_title` varchar(255) NOT NULL,
+	`discount_code` varchar(255) NOT NULL,
+	`discount_value` varchar(255) NOT NULL,
+	`discount_value_type` varchar(255) NOT NULL,
+	`discount_customer_email` varchar(255) NOT NULL,
+	`user_id` int(11) unsigned NOT NULL,
+	`discount_amount` decimal(12,4) NOT NULL,
+	`discount_tax` decimal(12,4) NOT NULL,
+	`discount_params` text NOT NULL,
+	PRIMARY KEY (`j2store_orderdiscount_id`),
+	KEY `order_id` (`order_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE IF NOT EXISTS `#__j2store_metafields` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `metakey` varchar(255) NOT NULL,
+  `namespace` varchar(255) NOT NULL,
+  `scope` varchar(255) NOT NULL,
+  `metavalue` text NOT NULL,
+  `valuetype` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `owner_id` int(10) unsigned NOT NULL,
+  `owner_resource` varchar(255) NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `metafields_owner_id_index` (`owner_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ;
+
+CREATE TABLE IF NOT EXISTS `#__j2store_queues` (
+ `j2store_queue_id` int(11) NOT NULL AUTO_INCREMENT,
+ `relation_id` varchar(255) NOT NULL,
+ `queue_type` varchar(255) NOT NULL,
+ `queue_data` longtext NOT NULL,
+ `params` longtext NOT NULL,
+ `priority` int(11) NOT NULL,
+ `status` varchar(255) NOT NULL,
+ `expired` datetime NOT NULL,
+ `created_on` varchar(255) DEFAULT NULL,
+ `modified_on` varchar(255) DEFAULT NULL,
+ PRIMARY KEY (`j2store_queue_id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ;
+

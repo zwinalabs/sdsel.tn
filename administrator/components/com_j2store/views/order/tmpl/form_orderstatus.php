@@ -8,22 +8,24 @@
 defined ( '_JEXEC' ) or die ();
 $order_state_save_link = JRoute::_('index.php?option=com_j2store&view=orders&task=orderstatesave');
 
-$this->order_state =J2Html::select()->clearState()
-												->type('genericlist')
-												->name('order_state_id')
-												->value($this->item->order_state_id)
-												->idTag("order_state_id_".$this->item->j2store_order_id)
-												->setPlaceHolders(array(''=>JText::_('J2STORE_SELECT_OPTION')))
-												->hasOne('Orderstatuses')
-												->setRelations(
-																array (
-																	'fields' => array
-																		 		(
-																					'key'=>'j2store_orderstatus_id',
-																					'name'=>'orderstatus_name'
-																				)
-																		)
-													)->getHtml();
+$this->order_state =J2Html::select()
+	->type('genericlist')
+	->name('order_state_id')
+	->value($this->item->order_state_id)
+	->idTag("order_state_id_".$this->item->j2store_order_id)
+	->setPlaceHolders(array(''=>JText::_('J2STORE_SELECT_OPTION')))
+	->hasOne('Orderstatuses')
+	->ordering('ordering')
+	->setRelations(
+		array (
+			'fields' => array
+			(
+				'key'=>'j2store_orderstatus_id',
+				'name'=>'orderstatus_name'
+			)
+		)
+	)->getHtml();
+
 ?>
 
 	<div class="panel-body">
@@ -58,7 +60,10 @@ $this->order_state =J2Html::select()->clearState()
 					<?php echo JText::_('J2STORE_RESET_DOWNLOAD_EXPIRY');?>
 				</label>
 
-
+                <label class="control-label">
+                    <input type="checkbox" name="reset_download_limit" value="1" />
+                    <?php echo JText::_('J2STORE_RESET_DOWNLOAD_LIMIT');?>
+                </label>
 			<?php endif;?>
 		</div>
 

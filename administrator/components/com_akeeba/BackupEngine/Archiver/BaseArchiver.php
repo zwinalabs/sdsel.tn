@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Archiver;
@@ -22,7 +21,7 @@ defined('AKEEBAENGINE') or die();
 if (!defined('AKEEBA_CHUNK'))
 {
 	$configuration = Factory::getConfiguration();
-	$chunksize     = $configuration->get('engine.archiver.common.chunk_size', 1048756);
+	$chunksize     = $configuration->get('engine.archiver.common.chunk_size', 1048576);
 	define('AKEEBA_CHUNK', $chunksize);
 }
 
@@ -108,7 +107,7 @@ abstract class BaseArchiver extends BaseFileManagement
 	 *
 	 * @param   bool  $finalPart  True if this is the final part
 	 *
-	 * @return  void
+	 * @return  bool  False if creating a new part fails
 	 */
 	abstract protected function createNewPartFile($finalPart = false);
 
@@ -202,18 +201,24 @@ abstract class BaseArchiver extends BaseFileManagement
 	 * Converts a human formatted size to integer representation of bytes,
 	 * e.g. 1M to 1024768
 	 *
-	 * @param   string $val The value in human readable format, e.g. "1M"
+	 * @param   string  $setting  The value in human readable format, e.g. "1M"
 	 *
 	 * @return  integer  The value in bytes
 	 */
-	protected function humanToIntegerBytes($val)
+	protected function humanToIntegerBytes($setting)
 	{
-		$val  = trim($val);
+		$val = trim($setting);
 		$last = strtolower($val{strlen($val) - 1});
+
+		if (is_numeric($last))
+		{
+			return $setting;
+		}
 
 		switch ($last)
 		{
-			// The 'G' modifier is available since PHP 5.1.0
+			case 't':
+				$val *= 1024;
 			case 'g':
 				$val *= 1024;
 			case 'm':
@@ -222,7 +227,7 @@ abstract class BaseArchiver extends BaseFileManagement
 				$val *= 1024;
 		}
 
-		return $val;
+		return (int) $val;
 	}
 
 	/**
@@ -449,7 +454,7 @@ abstract class BaseArchiver extends BaseFileManagement
 			// The compression succeeded
 			unset($udata);
 			$compressionMethod = 1;
-			$zdata             = aksubstr(aksubstr($zdata, 0, -4), 2);
+			$zdata             = aksubstr($zdata, 2, -4);
 			$c_len             = akstrlen($zdata);
 		}
 	}
@@ -464,7 +469,7 @@ abstract class BaseArchiver extends BaseFileManagement
 		clearstatcache();
 		$current_part_size = @filesize($this->_dataFileName);
 
-		return $this->partSize - ($current_part_size === false ? 0 : $current_part_size);
+		return (int) $this->partSize - ($current_part_size === false ? 0 : $current_part_size);
 	}
 
 	/**

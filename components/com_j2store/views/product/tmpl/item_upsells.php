@@ -26,7 +26,7 @@ $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-m
 
 					<div class="upsell-product-row <?php echo 'row-'.$row; ?> <?php echo $J2gridCol; ?>">
 					<?php endif;?>
-					<div class="<?php echo $J2gridCol.round((12 / $columns));?>">
+					<div class="<?php echo $J2gridCol.round((12 / $columns));?> upsell-product product-<?php echo $upsell_product->j2store_product_id;?> <?php echo $upsell_product->params->get('product_css_class','');?>">
 
 							<?php
 								$thumb_image = '';
@@ -53,12 +53,13 @@ $J2gridCol = ($this->params->get('bootstrap_version', 2) == 2) ? 'span' : 'col-m
 							$this->product = $upsell_product;
 							echo $this->loadAnyTemplate('site:com_j2store/product/item_price');
 							?>
-
+						<?php if( J2Store::product()->canShowCart($this->params) ): ?>
 							<?php
 								$this->singleton_product = $upsell_product;
 								$this->singleton_params = $this->params;								
 								echo $this->loadAnyTemplate('site:com_j2store/product/cart');
-							?>							
+							?>
+						<?php endif; ?>
 					</div>
 				<?php $counter++; ?>
 				<?php if (($rowcount == $columns) or ($counter == $total)) : ?>

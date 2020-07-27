@@ -10,6 +10,7 @@
 defined('_JEXEC') or die;
 $columns = $this->params->get('item_related_product_columns', 3);
 $total = count($this->up_sells); $counter = 0;
+$upsell_image_width = $this->params->get('item_product_upsell_image_width', '100');
 ?>
 
 <div class="row product-upsells-container">
@@ -17,6 +18,7 @@ $total = count($this->up_sells); $counter = 0;
 		<h3><?php echo JText::_('J2STORE_RELATED_PRODUCTS_UPSELLS'); ?></h3>
 				<?php foreach($this->up_sells as $upsell_product):?>
 					<?php
+						$upsell_product->product_link = JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$upsell_product->j2store_product_id);
 						if(!empty($upsell_product->addtocart_text)) {
 							$cart_text = JText::_($upsell_product->addtocart_text);
 						} else {
@@ -31,7 +33,7 @@ $total = count($this->up_sells); $counter = 0;
 					
 					<div class="upsell-product-row <?php echo 'row-'.$row; ?> row">
 					<?php endif;?>
-					<div class="col-sm-<?php echo round((12 / $columns));?>">
+					<div class="col-sm-<?php echo round((12 / $columns));?> upsell-product product-<?php echo $upsell_product->j2store_product_id;?> <?php echo $upsell_product->params->get('product_css_class','');?>">
 							<span class="upsell-product-image">
 							<?php
 								$thumb_image = '';
@@ -41,7 +43,7 @@ $total = count($this->up_sells); $counter = 0;
 	
 		      				?>
 			   				<?php if(isset($thumb_image) &&  JFile::exists(JPATH::clean(JPATH_SITE.'/'.$thumb_image))):?>
-			   					<img alt="<?php echo $upsell_product->product_name ;?>" class="j2store-product-thumb-image-<?php echo $upsell_product->j2store_product_id; ?>"  src="<?php echo JUri::root().JPath::clean($thumb_image);?>" />
+			   					<img title="<?php echo $upsell_product->product_name ;?>" alt="<?php echo $upsell_product->product_name ;?>" class="j2store-product-thumb-image-<?php echo $upsell_product->j2store_product_id; ?>"  src="<?php echo JUri::root().JPath::clean($thumb_image);?>" width="<?php echo intval($upsell_image_width);?>"/>
 						   	<?php endif; ?>
 	
 							</span>
@@ -56,7 +58,8 @@ $total = count($this->up_sells); $counter = 0;
 							$this->singleton_params = $this->params;
 							echo $this->loadAnyTemplate('site:com_j2store/products/price');
 							?>
-	
+
+						<?php if( J2Store::product()->canShowCart($this->params) ): ?>
 							<?php if(count($upsell_product->options) || $upsell_product->product_type == 'variable'): ?>
 								<a class="<?php echo $this->params->get('choosebtn_class', 'btn btn-success'); ?>"
 									href="<?php echo $upsell_product->product_link; ?>">
@@ -69,7 +72,8 @@ $total = count($this->up_sells); $counter = 0;
 								$this->singleton_cartext = $cart_text;
 								echo $this->loadAnyTemplate('site:com_j2store/products/cart');
 							?>
-							<?php endif; ?>						
+							<?php endif; ?>
+						<?php endif; ?>
 					</div>
 				<?php $counter++; ?>
 				<?php if (($rowcount == $columns) or ($counter == $total)) : ?>

@@ -20,6 +20,7 @@ class PlgSearchSppagebuilder extends JPlugin
 
 	protected $autoloadLanguage = true;
 
+	protected $app;
 
 	/**
 	 * Determine areas searchable by this plugin.
@@ -55,7 +56,8 @@ class PlgSearchSppagebuilder extends JPlugin
 	public function onContentSearch( $text, $phrase = '', $ordering = '', $areas = null )
 	{
 		$db 	= JFactory::getDbo();
-		$limit 	= 5;
+		$limit 	= $this->params->def('search_limit', 50);
+		$tag    = JFactory::getLanguage()->getTag();
 
 		if (is_array($areas)) {
 			if (!array_intersect($areas, array_keys($this->onContentSearchAreas()))) {
@@ -69,6 +71,8 @@ class PlgSearchSppagebuilder extends JPlugin
 			return array();
 		}
 
+		JLoader::register('SppagebuilderRouter', JPATH_SITE . '/components/com_sppagebuilder/route.php');
+
 		switch ($phrase)
 		{
 			case 'exact':
@@ -77,33 +81,27 @@ class PlgSearchSppagebuilder extends JPlugin
 			default:
 				$text = $db->quote('%' . $db->escape($text, true) . '%', false);
 				$wheres1 = array();
-				$wheres1[] = 'title LIKE ' . $text;
-				$wheres1[] = 'text LIKE ' . $text;
-				$where = '(' . implode(') OR (', $wheres1) . ')';
+				$wheres1[] = 's.title LIKE ' . $text;
+				$wheres1[] = 's.text LIKE ' . $text;
+				$where = '((' . implode(') OR (', $wheres1) . ')) AND s.published = 1';
 				break;
 		}
 
 		switch ($ordering)
 		{
 			case 'oldest':
-				$order = 'created_time ASC';
+				$order = 's.created_time ASC';
 				break;
-
-			/*
-			case 'popular':
-				$order = 'a.hits DESC';
-				break;
-			*/
 
 			case 'alpha':
-				$order = 'title ASC';
+				$order = 's.title ASC';
 				break;
 
 			case 'newest':
 			case 'category':
 			case 'popular':
 			default:
-				$order = 'created_time DESC';
+				$order = 's.created_on DESC';
 				break;
 		}
 
@@ -111,15 +109,21 @@ class PlgSearchSppagebuilder extends JPlugin
 
 		if ( $limit > 0 ) {
 			$query->clear();
-
-			$query->select('id, title AS title, created_time as created, \'\' AS browsernav, \'Page\' AS section, language');
-			$query->from('#__sppagebuilder');
+			$query->select('s.id as id, s.title AS title, s.created_on as created, s.language as language');
+			$query->from($db->quoteName('#__sppagebuilder', 's'));
+			$query->where($db->quoteName('s.extension') . ' = '  . $db->quote('com_sppagebuilder'));
 			$query->where($where);
+
+			if ($this->app->isClient('site') && JLanguageMultilang::isEnabled())
+			{
+				$query->where('s.language in (' . $db->quote($tag) . ',' . $db->quote('*') . ')');
+			}
+
 			$query->order($order);
 
 			$db->setQuery($query, 0, $limit);
 		}
-
+	
 		try
 		{
 			$list = $db->loadObjectList();
@@ -128,33 +132,37 @@ class PlgSearchSppagebuilder extends JPlugin
 			{
 				foreach ($list as $key => $item)
 				{
-					$list[$key]->href = JRoute::_('index.php?option=com_sppagebuilder&view=page&id='.$item->id.((($item->language != '*'))? '&lang='.$item->language:'') . $this->getItemid($item->id));
+					$menuItem = $this->getActiveMenu($item->id);
+					// if(isset($menuItem->title) && $menuItem->title) {
+					// 	$list[$key]->title = $menuItem->title;
+					// }
+					$itemId = '';
+					if(isset($menuItem->id) && $menuItem->id) {
+						$itemId = '&Itemid=' . $menuItem->id;
+					}
+					$list[$key]->href = JRoute::_('index.php?option=com_sppagebuilder&view=page&id='.$item->id.((($item->language != '*'))? '&lang='.$item->language:'') . $itemId);
 				}
 			}
 		}
 		catch (RuntimeException $e)
 		{
 			$list = array();
-			JFactory::getApplication()->enqueueMessage(JText::_('JERROR_AN_ERROR_HAS_OCCURRED'), 'error');
+			$this->app->enqueueMessage(JText::_('JERROR_AN_ERROR_HAS_OCCURRED'), 'error');
 		}
 
 		return $list;
 	}
 
-	private function getItemid($id = null) {
+	public static function getActiveMenu($pageId) {
 		$db = JFactory::getDbo();
-		$query = $db->getQuery(true); 
-		$query->select($db->quoteName(array('id')));
+		$query = $db->getQuery(true);
+		$query->select(array('title, id'));
 		$query->from($db->quoteName('#__menu'));
-		$query->where($db->quoteName('link') . ' LIKE '. $db->quote('%view=page&id='. $id .'%'));
+		$query->where($db->quoteName('link') . ' LIKE '. $db->quote('%option=com_sppagebuilder&view=page&id='. $pageId .'%'));
 		$query->where($db->quoteName('published') . ' = '. $db->quote('1'));
 		$db->setQuery($query);
-		$result = $db->loadResult();
+		$item = $db->loadObject();
 
-		if(count($result)) {
-			return '&Itemid=' . $result;
-		}
-
-		return;
+		return $item;
 	}
 }

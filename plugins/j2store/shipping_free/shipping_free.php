@@ -115,6 +115,19 @@ class plgJ2StoreShipping_Free extends J2StoreShippingPlugin
 		if($max_subtotal > 0 && $subtotal > $max_subtotal ) {
 			$status = false;
 		}
+
+		$check_shipping_product = $this->params->get('check_shipping_product', 1);
+        if($check_shipping_product && $status){
+            $products = $order->getItems();
+            $status = false;
+            foreach($products as $product) {
+                if (isset($product->cartitem->shipping) && $product->cartitem->shipping) {
+                    $status = true;
+                    break;
+                }
+            }
+        }
+
 		if(!$status) return $vars;
 		
 		$geozones_taxes = array();

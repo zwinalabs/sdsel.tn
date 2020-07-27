@@ -1,11 +1,10 @@
 <?php
 /**
- * @package angifw
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer Framework
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -97,7 +96,7 @@ class AView
 	protected $input = null;
 
     /** @var  AContainer Application container */
-    protected $container;
+    public $container;
 
     /**
      * Constructor

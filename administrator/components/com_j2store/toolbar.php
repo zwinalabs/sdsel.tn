@@ -186,8 +186,8 @@ class J2StoreToolbar extends F0FToolbar
 	{
 		if(J2Store::isPro()) {
 			parent::onBrowse();
-			JToolbarHelper::custom('history','icon icon-list','',JText::_('J2STORE_VOUCHER_HISTORY'));
-			JToolbarHelper::custom('send','icon icon-mail','',JText::_('J2STORE_VOUCHER_SEND'));
+			JToolbarHelper::custom('history','list','',JText::_('J2STORE_VOUCHER_HISTORY'));
+			JToolbarHelper::custom('send','mail','',JText::_('J2STORE_VOUCHER_SEND'));
 		}else {
 			$this->noToolbar();
 		}
@@ -197,6 +197,7 @@ class J2StoreToolbar extends F0FToolbar
 	{
 		if(J2Store::isPro()) {
 			parent::onEdit();
+			JToolbarHelper::save2copy ('copy');
 		}else {
 			$this->noToolbar();
 		}
@@ -257,19 +258,8 @@ class J2StoreToolbar extends F0FToolbar
 	public function onEmailtemplatesEdit() {
 		if(J2Store::isPro()) {
 			parent::onEdit();
-
 			$bar = JToolBar::getInstance('toolbar');
-			// Add "Export to CSV"
-			$link = JURI::getInstance();
-			$query = $link->getQuery(true);
-			$query['option'] = 'com_j2store';
-			$query['view'] = 'emailtemplates';
-			$query['task'] = 'sendtest';
-			$link->setQuery($query);
-
-			JToolBarHelper::divider();
-			$icon = 'mail';
-			$bar->appendButton('Link', $icon, JText::_('J2STORE_EMAILTEMPLATE_SEND_TEST_EMAIL_TO_YOURSELF'), $link->toString());
+			$bar->appendButton('Standard','mail' , JText::_('J2STORE_EMAILTEMPLATE_SEND_TEST_EMAIL_TO_YOURSELF'), 'sendtest', false);
 
 		}else {
 			$this->noToolbar();
@@ -570,6 +560,8 @@ class J2StoreToolbar extends F0FToolbar
 		$subtitle_key = strtoupper($option . '_TITLE_' . F0FInflector::pluralize($this->input->getCmd('view', 'cpanel')));
 		JToolBarHelper::title(JText::_(strtoupper($option)) . ': ' . JText::_($subtitle_key), $componentName);
 		// Set toolbar icons
+		$msg = JText::_($this->input->getCmd('option', 'com_foobar') . '_CONFIRM_DELETE');
+		JToolBarHelper::deleteList(strtoupper($msg));
 		JToolbarHelper::publish();
 		JToolbarHelper::unpublish();
 		JToolBarHelper::back();
@@ -635,6 +627,7 @@ class J2StoreToolbar extends F0FToolbar
 			$app = JFactory::getApplication();
 			parent::onEdit();
 			JToolBarHelper::divider();
+			JToolbarHelper::save2copy ('copy');
 			$bar = JToolBar::getInstance('toolbar');
 			$bar->appendButton('Link', 'list', JText::_('J2STORE_COUPON_HISTORY'), 'index.php?option=com_j2store&view=coupon&task=history&coupon_id='.$app->input->getInt('id'));
 		}else {

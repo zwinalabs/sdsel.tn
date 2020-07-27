@@ -11,6 +11,7 @@ $items = $this->order->getItems();
 $this->taxes = $order->getOrderTaxrates();
 $this->shipping = $order->getOrderShippingRate();
 $currency = J2Store::currency();
+$colspan = '2';
 
 ?>
 	<h3><?php echo JText::_('J2STORE_ORDER_SUMMARY')?></h3>
@@ -19,6 +20,10 @@ $currency = J2Store::currency();
 			<tr>
 				<th width="70%"><?php echo JText::_('J2STORE_CART_LINE_ITEM'); ?></th>
 				<th width="10%"><?php echo JText::_('J2STORE_CART_LINE_ITEM_QUANTITY'); ?></th>
+				<?php if(isset($this->taxes) && count($this->taxes) && $this->params->get('show_item_tax', 0)): ?>
+					<?php $colspan = '3'; ?>
+					<th><?php echo JText::_('J2STORE_CART_LINE_ITEM_TAX'); ?></th>
+				<?php endif; ?>
 				<th width="20%"><?php echo JText::_('J2STORE_CART_LINE_ITEM_TOTAL'); ?></th>
 			</tr>
 			</thead>
@@ -30,6 +35,7 @@ $currency = J2Store::currency();
 					$registry->loadString($item->orderitem_params);
 					$item->params = $registry;
 					$thumb_image = $item->params->get('thumb_image', '');
+                    $back_order_text = $item->params->get('back_order_item', '');
 				?>
 				<tr>
 					<td>
@@ -56,7 +62,7 @@ $currency = J2Store::currency();
 								}
 							?>
 								<small>
-								- <?php echo JText::_($attribute->orderitemattribute_name); ?> : <?php echo $attribute_value; ?>
+								- <?php echo JText::_($attribute->orderitemattribute_name); ?> : <?php echo nl2br($attribute_value); ?>
 								</small>						
              				   	<br />
 							<?php endforeach;?>
@@ -81,11 +87,22 @@ $currency = J2Store::currency();
 							</span>
 
 						<?php endif; ?>
+
+                        <?php if($back_order_text):?>
+                            <br />
+                            <span class="label label-inverse"><?php echo JText::_($back_order_text);?></span>
+                        <?php endif;?>
 						<?php echo J2Store::plugin()->eventWithHtml('AfterDisplayLineItemTitle', array($item, $this->order, $this->params));?>
 					</td>
 					<td><?php echo $item->orderitem_quantity; ?></td>
+
+					<?php if(isset($this->taxes) && count($this->taxes) && $this->params->get('show_item_tax', 0)): ?>
+						<td><?php 	echo $currency->format($item->orderitem_tax);	?></td>
+					<?php endif; ?>
+
 					<td class="cart-line-subtotal">
-						<?php echo $currency->format($this->order->get_formatted_lineitem_total($item, $this->params->get('checkout_price_display_options', 1))); ?>					
+						<?php echo $currency->format($this->order->get_formatted_lineitem_total($item, $this->params->get('checkout_price_display_options', 1))); ?>
+						<?php echo J2Store::plugin()->eventWithHtml('AfterDisplayLineItemTotal', array($item, $this->order, $this->params));?>
 					</td>
 				</tr>
 				<?php endforeach; ?>
@@ -94,7 +111,7 @@ $currency = J2Store::currency();
 				<?php if($totals = $this->order->get_formatted_order_totals()): ?>
 					<?php foreach($totals as $total): ?>
 						<tr>
-							<th scope="row" colspan="2"> <?php echo $total['label']; ?></th>
+							<th scope="row" colspan="<?php echo $colspan; ?>"> <?php echo $total['label']; ?></th>
 							<td><?php echo $total['value']; ?></td>
 						</tr>
 					<?php endforeach; ?>

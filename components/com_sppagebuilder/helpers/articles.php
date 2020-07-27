@@ -2,20 +2,21 @@
 /**
  * @package SP Page Builder
  * @author JoomShaper http://www.joomshaper.com
- * @copyright Copyright (c) 2010 - 2016 JoomShaper
+ * @copyright Copyright (c) 2010 - 2019 JoomShaper
  * @license http://www.gnu.org/licenses/gpl-2.0.html GNU/GPLv2 or later
 */
 //no direct accees
-defined ('_JEXEC') or die ('restricted aceess');
+defined ('_JEXEC') or die ('Restricted access');
+use Joomla\Utilities\ArrayHelper;
 
 if(!class_exists('ContentHelperRoute')) require_once (JPATH_SITE . '/components/com_content/helpers/route.php');
 
 abstract class SppagebuilderHelperArticles
 {
-	public static function getArticles( $count = 5, $ordering = 'latest', $catid = '', $include_subcategories = true, $post_format = '' ) {
+	public static function getArticles( $count = 5, $ordering = 'latest', $catid = '', $include_subcategories = true, $post_format = '', $tagids = array() ) {
 
 		$authorised = JAccess::getAuthorisedViewLevels(JFactory::getUser()->get('id'));
-	
+
 		$app = JFactory::getApplication();
 		$db = JFactory::getDbo();
 		$nullDate = $db->quote($db->getNullDate());
@@ -30,34 +31,61 @@ abstract class SppagebuilderHelperArticles
 		->select($db->quoteName('b.title', 'category'))
 		->join('LEFT', $db->quoteName('#__categories', 'b') . ' ON (' . $db->quoteName('a.catid') . ' = ' . $db->quoteName('b.id') . ')')
 		->where($db->quoteName('b.extension') . ' = ' . $db->quote('com_content'));
-		
+
 		if($post_format) {
-			$query->where($db->quoteName('a.attribs') . ' LIKE ' . $db->quote('%"post_format":"'. $post_format .'"%'));
+			$query->where('('.$db->quoteName('a.attribs') . ' LIKE ' . $db->quote('%"post_format":"'. $post_format .'"%') . ' OR ' . $db->quoteName('a.attribs') . ' LIKE ' . $db->quote('%"helix_ultimate_article_format":"'. $post_format .'"%').')');
 		}
-		
+
 		$query->where($db->quoteName('a.state') . ' = ' . $db->quote(1));
-		
-		// Category filter
-		if ($catid != '') {
-			$categories = self::getCategories( $catid, $include_subcategories );
-			array_unshift($categories, $catid);
 
-			$query->where($db->quoteName('a.catid')." IN (" . implode( ',', $categories ) . ")");
+		// Category filter
+		if ( ($catid != '' || is_array($catid)) ) {
+			if (!is_array($catid)) {
+				$catid = array($catid);
+			}
+
+			if (!in_array('', $catid)) {
+				$categories = self::getCategories( $catid, $include_subcategories );
+				$categories = array_merge($categories, $catid);
+				//array_unshift($categories, $catid);
+				$query->where($db->quoteName('a.catid')." IN (" . implode( ',', $categories ) . ")");
+			}
 		}
 
+		// tags filter
+		if (is_array($tagids) && count($tagids)) {
+			$tagId = implode(',', ArrayHelper::toInteger($tagids));
+			if ($tagId) {
+				$subQuery = $db->getQuery(true)
+					->select('DISTINCT content_item_id')
+					->from($db->quoteName('#__contentitem_tag_map'))
+					->where('tag_id IN (' . $tagId . ')')
+					->where('type_alias = ' . $db->quote('com_content.article'));
+
+				$query->innerJoin('(' . (string) $subQuery . ') AS tagmap ON tagmap.content_item_id = a.id');
+			}
+		}
+		
+		// publishing
 		$query->where('(a.publish_up = ' . $nullDate . ' OR a.publish_up <= ' . $nowDate . ')');
 		$query->where('(a.publish_down = ' . $nullDate . ' OR a.publish_down >= ' . $nowDate . ')');
-		
+
 		// has order by
 		if ($ordering == 'hits') {
 			$query->order($db->quoteName('a.hits') . ' DESC');
 		} elseif($ordering == 'featured') {
 			$query->where($db->quoteName('a.featured') . ' = ' . $db->quote(1));
-			$query->order($db->quoteName('a.created') . ' DESC');
+			$query->order($db->quoteName('a.publish_up') . ' DESC');
 		} elseif($ordering == 'oldest') {
-			$query->order($db->quoteName('a.created') . ' ASC');
+			$query->order($db->quoteName('a.publish_up') . ' ASC');
+		} elseif($ordering == 'alphabet_asc') {
+			$query->order($db->quoteName('a.title') . ' ASC');
+		} elseif($ordering == 'alphabet_desc') {
+			$query->order($db->quoteName('a.title') . ' DESC');
+		} elseif($ordering == 'random') {
+			$query->order($query->Rand());
 		} else {
-			$query->order($db->quoteName('a.created') . ' DESC');
+			$query->order($db->quoteName('a.publish_up') . ' DESC');
 		}
 
 		// Language filter
@@ -69,7 +97,6 @@ abstract class SppagebuilderHelperArticles
 		$query->where($db->quoteName('a.access')." IN (" . implode( ',', $authorised ) . ")");
 		$query->order($db->quoteName('a.created') . ' DESC')
 		->setLimit($count);
-
 		$db->setQuery($query);
 		$items = $db->loadObjectList();
 
@@ -80,9 +107,16 @@ abstract class SppagebuilderHelperArticles
 			$item->link 	= JRoute::_(ContentHelperRoute::getArticleRoute($item->slug, $item->catid, $item->language));
 			$attribs 		= json_decode($item->attribs);
 
+			$feature_img = '';
+			if (isset($attribs->helix_ultimate_image) && $attribs->helix_ultimate_image) {
+				$feature_img = $attribs->helix_ultimate_image;
+			} elseif (isset($attribs->spfeatured_image) && $attribs->spfeatured_image) {
+				$feature_img = $attribs->spfeatured_image;
+			}
+
 			// Featured Image
-			if(isset($attribs->spfeatured_image) && $attribs->spfeatured_image != NULL) {
-				$item->featured_image = $featured_image = $attribs->spfeatured_image;
+			if(isset($feature_img) && $feature_img != NULL) {
+				$item->featured_image = $featured_image = $feature_img;
 
 				$img_baseurl = basename($featured_image);
 
@@ -114,9 +148,17 @@ abstract class SppagebuilderHelperArticles
 			} else {
 				$images = json_decode($item->images);
 				if(isset($images->image_intro) && $images->image_intro) {
-					$item->image_thumbnail = $images->image_intro;
+					if(strpos($images->image_intro, "http://") !== false || strpos($images->image_intro, "https://") !== false){
+						$item->image_thumbnail = $images->image_intro;
+					} else {
+						$item->image_thumbnail = JURI::root(true) . '/' . $images->image_intro;
+					}
 				} elseif (isset($images->image_fulltext) && $images->image_fulltext) {
-					$item->image_thumbnail = $images->image_fulltext;
+					if(strpos($images->image_fulltext, "http://") !== false || strpos($images->image_fulltext, "https://") !== false){
+						$item->image_thumbnail = $images->image_fulltext;
+					} else {
+						$item->image_thumbnail = JURI::root(true) . '/' . $images->image_fulltext;
+					}
 				} else {
 					$item->image_thumbnail = false;
 				}
@@ -124,17 +166,25 @@ abstract class SppagebuilderHelperArticles
 
 			// Post Format
 			$item->post_format = 'standard';
-			if(isset($attribs->post_format) && $attribs->post_format != '') {
+			if(isset($attribs->helix_ultimate_article_format) && $attribs->helix_ultimate_article_format != '') {
+				$item->post_format = $attribs->helix_ultimate_article_format;
+			} elseif(isset($attribs->post_format) && $attribs->post_format != '') {
 				$item->post_format = $attribs->post_format;
 			}
 
 			// Post Format Video
-			if(isset($attribs->post_format) && $attribs->post_format == 'video') {
-				if(isset($attribs->video) && $attribs->video != NULL) {
-					$video = parse_url($attribs->video);
+			if(isset($item->post_format) && $item->post_format == 'video') {
+				
+				$video_url = '';
+				if (isset($attribs->helix_ultimate_video) && $attribs->helix_ultimate_video) {
+					$video_url = $attribs->helix_ultimate_video;
+				} elseif (isset($attribs->video) && $attribs->video) {
+					$video_url = $attribs->video;
+				}
 
+				if(isset($video_url) && $video_url != NULL) {
+					$video = parse_url($video_url);
 					$video_src = '';
-
 					switch($video['host']) {
 						case 'youtu.be':
 						$video_id 	= trim($video['path'],'/');
@@ -158,19 +208,29 @@ abstract class SppagebuilderHelperArticles
 				} else {
 					$item->video_src = '';
 				}
+
+				
 			}
 
 			// Post Format Audio
-			if(isset($attribs->post_format) && $attribs->post_format == 'audio') {
-				if(isset($attribs->audio) && $attribs->audio != NULL) {
-					$item->audio_embed = $attribs->audio;
+			if(isset($item->post_format) && $item->post_format == 'audio') {
+
+				$audio_url = '';
+				if (isset($attribs->helix_ultimate_audio) && $attribs->helix_ultimate_audio) {
+					$audio_url = $attribs->helix_ultimate_audio;
+				} elseif (isset($attribs->audio) && $attribs->audio) {
+					$audio_url = $attribs->audio;
+				}
+
+				if(isset($audio_url) && $audio_url != NULL) {
+					$item->audio_embed = $audio_url;
 				} else {
 					$item->audio_embed = '';
 				}
 			}
 
 			// Post Format Quote
-			if(isset($attribs->post_format) && $attribs->post_format == 'quote') {
+			if(isset($item->post_format) && $item->post_format == 'quote') {
 				if(isset($attribs->quote_text) && $attribs->quote_text != NULL) {
 					$item->quote_text = $attribs->quote_text;
 				} else {
@@ -185,7 +245,7 @@ abstract class SppagebuilderHelperArticles
 			}
 
 			// Post Format Status
-			if(isset($attribs->post_format) && $attribs->post_format == 'status') {
+			if(isset($item->post_format) && $item->post_format == 'status') {
 				if(isset($attribs->post_status) && $attribs->post_status != NULL) {
 					$item->post_status = $attribs->post_status;
 				} else {
@@ -194,7 +254,7 @@ abstract class SppagebuilderHelperArticles
 			}
 
 			// Post Format Link
-			if(isset($attribs->post_format) && $attribs->post_format == 'link') {
+			if(isset($item->post_format) && $item->post_format == 'link') {
 				if(isset($attribs->link_title) && $attribs->link_title != NULL) {
 					$item->link_title = $attribs->link_title;
 				} else {
@@ -209,60 +269,72 @@ abstract class SppagebuilderHelperArticles
 			}
 
 			// Post Format Gallery
-			if(isset($attribs->post_format) && $attribs->post_format == 'gallery') {
+			if(isset($item->post_format) && $item->post_format == 'gallery') {
+
+				$gallery_imgs = '';
+				if (isset($attribs->helix_ultimate_gallery) && $attribs->helix_ultimate_gallery) {
+					$gallery_imgs = $attribs->helix_ultimate_gallery;
+				} elseif (isset($attribs->gallery) && $attribs->gallery) {
+					$gallery_imgs = $attribs->gallery;
+				}
 
 				$item->imagegallery = new stdClass();
+				$gallery_imgs;
 
-				if(isset($attribs->gallery) && $attribs->gallery != NULL) {
-					$gallery_all_images = json_decode($attribs->gallery)->gallery_images;
-
+				if(isset($gallery_imgs) && $gallery_imgs != NULL) {
+					$gallery_img_decode = json_decode($gallery_imgs);
+					$gallery_all_images = '';
+					if (isset($gallery_img_decode->helix_ultimate_gallery_images) && $gallery_img_decode->helix_ultimate_gallery_images) {
+						$gallery_all_images = $gallery_img_decode->helix_ultimate_gallery_images;
+					} elseif (isset($gallery_img_decode->gallery_images) && $gallery_img_decode->gallery_images) {
+						$gallery_all_images = $gallery_img_decode->gallery_images;
+					}
+					
 					$gallery_images = array();
+					if(isset($gallery_all_images) && is_array($gallery_all_images)){
+						foreach ($gallery_all_images as $key=>$value) {
+							$gallery_images[$key]['full'] = $value;
+							$gallery_img_baseurl = basename($value);
 
-					foreach ($gallery_all_images as $key=>$value) {
-						$gallery_images[$key]['full'] = $value;
+							//Small
+							$small = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_small.' . JFile::getExt($gallery_img_baseurl);
+							if(file_exists($small)) {
+								$gallery_images[$key]['small'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_small.' . JFile::getExt($gallery_img_baseurl);
+							}
 
-						$gallery_img_baseurl = basename($value);
+							//Thumbnail
+							$thumbnail = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_thumbnail.' . JFile::getExt($gallery_img_baseurl);
+							if(file_exists($thumbnail)) {
+								$gallery_images[$key]['thumbnail'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_thumbnail.' . JFile::getExt($gallery_img_baseurl);
+							}
 
-						//Small
-						$small = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_small.' . JFile::getExt($gallery_img_baseurl);
-						if(file_exists($small)) {
-							$gallery_images[$key]['small'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_small.' . JFile::getExt($gallery_img_baseurl);
-						}
+							//Medium
+							$medium = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_medium.' . JFile::getExt($gallery_img_baseurl);
+							if(file_exists($medium)) {
+								$gallery_images[$key]['medium'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_medium.' . JFile::getExt($gallery_img_baseurl);
+							}
 
-						//Thumbnail
-						$thumbnail = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_thumbnail.' . JFile::getExt($gallery_img_baseurl);
-						if(file_exists($thumbnail)) {
-							$gallery_images[$key]['thumbnail'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_thumbnail.' . JFile::getExt($gallery_img_baseurl);
-						}
-
-						//Medium
-						$medium = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_medium.' . JFile::getExt($gallery_img_baseurl);
-						if(file_exists($medium)) {
-							$gallery_images[$key]['medium'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_medium.' . JFile::getExt($gallery_img_baseurl);
-						}
-
-						//Large
-						$large = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_large.' . JFile::getExt($gallery_img_baseurl);
-						if(file_exists($large)) {
-							$gallery_images[$key]['large'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_large.' . JFile::getExt($gallery_img_baseurl);
+							//Large
+							$large = JPATH_ROOT . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) .  '_large.' . JFile::getExt($gallery_img_baseurl);
+							if(file_exists($large)) {
+								$gallery_images[$key]['large'] = JURI::root(true) . '/' . dirname($value) . '/' . JFile::stripExt($gallery_img_baseurl) . '_large.' . JFile::getExt($gallery_img_baseurl);
+							}
 						}
 					}
 
 					$item->imagegallery->images = $gallery_images;
-
 				} else {
 					$item->imagegallery->images = array();
 				}
+
 			}
 		}
 
 		return $items;
 	}
 
-	public static function getCategories($parent_id = 1, $include_subcategories = true, $child = false) {
-		if(!$child) {
-			$cats = array();
-		}
+	public static function getCategories($parent_id = 1, $include_subcategories = true, $child = false, $cats = array()) {
+
 		$app = JFactory::getApplication();
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
@@ -274,18 +346,18 @@ abstract class SppagebuilderHelperArticles
 			->where($db->quoteName('published') . ' = ' . $db->quote(1))
 			->where($db->quoteName('access')." IN (" . implode( ',', JFactory::getUser()->getAuthorisedViewLevels() ) . ")")
 			->where($db->quoteName('language')." IN (" . $db->Quote(JFactory::getLanguage()->getTag()).", ".$db->Quote('*') . ")")
-			->where($db->quoteName('parent_id') . ' = ' . $db->quote($parent_id))
+			->where($db->quoteName('parent_id')." IN (" . implode( ',', $parent_id ) . ")")
 			->order($db->quoteName('lft') . ' ASC');
 
 		$db->setQuery($query);
-
 		$rows = $db->loadObjectList();
 
 		foreach ($rows as $row) {
-			array_push($cats, $row->id);
+
 			if($include_subcategories) {
+				array_push($cats, $row->id);
 				if (self::hasChildren($row->id)) {
-					self::getCategories($row->id, $include_subcategories, true);
+					$cats = self::getCategories(array($row->id), $include_subcategories, true, $cats);
 				}
 			}
 		}
@@ -294,6 +366,7 @@ abstract class SppagebuilderHelperArticles
 	}
 
 	private static function hasChildren($parent_id = 1) {
+
 		$app = JFactory::getApplication();
 		$db = JFactory::getDbo();
 		$query = $db->getQuery(true);
@@ -312,7 +385,9 @@ abstract class SppagebuilderHelperArticles
 
 		$childrens = $db->loadObjectList();
 
-		if(count($childrens)) {
+
+
+		if(is_array($childrens) && count($childrens)) {
 			return true;
 		}
 

@@ -68,12 +68,12 @@ class J2StoreSelectableFields {
 		}
 		$js = "function updateFieldType(){
 			newType = document.getElementById('fieldtype').value;
-			hiddenAll = new Array('multivalues','cols','rows','size','required','format','zone','coupon','default','customtext','columnname','filtering','maxlength','allow','readonly');
+			hiddenAll = new Array('multivalues','cols','rows','size','required','format','zone','coupon','default','customtext','columnname','filtering','maxlength','allow','readonly','place_holder');
 			allTypes = new Array();
-			allTypes['text'] = new Array('size','required','default','columnname','filtering','maxlength','readonly');
-			allTypes['email'] = new Array('size','required','default','columnname','filtering','maxlength','readonly');
+			allTypes['text'] = new Array('size','required','default','columnname','filtering','maxlength','readonly','place_holder');
+			allTypes['email'] = new Array('size','required','default','columnname','filtering','maxlength','readonly','place_holder');
 			allTypes['link'] = new Array('size','required','default','columnname','filtering','maxlength','readonly');
-			allTypes['textarea'] = new Array('cols','rows','required','default','columnname','filtering','readonly','maxlength');
+			allTypes['textarea'] = new Array('cols','rows','required','default','columnname','filtering','readonly','maxlength','place_holder');
 			allTypes['wysiwyg'] = new Array('cols','rows','required','default','columnname','filtering');
 			allTypes['radio'] = new Array('multivalues','required','default','columnname');
 			allTypes['checkbox'] = new Array('multivalues','required','default','columnname');
@@ -180,7 +180,7 @@ class j2storeCountryType{
 				$query->where('a.enabled=1')
 					->order('a.zone_name ASC');
 				//if(isset($this->country_id)) {
-					$query->where('a.country_id='.$this->country_id);
+					$query->where('a.country_id='.$db->q($this->country_id));
 				//}
 				$db->setQuery($query);
 				$sets1[$this->country_id] = $db->loadObjectList();
@@ -216,6 +216,7 @@ class j2storeCountryType{
 			$this->values[] = JHTML::_('select.option', $zone->j2store_zone_id, JText::_($zone->zone_name));
 		}
 		return JHTML::_('select.genericlist', $this->values, $map, $options, 'value', 'text', (int)$value, $id );
+
 	}
 
 }

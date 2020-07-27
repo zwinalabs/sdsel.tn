@@ -1,19 +1,20 @@
 <?php
 /**
- * @package angifw
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer Framework
- *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ */
+
+defined('_AKEEBA') or die();
+
+/**
  * This file may contain code from the Joomla! Platform, Copyright (c) 2005 -
  * 2012 Open Source Matters, Inc. This file is NOT part of the Joomla! Platform.
  * It is derivative work and clearly marked as such as per the provisions of the
  * GNU General Public License.
  */
-
-defined('_AKEEBA') or die();
 
 /**
  * PostgreSQL database driver
@@ -897,7 +898,7 @@ class ADatabaseDriverPostgresql extends ADatabaseDriver
 	 * @return  mixed  Either the next row from the result set or false if there are no more rows.
 	 *
 	 */
-	protected function fetchAssoc($cursor = null)
+	public function fetchAssoc($cursor = null)
 	{
 		return pg_fetch_assoc($cursor ? $cursor : $this->cursor);
 	}

@@ -93,7 +93,12 @@ defined('_JEXEC') or die;
 					<td colspan="7">
 						<label class="attribute_option_label">
 						</label>
-						<?php echo J2Html::text('Selectoption' ,'',array('id'=>'optionselector'));?>
+                        <select name="option_select_id" id="option_select_id">
+                            <?php foreach ($this->product_option_list as $option_list):?>
+                                <option value="<?php echo $option_list->j2store_option_id?>"><?php echo $option_list->option_name .' ('.$option_list->option_unique_name.')';?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <a onclick="addOption()" class="btn btn-success"> <?php echo JText::_('J2STORE_ADD_OPTIONS')?></a>
 					</td>
 				</tr>
 				</tbody>
@@ -111,66 +116,27 @@ defined('_JEXEC') or die;
 		</div>
 </div>
 <script type="text/javascript">
-(function($) {
-	var parent_options;
+function addOption() {
+    (function ($) {
+        var option_value = $('#option_select_id').val();
+        var option_name = $('#option_select_id option[value='+option_value+']').html();
 
-		$(document).ready(function() {
-			$('#optionselector').autocomplete({
-				source : function(request, response) {
-					var config_option = {
-						option: 'com_j2store',
-						view: 'options',
-						task: 'getOptions',
-						product_type: '<?php echo $this->item->product_type;?>',
-						q: request.term
-					};
-					$.ajax({
-						type : 'post',
-						url  : '<?php echo JRoute::_('index.php');?>',
-						data : config_option,
-						dataType : 'json',
-						success : function(data) {
-							parent_options = data['pa_options'];
-							response($.map(data['options'], function(item) {
-								return {
-									label: item.option_name+' ('+item.option_unique_name+')',
-									value: item.j2store_option_id
-								}
-							}));
-						}
-					});
-				},
-				minLength : 2,
-				select : function(event, ui) {
-					var html='';
-					html+='<select class="input-small" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ ui.item.value+'][parent_id]\">';
-					html+='<option value=\"0\"><?php echo JText::_('J2STORE_SELECT_PARENT_OPTION');?></option>';
-					$.each(parent_options, function(index,value) {
-						html+='<option value=\"'+value.j2store_option_id+'\" id=\"'+ ui.item.value+'paropval'+value.j2store_option_id+'\">'+value.option_name+'</option>';
-					});
-					html+='</select>';
+        var html='';
+        html+='<span class="j2error"><?php echo JText::_('J2STORE_PARENT_OPTION_MESSAGE');?></span>';
 
-					$('<tr><td class=\"addedOption\">' + ui.item.label+ '</td><td></td>'
-							+'<td>'
-							+ html
-							+'</td><td></td><td>'
-							+'<select class="input-small" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ ui.item.value+'][required]\" ><option value=\"0\"><?php echo Jtext::_('J2STORE_NO');?></option>'
-							+'<option value=\"1\"><?php echo JText::_('J2STORE_YES'); ?></option></select>'
-							+'</td><td><input class=\"input-small\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ ui.item.value+'][ordering]\" value=\"0\"></td>'
-							+'<td><span class=\"optionRemove\" onclick=\"j2store.jQuery(this).parent().parent().remove();\">x</span>'
-							+'<input type=\"hidden\" value=\"' + ui.item.value+ '\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ ui.item.value+'][option_id]\" /><input type=\"hidden\" value="" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ ui.item.value+'][j2store_productoption_id]\" /> </td></tr>').insertBefore('.j2store_a_options');
-					this.value = '';
-					return false;
-				},
-				search : function(event, ui) {
-					$('#optionselector').addClass('optionsLoading');
-				}
-			});
+        $('<tr><td class=\"addedOption\">' + option_name+ '</td><td></td>'
+            +'<td>'
+            + html
+            +'</td><td></td><td>'
+            +'<select class="input-small" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ option_value +'][required]\" ><option value=\"0\"><?php echo Jtext::_('J2STORE_NO');?></option>'
+            +'<option value=\"1\"><?php echo JText::_('J2STORE_YES'); ?></option></select>'
+            +'</td><td><input class=\"input-small\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ option_value +'][ordering]\" value=\"0\"></td>'
+            +'<td><span class=\"optionRemove\" onclick=\"j2store.jQuery(this).parent().parent().remove();\">x</span>'
+            +'<input type=\"hidden\" value=\"' + option_value + '\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ option_value +'][option_id]\" /><input type=\"hidden\" value="" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ option_value +'][j2store_productoption_id]\" /> </td></tr>').insertBefore('.j2store_a_options');
+        key++;
+    })(j2store.jQuery);
 
-		});
-		})(j2store.jQuery);
-
-
+}
 
 function removePAOption(pao_id) {
 	(function($) {

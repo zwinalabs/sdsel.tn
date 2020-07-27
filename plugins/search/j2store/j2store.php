@@ -28,7 +28,7 @@ class PlgSearchJ2Store extends JPlugin
 	public function onContentSearchAreas()
 	{
 		static $areas = array(
-				'product' => 'Products'
+			'product' => 'Products'
 		);
 
 		return $areas;
@@ -180,21 +180,24 @@ class PlgSearchJ2Store extends JPlugin
 			$case_when1 .= $c_id . ' END as catslug';
 
 			$query->select('a.title AS title, a.metadesc, a.metakey, a.created AS created,a.id,#__j2store_variants.sku')
-			->select($query->concatenate(array('a.introtext', 'a.fulltext')) . ' AS text')
-			->select('c.title AS section, ' . $case_when . ',' . $case_when1 . ', ' . '\'2\' AS browsernav')
+			      ->select($query->concatenate(array('a.introtext', 'a.fulltext')) . ' AS text')
+			      ->select('c.title AS section, ' . $case_when . ',' . $case_when1 . ', ' . '\'2\' AS browsernav')
 
-			->from('#__content AS a');
+			      ->from('#__content AS a');
 			$query->select('#__j2store_products.*');
 			$query->join('INNER', '#__j2store_products ON #__j2store_products.product_source='.$db->q('com_content').' AND #__j2store_products.product_source_id = a.id AND #__j2store_products.enabled=1 AND #__j2store_products.visibility=1 ');
 			$query->join('LEFT', '#__j2store_variants ON #__j2store_products.j2store_product_id = #__j2store_variants.product_id ');
-			
+
+			$query->select('#__j2store_productimages.thumb_image, #__j2store_productimages.main_image, #__j2store_productimages.additional_images');
+			$query->join('LEFT OUTER', '#__j2store_productimages ON #__j2store_products.j2store_product_id=#__j2store_productimages.product_id');
+
 			$query->join('INNER', '#__categories AS c ON c.id=a.catid')
-			->where(
-					'(' . $where . ') AND a.state=1 AND c.published = 1 AND a.access IN (' . $groups . ') '
-					. 'AND c.access IN (' . $groups . ') '
-					. 'AND (a.publish_up = ' . $db->quote($nullDate) . ' OR a.publish_up <= ' . $db->quote($now) . ') '
-					. 'AND (a.publish_down = ' . $db->quote($nullDate) . ' OR a.publish_down >= ' . $db->quote($now) . ')'
-			);
+			      ->where(
+				      '(' . $where . ') AND a.state=1 AND c.published = 1 AND a.access IN (' . $groups . ') '
+				      . 'AND c.access IN (' . $groups . ') '
+				      . 'AND (a.publish_up = ' . $db->quote($nullDate) . ' OR a.publish_up <= ' . $db->quote($now) . ') '
+				      . 'AND (a.publish_down = ' . $db->quote($nullDate) . ' OR a.publish_down >= ' . $db->quote($now) . ')'
+			      );
 			// here let us join our j2store products with content
 			$query->group('a.id, a.title, a.metadesc, a.metakey, a.created, a.introtext, a.fulltext, c.title, a.alias, c.alias, c.id');
 			$query->order($order);
@@ -204,11 +207,11 @@ class PlgSearchJ2Store extends JPlugin
 			if ($app->isSite() && JLanguageMultilang::isEnabled())
 			{
 				$query->where('a.language in (' . $db->quote($tag) . ',' . $db->quote('*') . ')')
-				->where('c.language in (' . $db->quote($tag) . ',' . $db->quote('*') . ')');
+				      ->where('c.language in (' . $db->quote($tag) . ',' . $db->quote('*') . ')');
 			}
 
 			$db->setQuery($query, 0, $limit);
-			$list = $db->loadObjectList();			
+			$list = $db->loadObjectList();
 			$limit -= count($list);
 
 			if (isset($list))
@@ -229,6 +232,7 @@ class PlgSearchJ2Store extends JPlugin
 						$pro_menu = J2StoreRouterHelper::findProductMenu ( $qoptions );
 						$menu_id = isset($pro_menu->id) ? $pro_menu->id : $menu_id;
 						$list[$key]->href  = JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$item->j2store_product_id.'&Itemid='.$menu_id);
+						$list[$key]->image = $item->main_image;
 						//$list[$key]->href = JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$item->j2store_product_id.'&Itemid='.$menu_id);
 					}
 				}
@@ -236,7 +240,7 @@ class PlgSearchJ2Store extends JPlugin
 
 			$rows[] = $list;
 		}
-		$results = array();		
+		$results = array();
 		if (count($rows))
 		{
 			foreach ($rows as $row)
@@ -244,19 +248,19 @@ class PlgSearchJ2Store extends JPlugin
 				$new_row = array();
 
 				foreach ($row as $article)
-				{					
+				{
 					if (SearchHelper::checkNoHTML($article, $searchText, array('text', 'title', 'metadesc', 'metakey','sku')))
 					{
 						$new_row[] = $article;
-						
+
 					}
-					
+
 				}
 
 				$results = array_merge($results, (array) $new_row);
 			}
 		}
-		
+
 		return $results;
 	}
 }

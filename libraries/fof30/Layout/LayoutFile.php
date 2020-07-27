@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -36,6 +36,12 @@ class LayoutFile extends JLayoutFile
 	 */
 	protected function getPath()
 	{
+		if (is_null($this->container))
+		{
+			$component       = $this->options->get('component');
+			$this->container = Container::getInstance($component);
+		}
+
 		$filesystem = $this->container->filesystem;
 
 		if (is_null($this->fullPath) && !empty($this->layoutId))
@@ -59,14 +65,19 @@ class LayoutFile extends JLayoutFile
 			$possiblePaths = array(
 				$prefix . '/templates/' . $this->container->platform->getTemplate() . '/html/layouts/' . $filePath,
 				$this->basePath . '/' . $filePath,
-				$platformDirs['root'] . '/layouts/' . $filePath
+				$platformDirs['root'] . '/layouts/' . $filePath,
 			);
 
 			reset($files);
 
-			while ((list(, $fileName) = each($files)) && is_null($this->fullPath))
+			foreach ($files as $fileName)
 			{
-				$r = $filesystem->pathFind($possiblePaths, $fileName);
+				if (!is_null($this->fullPath))
+				{
+					break;
+				}
+
+				$r              = $filesystem->pathFind($possiblePaths, $fileName);
 				$this->fullPath = $r === false ? null : $r;
 			}
 		}

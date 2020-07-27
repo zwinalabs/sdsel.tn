@@ -71,7 +71,7 @@ class J2StoreHelperSelect {
 		$enabled = 1;
 		$countries = F0FModel::getTmpInstance ( 'countries', 'J2StoreModel' )->enabled ( $enabled )->getList ();
 		foreach ( $countries as $country ) {
-			$options [$country->j2store_country_id] = $country->country_name;
+			$options [$country->j2store_country_id] = JText::_($country->country_name);
 		}
 		return $options;
 	}
@@ -342,7 +342,7 @@ class J2StoreHelperSelect {
 			{
 				if (is_numeric($config['filter.published']))
 				{
-					$query->where('a.published = ' . (int) $config['filter.published']);
+					$query->where('a.published = ' . $db->q((int) $config['filter.published']));
 				}
 				elseif (is_array($config['filter.published']))
 				{

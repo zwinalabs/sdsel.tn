@@ -16,7 +16,7 @@ $params = $this->singleton_params;
 
 <?php if($params->get('item_show_product_base_price', 1) || $params->get('item_show_product_special_price', 1)): ?>
 <div class="product-price-container">
-		<?php if($params->get('item_show_product_base_price', 1) && $product->pricing->base_price != $product->pricing->price): ?>
+		<?php if($params->get('item_show_product_base_price', 1) && isset($product->pricing->base_price) && isset($product->pricing->price) && $product->pricing->base_price != $product->pricing->price): ?>
 			<?php $class='';?>
 			<?php if(isset($product->pricing->is_discount_pricing_available)) $class='strike'; ?>
 			<div class="base-price <?php echo $class?>">
@@ -26,7 +26,7 @@ $params = $this->singleton_params;
 			</div>
 		<?php endif; ?>
 
-		<?php if($params->get('item_show_product_special_price', 1)): ?>
+		<?php if($params->get('item_show_product_special_price', 1) && isset($product->pricing->price)): ?>
 		<div class="sale-price">
 			<span class="product-element-value">
 				<?php echo J2Store::product()->displayPrice($product->pricing->price, $product, $params);?>
@@ -45,11 +45,13 @@ $params = $this->singleton_params;
 
 <?php echo J2Store::plugin()->eventWithHtml('AfterRenderingProductPrice', array($product)); ?>
 
-<?php if($params->get('item_show_discount_percentage', 1) && isset($product->pricing->is_discount_pricing_available)): ?>
-	<?php $discount =(1 - ($product->pricing->price / $product->pricing->base_price) ) * 100; ?>
-	<?php if($discount > 0): ?>
-		<div class="discount-percentage">
-			<?php  echo round($discount).' % '.JText::_('J2STORE_PRODUCT_OFFER');?>
-		</div>
-	<?php endif; ?>
+<?php if($params->get('item_show_discount_percentage', 1)): ?>
+    <div class="discount-percentage">
+        <?php if( isset($product->pricing->is_discount_pricing_available)): ?>
+            <?php $discount =(1 - ($product->pricing->price / $product->pricing->base_price) ) * 100; ?>
+            <?php if($discount > 0): ?>
+                <?php  echo round($discount).' % '.JText::_('J2STORE_PRODUCT_OFFER');?>
+            <?php endif; ?>
+        <?php endif; ?>
+    </div>
 <?php endif; ?>

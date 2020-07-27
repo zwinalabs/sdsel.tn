@@ -1,13 +1,15 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
- * @license   GNU General Public License version 3, or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
+ *
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 // Protect from unauthorized access
 defined('_JEXEC') or die();
 
 define('AKEEBA_PRO', '0');
-define('AKEEBA_VERSION', '5.2.3');
-define('AKEEBA_DATE', '2016-09-16');
+define('AKEEBA_VERSION', '6.4.2.1');
+define('AKEEBA_DATE', '2019-03-18');

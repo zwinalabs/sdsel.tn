@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -11,6 +11,7 @@ namespace Akeeba\Backup\Site\Dispatcher;
 defined('_JEXEC') or die();
 
 use Akeeba\Backup\Admin\Dispatcher\Dispatcher as AdminDispatcher;
+use Akeeba\Backup\Admin\Helper\SecretWord;
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform;
 use FOF30\Container\Container;
@@ -66,12 +67,11 @@ class Dispatcher extends AdminDispatcher
 		}
 
 		// Make sure we have a profile set throughout the component's lifetime
-		$session    = $this->container->session;
-		$profile_id = $session->get('profile', null, 'akeeba');
+		$profile_id = $this->container->platform->getSessionVar('profile', null, 'akeeba');
 
 		if (is_null($profile_id))
 		{
-			$session->set('profile', 1, 'akeeba');
+			$this->container->platform->setSessionVar('profile', 1, 'akeeba');
 		}
 
 		// Load Akeeba Engine
@@ -98,8 +98,12 @@ class Dispatcher extends AdminDispatcher
 		// Load the utils helper library
 		Platform::getInstance()->load_version_defines();
 
+		// Make sure the front-end backup Secret Word is stored encrypted
+		$params = $this->container->params;
+		SecretWord::enforceEncryption($params, 'frontend_secret_word');
+
 		// Make sure we have a version loaded
-		@include_once($this->container->backEndPath . '/components/com_akeeba/version.php');
+		@include_once($this->container->backEndPath . '/version.php');
 
 		if (!defined('AKEEBA_VERSION'))
 		{

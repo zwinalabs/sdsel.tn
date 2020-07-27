@@ -1,11 +1,10 @@
 <?php
 /**
- * @package angifw
- * @copyright Copyright (C) 2009-2016 Nicholas K. Dionysopoulos. All rights reserved.
- * @author Nicholas K. Dionysopoulos - http://www.dionysopoulos.me
- * @license http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
+ * ANGIE - The site restoration script for backup archives created by Akeeba Backup and Akeeba Solo
  *
- * Akeeba Next Generation Installer Framework
+ * @package   angie
+ * @copyright Copyright (c)2009-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU/GPL v3 or later
  */
 
 defined('_AKEEBA') or die();
@@ -239,6 +238,7 @@ class ADispatcher
 			// For json, don't use normal 403 page, but a json encoded message
 			if ($this->input->get('format', '') == 'json')
 			{
+				@ob_clean();
 				echo json_encode(array('code' => '403', 'error' => $this->getError()));
 				exit();
 			}
@@ -248,39 +248,39 @@ class ADispatcher
 
 		// Get and execute the controller
 		$defaultApp = $this->container->application->getName();
-		$option	= $this->input->getCmd('option', $defaultApp);
-		$view	= $this->input->getCmd('view', $this->defaultView);
-		$task	= $this->input->getCmd('task', 'default');
+		$option     = $this->input->getCmd('option', $defaultApp);
+		$view       = $this->input->getCmd('view', $this->defaultView);
+		$task       = $this->input->getCmd('task', 'default');
 
 		if (empty($task))
 		{
 			$task = $this->getTask($view);
 		}
 
-		$this->input->set('view',$view);
-		$this->input->set('task',$task);
+		$this->input->set('view', $view);
+		$this->input->set('task', $task);
 
-		$config = $this->config;
+		$config          = $this->config;
 		$config['input'] = $this->input;
 
 		$controller = AController::getTmpInstance($option, $view, $config, $this->container);
-		$status = $controller->execute($task);
+		$status     = $controller->execute($task);
 
-		if($status === false)
-        {
+		if ($status === false)
+		{
 			throw new Exception(AText::_('ANGI_APPLICATION_ERROR_ACCESS_FORBIDDEN'), 403);
 		}
 
-		if(!$this->onAfterDispatch())
-        {
+		if (!$this->onAfterDispatch())
+		{
 			throw new Exception(AText::_('ANGI_APPLICATION_ERROR_ACCESS_FORBIDDEN'), 403);
 		}
 
-        // Issue the redirect only if we're not in JSON format
-        if($this->input->getCmd('format', '') != 'json')
-        {
-            $controller->redirect();
-        }
+		// Issue the redirect only if we're not in JSON format
+		if ($this->input->getCmd('format', '') != 'json')
+		{
+			$controller->redirect();
+		}
 	}
 
 	/**

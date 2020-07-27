@@ -18,9 +18,7 @@ class StandardCalculator extends JObject {
 	public function calculate() {
 		
 		$variant = $this->get('variant');
-		$quantity = $this->get('quantity');
-		$date = $this->get('date');
-		$group_id = $this->get('group_id');
+
 		
 		$pricing = new JObject();
 		
@@ -33,8 +31,12 @@ class StandardCalculator extends JObject {
 		
 		$model = F0FModel::getTmpInstance('ProductPrices', 'J2StoreModel');
 		
-		J2Store::plugin()->event('BeforeGetPrice', array(&$pricing, &$model));
-		
+		J2Store::plugin()->event('BeforeGetPrice', array(&$pricing, &$model,&$this));
+
+		$quantity = $this->get('quantity');
+		$date = $this->get('date');
+		$group_id = $this->get('group_id');
+
 		$model->setState( 'variant_id', $variant->j2store_variant_id );
 		
 		//where quantity_from < $quantity
@@ -45,9 +47,9 @@ class StandardCalculator extends JObject {
 		$nullDate = JFactory::getDBO( )->getNullDate( );
 		if ( empty( $date ) || $date == $nullDate )
 		{
-			$date = JFactory::getDate('now', $tz)->toSql(true);
+			$date = JFactory::getDate('now', $tz)->format('Y-m-d');//toSql(true);
 		}
-		
+
 		//where date_from <= $date
 		//where date_to >= $date OR date_to == nullDate
 		

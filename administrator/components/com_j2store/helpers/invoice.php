@@ -73,8 +73,9 @@ class J2Invoice {
 				$score = $langScore;
 				if ($score > $preferredScore)
 				{
+					J2Store::plugin ()->event ( 'InvoiceFileTemplate',array(&$template,$order) );
 					$templateText = $template->body;
-
+					$preferredScore = $score;
 				}
 			}
 		} else {
@@ -92,15 +93,15 @@ class J2Invoice {
 			->select('*')
 			->from('#__j2store_invoicetemplates')
 			->where($db->qn('enabled').'='.$db->q(1))
-			->where(' CASE WHEN orderstatus_id = '.$order->order_state_id .' THEN orderstatus_id = '.$order->order_state_id .'
+			->where(' CASE WHEN orderstatus_id = '.$db->q($order->order_state_id) .' THEN orderstatus_id = '.$db->q($order->order_state_id) .'
 							ELSE orderstatus_id ="*" OR orderstatus_id =""
 						END
 					');
 			if(isset($order->customer_group) && !empty($order->customer_group)) {
 				$app = JFactory::getApplication ();
 				if($app->isSite()){
-					$query->where(' CASE WHEN group_id = '.$db->q($order->customer_group).' THEN group_id ='.$db->q($order->customer_group).'
-									ELSE group_id ="*" OR group_id =""
+					$query->where(' CASE WHEN group_id IN( '.$order->customer_group.') THEN group_id IN('.$order->customer_group.')
+									ELSE group_id ="*" OR group_id ="1" OR group_id =""
 								END
 					');
 				}
@@ -109,7 +110,7 @@ class J2Invoice {
 							ELSE paymentmethod="*" OR paymentmethod=""
 						END
 					');
-
+			J2Store::plugin ()->event ( 'AfterInvoiceQuery',array(&$query,$order) );
 			$db->setQuery($query);
 			try {
 				$allTemplates = $db->loadObjectList();

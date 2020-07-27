@@ -173,6 +173,16 @@ class J2Currency {
 		}
   	}
 
+	public function getThousandSysmbol($currency=''){
+		if (!$currency) {
+			return $this->currencies[$this->code]['currency_thousands'];
+		} elseif ($currency && isset($this->currencies[$currency])) {
+			return $this->currencies[$currency]['currency_thousands'];
+		} else {
+			return 0;
+		}
+	}
+
   	public function getCode() {
     	return $this->code;
   	}
@@ -236,7 +246,7 @@ class J2Currency {
   				'BHD' => 48,
   				'BDT' => 50,
   				'BBD' => 52,
-  				'BYR' => 112,
+  				'BYN' => 112,
   				'BZD' => 84,
   				'XOF' => 768,
   				'BMD' => 60,
@@ -278,7 +288,7 @@ class J2Currency {
   				'XPF' => 876,
   				'GMD' => 270,
   				'GEL' => 268,
-  				'GHC' => 288,
+  				'GHS' => 288,
   				'GIP' => 292,
   				'GTQ' => 320,
   				'GNF' => 324,
@@ -380,7 +390,8 @@ class J2Currency {
   				'VND' => 704,
   				'YER' => 887,
   				'ZMK' => 894,
-  				'ZWD' => 716
+  				'ZWD' => 716,
+		    'BTC'=> 999
   		);
   	
   		return $result;

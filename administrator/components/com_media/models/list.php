@@ -3,7 +3,7 @@
  * @package     Joomla.Administrator
  * @subpackage  com_media
  *
- * @copyright   Copyright (C) 2005 - 2016 Open Source Matters, Inc. All rights reserved.
+ * @copyright   Copyright (C) 2005 - 2019 Open Source Matters, Inc. All rights reserved.
  * @license     GNU General Public License version 2 or later; see LICENSE.txt
  */
 
@@ -39,7 +39,7 @@ class MediaModelList extends JModelLegacy
 			$folder = $input->get('folder', '', 'path');
 			$this->setState('folder', $folder);
 
-			$parent = str_replace("\\", "/", dirname($folder));
+			$parent = str_replace("\\", '/', dirname($folder));
 			$parent = ($parent == '.') ? null : $parent;
 			$this->setState('parent', $parent);
 			$set = true;
@@ -113,6 +113,12 @@ class MediaModelList extends JModelLegacy
 		$basePath  = COM_MEDIA_BASE . ((strlen($current) > 0) ? '/' . $current : '');
 		$mediaBase = str_replace(DIRECTORY_SEPARATOR, '/', COM_MEDIA_BASE . '/');
 
+		// Reset base path
+		if (strpos(realpath($basePath), JPath::clean(COM_MEDIA_BASE)) !== 0)
+		{
+			$basePath = COM_MEDIA_BASE;
+		}
+
 		$images  = array ();
 		$folders = array ();
 		$docs    = array ();
@@ -131,11 +137,13 @@ class MediaModelList extends JModelLegacy
 		// Iterate over the files if they exist
 		if ($fileList !== false)
 		{
+			$tmpBaseObject = new JObject;
+
 			foreach ($fileList as $file)
 			{
 				if (is_file($basePath . '/' . $file) && substr($file, 0, 1) != '.' && strtolower($file) !== 'index.html')
 				{
-					$tmp = new JObject;
+					$tmp = clone $tmpBaseObject;
 					$tmp->name = $file;
 					$tmp->title = $file;
 					$tmp->path = str_replace(DIRECTORY_SEPARATOR, '/', JPath::clean($basePath . '/' . $file));
@@ -190,15 +198,15 @@ class MediaModelList extends JModelLegacy
 
 						// Video
 						case 'mp4':
-							$tmp->icon_32 = "media/mime-icon-32/" . $ext . ".png";
-							$tmp->icon_16 = "media/mime-icon-16/" . $ext . ".png";
+							$tmp->icon_32 = 'media/mime-icon-32/' . $ext . '.png';
+							$tmp->icon_16 = 'media/mime-icon-16/' . $ext . '.png';
 							$videos[] = $tmp;
 							break;
 
 						// Non-image document
 						default:
-							$tmp->icon_32 = "media/mime-icon-32/" . $ext . ".png";
-							$tmp->icon_16 = "media/mime-icon-16/" . $ext . ".png";
+							$tmp->icon_32 = 'media/mime-icon-32/' . $ext . '.png';
+							$tmp->icon_16 = 'media/mime-icon-16/' . $ext . '.png';
 							$docs[] = $tmp;
 							break;
 					}
@@ -209,9 +217,11 @@ class MediaModelList extends JModelLegacy
 		// Iterate over the folders if they exist
 		if ($folderList !== false)
 		{
+			$tmpBaseObject = new JObject;
+
 			foreach ($folderList as $folder)
 			{
-				$tmp = new JObject;
+				$tmp = clone $tmpBaseObject;
 				$tmp->name = basename($folder);
 				$tmp->path = str_replace(DIRECTORY_SEPARATOR, '/', JPath::clean($basePath . '/' . $folder));
 				$tmp->path_relative = str_replace($mediaBase, '', $tmp->path);

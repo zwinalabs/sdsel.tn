@@ -1,12 +1,11 @@
 <?php
 /**
  * Akeeba Engine
- * The modular PHP5 site backup engine
+ * The PHP-only site backup engine
  *
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU GPL version 3 or, at your option, any later version
  * @package   akeebaengine
- *
  */
 
 namespace Akeeba\Engine\Archiver;
@@ -16,7 +15,7 @@ defined('AKEEBAENGINE') or die();
 
 use Akeeba\Engine\Base\Exceptions\ErrorException;
 use Akeeba\Engine\Base\Exceptions\WarningException;
-use Akeeba\Engine\Base\Object as BaseObject;
+use Akeeba\Engine\Base\BaseObject as BaseObject;
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform;
 use Akeeba\Engine\Util\FileSystem;
@@ -216,38 +215,6 @@ abstract class Base extends BaseObject
 	}
 
 	/**
-	 * Overrides setWarning() in order to also write the warning  message to the log file
-	 *
-	 * @param   string $warning The warning message
-	 *
-	 * @codeCoverageIgnore
-	 *
-	 * @return  void
-	 */
-	public function setWarning($warning)
-	{
-		parent::setWarning($warning);
-
-		Factory::getLog()->log(LogLevel::WARNING, $warning);
-	}
-
-	/**
-	 * Overrides setError() in order to also write the error message to the log file
-	 *
-	 * @param   string $error The error message
-	 *
-	 * @codeCoverageIgnore
-	 *
-	 * @return  void
-	 */
-	public function setError($error)
-	{
-		parent::setError($error);
-
-		Factory::getLog()->log(LogLevel::ERROR, $error);
-	}
-
-	/**
 	 * Initialises the archiver class, creating the archive from an existent
 	 * installer's JPA archive. MUST BE OVERRIDEN BY CHILDREN CLASSES.
 	 *
@@ -318,7 +285,8 @@ abstract class Base extends BaseObject
 
 			if (array_key_exists($embedded_installer, $installerDescriptors))
 			{
-				$packages = $installerDescriptors[$embedded_installer]['package'];
+				$packages  = $installerDescriptors[$embedded_installer]['package'];
+				$langPacks = $installerDescriptors[$embedded_installer]['language'];
 
 				if (empty($packages))
 				{
@@ -330,19 +298,33 @@ abstract class Base extends BaseObject
 						"offset"   => 0, // Offset in JPA file
 						"skip"     => false, // Skip this?
 						"done"     => true, // Are we done yet?
-						"filesize" => 0
+						"filesize" => 0,
 					);
 
 					return $retArray;
 				}
 
 				$packages   = explode(',', $packages);
+				$langPacks  = explode(',', $langPacks);
 				$totalSize  = 0;
 				$pathPrefix = Platform::getInstance()->get_installer_images_path() . '/';
 
 				foreach ($packages as $package)
 				{
-					$filePath = $pathPrefix . $package;
+					$filePath  = $pathPrefix . $package;
+					$totalSize += (int) @filesize($filePath);
+				}
+
+				foreach ($langPacks as $langPack)
+				{
+					$filePath  = $pathPrefix . $langPack;
+
+					if (!is_file($filePath))
+					{
+						continue;
+					}
+
+					$packages[] = $langPack;
 					$totalSize += (int) @filesize($filePath);
 				}
 
@@ -433,6 +415,21 @@ abstract class Base extends BaseObject
 				$installerDescriptors = Factory::getEngineParamsProvider()->getInstallerList();
 				$packages             = $installerDescriptors[$embedded_installer]['package'];
 				$packages             = explode(',', $packages);
+				$pathPrefix           = Platform::getInstance()->get_installer_images_path() . '/';
+				$langPacks            = $installerDescriptors[$embedded_installer]['language'];
+				$langPacks            = explode(',', $langPacks);
+
+				foreach ($langPacks as $langPack)
+				{
+					$filePath = $pathPrefix . $langPack;
+
+					if (!is_file($filePath))
+					{
+						continue;
+					}
+
+					$packages[] = $langPack;
+				}
 
 				Factory::getLog()->log(LogLevel::DEBUG, '  Done with package ' . $packages[$index]);
 

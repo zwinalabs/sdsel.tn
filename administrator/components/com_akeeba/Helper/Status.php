@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -13,6 +13,7 @@ defined('_JEXEC') or die();
 use Akeeba\Engine\Factory;
 use Akeeba\Engine\Platform;
 use FOF30\Container\Container;
+use FOF30\Date\Date;
 use JText;
 
 /**
@@ -92,15 +93,15 @@ class Status
 
 		if ($status && empty($quirks))
 		{
-			$html = '<p class="alert alert-success">' . JText::_('COM_AKEEBA_CPANEL_LBL_STATUS_OK') . '</p>';
+			$html = '<div class="akeeba-block--success"><p>' . JText::_('COM_AKEEBA_CPANEL_LBL_STATUS_OK') . '</p></div>';
 		}
 		elseif ($status && !empty($quirks))
 		{
-			$html = '<p class="alert">' . JText::_('COM_AKEEBA_CPANEL_LBL_STATUS_WARNING') . '</p>';
+			$html = '<div class="akeeba-block--warning"><p>' . JText::_('COM_AKEEBA_CPANEL_LBL_STATUS_WARNING') . '</p></div>';
 		}
 		else
 		{
-			$html = '<p class="alert alert-error">' . JText::_('COM_AKEEBA_CPANEL_LBL_STATUS_ERROR') . '</p>';
+			$html = '<div class="akeeba-block--failure"><p>' . JText::_('COM_AKEEBA_CPANEL_LBL_STATUS_ERROR') . '</p></div>';
 		}
 
 		return $html;
@@ -176,9 +177,9 @@ class Status
 	{
 		$db    = Container::getInstance('com_akeeba')->db;
 		$query = $db->getQuery(true)
-					->select('MAX(' . $db->qn('id') . ')')
-					->from($db->qn('#__ak_stats'))
-					->where($db->qn('origin') . ' != ' . $db->q('restorepoint'));
+			->select('MAX(' . $db->qn('id') . ')')
+			->from($db->qn('#__ak_stats'))
+			->where($db->qn('origin') . ' != ' . $db->q('restorepoint'));
 		$db->setQuery($query);
 		$id = $db->loadResult();
 
@@ -191,23 +192,21 @@ class Status
 
 		$record = Platform::getInstance()->get_statistics($id);
 
-		\JLoader::import('joomla.utilities.date');
-
 		switch ($record['status'])
 		{
 			case 'run':
 				$status      = JText::_('COM_AKEEBA_BUADMIN_LABEL_STATUS_PENDING');
-				$statusClass = "label-warning";
+				$statusClass = "akeeba-label--warning";
 				break;
 
 			case 'fail':
 				$status      = JText::_('COM_AKEEBA_BUADMIN_LABEL_STATUS_FAIL');
-				$statusClass = "label-important";
+				$statusClass = "akeeba-label--failure";
 				break;
 
 			case 'complete':
 				$status      = JText::_('COM_AKEEBA_BUADMIN_LABEL_STATUS_OK');
-				$statusClass = "label-success";
+				$statusClass = "akeeba-label--success";
 				break;
 
 			default:
@@ -238,13 +237,16 @@ class Status
 
 		if (array_key_exists($record['type'], $backup_types['scripts']))
 		{
-			$type = Platform::getInstance()->translate($backup_types['scripts'][ $record['type'] ]['text']);
+			$type = Platform::getInstance()->translate($backup_types['scripts'][$record['type']]['text']);
 		}
 
-		$startTime = new \JDate($record['backupstart']);
+		$container = Container::getInstance('com_akeeba');
+		$startTime = new Date($record['backupstart'], 'UTC');
+		$tz        = new \DateTimeZone($container->platform->getUser()->getParam('timezone', $container->platform->getConfig()->get('offset', 'UTC')));
+		$startTime->setTimezone($tz);
 
-		$html = '<table class="table table-striped">';
-		$html .= '<tr><td>' . JText::_('COM_AKEEBA_BUADMIN_LABEL_START') . '</td><td>' . $startTime->format(JText::_('DATE_FORMAT_LC4'), true) . '</td></tr>';
+		$html = '<table class="akeeba-table--striped">';
+		$html .= '<tr><td>' . JText::_('COM_AKEEBA_BUADMIN_LABEL_START') . '</td><td>' . $startTime->format(JText::_('DATE_FORMAT_LC2'), true) . '</td></tr>';
 		$html .= '<tr><td>' . JText::_('COM_AKEEBA_BUADMIN_LABEL_DESCRIPTION') . '</td><td>' . $record['description'] . '</td></tr>';
 		$html .= '<tr><td>' . JText::_('COM_AKEEBA_BUADMIN_LABEL_STATUS') . '</td><td><span class="label ' . $statusClass . '">' . $status . '</span></td></tr>';
 		$html .= '<tr><td>' . JText::_('COM_AKEEBA_BUADMIN_LABEL_ORIGIN') . '</td><td>' . $origin . '</td></tr>';

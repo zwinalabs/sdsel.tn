@@ -8,60 +8,73 @@
 // No direct access
 defined('_JEXEC') or die;
 ?>
-<div class="j2store-product-filters">
-	<div class="row-fluid">
-		<div class="span7">
-			<div class="alert alert-info alert-block">
-				<strong><?php echo JText::_('J2STORE_NOTE'); ?></strong> <?php echo JText::_('J2STORE_FEATURE_AVAILABLE_IN_J2STORE_PRODUCT_LAYOUTS'); ?>
-			</div>
-			<div class="control-group">
-				<h3><?php echo JText::_('COM_J2STORE_TITLE_FILTERGROUPS'); ?></h3>
-				<table id="product_filters_table"
-					class="adminlist table table-striped table-bordered j2store">
-					<thead>
-						<th><?php echo JText::_('J2STORE_PRODUCT_FILTER_VALUE');?></th>
-						<th><?php echo JText::_('J2STORE_REMOVE');?></th>
-					</thead>
-					<tbody>
-					<?php if(isset($this->product_filters) && count($this->product_filters)): ?>
-					<?php foreach($this->product_filters as $group_id=>$filters):?>
-						<tr>
-							<td colspan="2"><h4><?php echo $filters['group_name']; ?></h4></td>
-						</tr>
-						<?php foreach($filters['filters'] as $filter):
-						?>
-						<tr
-							id="product_filter_current_option_<?php echo $filter->filter_id;?>">
-							<td class="addedFilter">
-									<?php echo $filter->filter_name ;?>
-								</td>
-							<td><span class="filterRemove"
-								onclick="removeFilter(<?php echo $filter->filter_id; ?>, <?php echo $this->item->j2store_product_id; ?>);">x</span>
-								<input type="hidden" value="<?php echo $filter->filter_id;?>"
-								name="<?php echo $this->form_prefix.'[productfilter_ids]' ;?>[]" />
-							</td>
-							</td>
-						</tr>
-					<?php endforeach;?>
-					<?php endforeach;?>
-					<?php endif;?>
-					<tr class="j2store_a_filter">
-							<td colspan="2">
-								<?php echo JText::_('J2STORE_SEARCH_AND_PRODUCT_FILTERS');?>
-								<?php echo J2Html::text('productfilter' ,'' ,array('id' =>'J2StoreproductFilter'));?>
-							</td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
-		</div>
-		<div class="span5">&nbsp;</div>
-	</div>
-
+<div class="j2store-product-filters" id="j2store-product-filter-blog">
+    <?php  echo $this->loadTemplate('ajax_avfilter');?>
 </div>
 
 <script type="text/javascript">
+    var total_variants =<?php echo $this->item->productfilter_pagination->total;?>;
+    var limit  = <?php echo $this->filter_limit;?>;
+    var product_id = <?php echo $this->item->j2store_product_id;?>;
+    (function($) {
+        /**  on load will create footer list **/
+        $(document).ready(function(){
+            $('#j2store-product-filter-blog').after('<div id="nav" class="pagination pagination-toolbar"><ul class="pagination-list"></ul></div>');
+            var numPages = total_variants / limit;
+            // now convert the numPages to int
+            numPages = Math.ceil(numPages);
+            if(numPages > 1 ){
+                createFilterFooterList(numPages);
+                $('#nav .pagination-list a').bind('click', function(){
+                    $('#nav .pagination-list li').removeClass('active');
+                    $(this).parent('li').addClass('active');
+                });
+            }
+        });
 
+    })(j2store.jQuery);
+
+    /***
+     *  This method will append pagination li to parent Ul
+     */
+    function createFilterFooterList(numPages){
+        (function($) {
+            var limitstart = 0;
+            for(i = 0;i < numPages;i++) {
+                var pageNum = i + 1;
+                limitstart = i * limit;
+                $('#nav .pagination-list').append('<li><a data-get_limitstart="'+limitstart +'" data-get_page="'+i+'"  onclick="getProductFilterList(this);" href="javascript:void(0);" rel="'+i+'">'+pageNum+'</a></li> ');
+            }
+            $('#nav .pagination-list li:first').addClass('active');
+        })(j2store.jQuery);
+    }
+    
+    function getProductFilterList(element) {
+        (function($) {
+            var limitstart = $(element).data('get_limitstart');
+            var ajOptions = {
+                type : 'post',
+                url :  'index.php',
+                cache: false,
+                dataType : 'json',
+                data:{
+                    'option':'com_j2store',
+                    'view' :'products',
+                    'task' :'getProductFilterListAjax',
+                    'limitstart':limitstart,
+                    'product_id' : product_id,
+                    'limit' : limit,
+                    'form_prefix' : '<?php echo $this->form_prefix;?>'
+                }
+            }
+            $.ajax(ajOptions)
+                .done( function(json) {
+                    if(json['html']){
+                        $('#j2store-product-filter-blog').html(json['html']);
+                    }
+                })
+        })(j2store.jQuery);
+    }
 						function removeFilter(filter_id, product_id) {
 							var rem_filter = {
 								option: 'com_j2store',

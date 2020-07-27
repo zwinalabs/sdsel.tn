@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -10,10 +10,15 @@ namespace FOF30\View\DataView;
 use FOF30\Form\Form as FormObject;
 use FOF30\Model\DataModel;
 use FOF30\Render\RenderInterface;
-use FOF30\View\Exception\AccessForbidden;
 
 defined('_JEXEC') or die;
 
+/**
+ * Class Form
+ * @package FOF30\View\DataView
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
+ */
 class Form extends Html implements DataViewInterface
 {
 	/** @var  FormObject  The form to render */

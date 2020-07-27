@@ -8,9 +8,20 @@
 defined('_JEXEC') or die;
 JHTML::_('behavior.modal');
 $this->params = J2Store::config();
+$selected = "selected='selected'";
 ?>
 <div class="row">
-<div class="span12"><span class="pull-right"><?php echo $this->pagination->getLimitBox();?></span></div>
+	<div class="span12">
+		<span class="pull-right"><?php echo $this->pagination->getLimitBox();?></span>
+		<span class="pull-right">
+			<?php echo JText::_( 'J2STORE_INVENTRY_FILTER_STOCK' ); ?>:
+			<select name="inventry_stock" onchange="this.form.submit();">
+				<option value=""><?php echo JText::_ ( 'J2STORE_ALL' );?></option>
+				<option value="out_of_stock" <?php echo isset( $this->state->inventry_stock ) && $this->state->inventry_stock == 'out_of_stock' ? $selected:''; ?>><?php echo JText::_ ( 'J2STORE_OUT_OF_STOCK' );?></option>
+				<option value="in_stock" <?php echo isset( $this->state->inventry_stock ) && $this->state->inventry_stock == 'in_stock' ? $selected:''; ?>><?php echo JText::_ ( 'COM_J2STORE_PRODUCT_IN_STOCK' );?></option>
+			</select>
+		</span>
+	</div>
 </div>
 
 <table class="table table-striped table-bordered">
@@ -24,8 +35,6 @@ $this->params = J2Store::config();
 				<?php  echo JText::_('J2STORE_PRODUCT_NAME'); ?>
 			</th>
 			<th><?php  echo JText::_('J2STORE_PRODUCT_SOURCE'); ?></th>
-			<!--  <th><?php  echo JHTML::_('grid.sort',  'J2STORE_PRODUCT_SOURCE_ID', 'product_source_id', $this->state->filter_order_Dir, $this->state->filter_order ); ?></th>
-			-->
 			<th><?php  echo JText::_('J2STORE_PRODUCT_MANAGE_STOCK'); ?></th>
 			<th><?php  echo JText::_('J2STORE_PRODUCT_STOCK_QUANTITY'); ?></th>
 			<th><?php  echo JText::_('J2STORE_STOCK_STATUS'); ?></th>								
@@ -44,7 +53,7 @@ $this->params = J2Store::config();
 				foreach($this->products as $i => $item):
 				?>
 				<tr>
-					<td><?php //echo $this->pagination->getRowOffset( $i ); ?></td>
+					<td><?php echo $this->pagination->getRowOffset( $i ); ?></td>
 					<td>
 							<?php echo $item->j2store_product_id;?>
 
@@ -52,13 +61,18 @@ $this->params = J2Store::config();
 					<td>
 						<a target="_blank" href="<?php echo $item->product->product_edit_url;?>">
 							<strong>
-								<?php echo $item->product->product_name;?>
+								<?php echo $item->product->product_name; ?>
 							</strong>
 						</a>
+                        <br>
+                        <?php if(isset($item->product->variants->sku) && !empty($item->product->variants->sku)) : ?>
+                        <strong> <?php echo JText::_('J2STORE_SKU');?>:</strong>
+                        <?php echo isset($item->product->variants->sku) ? $item->product->variants->sku: '';?>
+                        <?php endif; ?>
 					</td>
 					<td><?php echo  $item->product->product_source;?></td>
 					 <!--  <td><?php echo $item->product->product_source_id;?></td>-->
-					<?php if($item->product->product_type=='variable'):?>
+					<?php if(in_array($item->product->product_type,array('variable','advancedvariable','flexivariable', 'variablesubscriptionproduct'))):?>
 					<td colspan="4">							
 							<?php echo JText::_('J2STORE_HAS_VARIANTS'); ?>
 							<button type="button" class="btn btn-small btn-warning" id="showvariantbtn-<?php echo $item->j2store_product_id;?>" href="javascript:void(0);" onclick="jQuery('#hide-icon-<?php echo $item->j2store_product_id;?>').toggle('click');jQuery('#show-icon-<?php echo $item->j2store_product_id;?>').toggle('click');jQuery('#variantListTable-<?php echo $item->j2store_product_id;?>').toggle('click');" >
@@ -76,6 +90,7 @@ $this->params = J2Store::config();
 									<th><?php echo JText::_('J2STORE_INVANTORY_SAVE'); ?></th>
 								</thead>
 								<tbody>
+										<tr><td colspan="6" ><span class="pull-right"><a id="save_all_inventry_<?php echo $item->j2store_product_id;?>" onclick="saveAllVariant('<?php echo $item->j2store_product_id;?>')" class="btn btn-primary"><?php echo JText::_ ( 'J2STORE_SAVEALL' );?></a></span></td></tr>
 										<?php
 										$variant_model = F0FModel::getTmpInstance('Variants', 'J2StoreModel');
 										$variant_model->setState('product_type', $item->product->product_type);
@@ -83,28 +98,30 @@ $this->params = J2Store::config();
 													->is_master(0)
 													->getList();
 										if(isset($variants) && count($variants)):
+											$i = 0;
 										foreach($variants as $variant):
-										
 										?>
 										<tr class="variants-list">
 											<td><?php echo J2Store::product()->getVariantNamesByCSV($variant->variant_name); ?></td>
 											<td><?php echo $variant->sku; ?></td>
 											<td>
-												<select name="manage_stock[<?php echo $variant->j2store_variant_id;?>]" id="manage_stock_<?php echo $variant->j2store_variant_id;?>" style="width:100px;";>
-													<option value="0" <?php if($variant->manage_stock==0)echo "selected";?>>No</option>
-													<option value="1" <?php if($variant->manage_stock==1)echo "selected";?>>Yes</option>						
+												<input type="hidden" name="list[<?php echo $i;?>][j2store_variant_id]" value="<?php echo $variant->j2store_variant_id;?>">
+												<select name="list[<?php echo $i;?>][manage_stock]" id="manage_stock_<?php echo $variant->j2store_variant_id;?>" style="width:100px;";>
+													<option value="0" <?php if($variant->manage_stock==0)echo "selected";?>><?php echo JText::_ ( 'J2STORE_NO' );?></option>
+													<option value="1" <?php if($variant->manage_stock==1)echo "selected";?>><?php echo JText::_ ( 'J2STORE_YES' );?></option>
 												 </select>											
 											</td>
 											<td>
-											<input type="number" size="2" id="quantity_<?php echo $variant->j2store_variant_id;?>" name="quantity[<?php echo $variant->j2store_variant_id;?>]" value="<?php echo $variant->quantity;?>">
+											<input type="number" size="2" id="quantity_<?php echo $variant->j2store_variant_id;?>" name="list[<?php echo $i;?>][quantity]" value="<?php echo $variant->quantity;?>">
 											<td>
-												<select id="availability_<?php echo $variant->j2store_variant_id;?>" name="availability[<?php echo $variant->j2store_variant_id;?>]">
-													<option value="0" <?php if($variant->availability==0)echo "selected";?>>Out of Stock</option>
-													<option value="1" <?php if($variant->availability==1)echo "selected";?>>In Stock</option>						
+												<select id="availability_<?php echo $variant->j2store_variant_id;?>" name="list[<?php echo $i;?>][availability]">
+													<option value="0" <?php if($variant->availability==0)echo "selected";?>><?php echo JText::_ ( 'J2STORE_OUT_OF_STOCK' );?></option>
+													<option value="1" <?php if($variant->availability==1)echo "selected";?>><?php echo JText::_ ( 'COM_J2STORE_PRODUCT_IN_STOCK' );?></option>
 					 							</select>											
 											</td>
-											<td><a class="btn btn-success" onclick="j2storesaveinventory(<?php echo $variant->j2store_variant_id;?>)">Save</a></td>
+											<td><a class="btn btn-success" onclick="j2storesaveinventory(<?php echo $variant->j2store_variant_id;?>)"><?php echo JText::_ ( 'JAPPLY' );?></a></td>
 										</tr>
+											<?php $i = $i+1; ?>
 										<?php endforeach;?>
 										<?php else:?>
 										<tr>
@@ -117,19 +134,19 @@ $this->params = J2Store::config();
 					<?php else:?>
 					<td>
 					 <select name="manage_stock[<?php echo $item->variant_id;?>]" id="manage_stock_<?php echo $item->variant_id;?>" style="width:100px;";>
-						<option value="0" <?php if($item->manage_stock==0)echo "selected";?>>No</option>
-						<option value="1" <?php if($item->manage_stock==1)echo "selected";?>>Yes</option>						
+						<option value="0" <?php if($item->manage_stock==0)echo "selected";?>><?php echo JText::_ ( 'J2STORE_NO' );?></option>
+						<option value="1" <?php if($item->manage_stock==1)echo "selected";?>><?php echo JText::_ ( 'J2STORE_YES' );?></option>
 					 </select>
 					 </td>
 					 <td><input type="number" size="2" id="quantity_<?php echo $item->variant_id;?>" name="quantity[<?php echo $item->variant_id;?>]" value="<?php echo $item->quantity;?>"></td>
 					 <td>
 					 <select id="availability_<?php echo $item->variant_id;?>" name="availability[<?php echo $item->variant_id;?>]">
-						<option value="0" <?php if($item->availability==0)echo "selected";?>>Out of Stock</option>
-						<option value="1" <?php if($item->availability==1)echo "selected";?>>In Stock</option>						
+						<option value="0" <?php if($item->availability==0)echo "selected";?>><?php echo JText::_ ( 'J2STORE_OUT_OF_STOCK' );?></option>
+						<option value="1" <?php if($item->availability==1)echo "selected";?>><?php echo JText::_ ( 'COM_J2STORE_PRODUCT_IN_STOCK' );?></option>
 					 </select>
 					 </td>
 					 
-					 <td><a class="btn btn-success" onclick="j2storesaveinventory(<?php echo $item->variant_id;?>)">Save</a></td>
+					 <td><a class="btn btn-success" onclick="j2storesaveinventory(<?php echo $item->variant_id;?>)"><?php echo JText::_ ( 'JAPPLY' );?></a></td>
 					 <?php endif;?>
 				</tr>
 				<?php endforeach; ?>
@@ -141,6 +158,36 @@ $this->params = J2Store::config();
 	</tbody>
 </table>
 <script type="text/javascript">
+function saveAllVariant(product_id) {
+	var data = jQuery('#adminForm #variantListTable-'+product_id).find('input,select').serialize();
+	jQuery.ajax({
+		url: 'index.php?option=com_j2store&view=inventories&task=saveAllVariantInventory',
+		type: 'post',
+		dataType: 'json',
+		data: data,
+		cache: false,
+		beforeSend: function() {
+			jQuery('#save_all_inventry_'+product_id).attr('disabled', true);
+			jQuery('#save_all_inventry_'+product_id).html('saving...');
+		},
+		success: function(json) {
+			jQuery('#save_all_inventry_'+product_id).attr('disabled', false);
+			jQuery('.text-danger, .text-success').remove();
+
+			if (json['error']) {
+
+			}
+
+			if (json['success']) {
+				window.location = json['success'];
+			}
+		},
+		/*error: function(xhr, ajaxOptions, thrownError) {
+			alert(thrownError + "\r\n" + xhr.statusText + "\r\n" + xhr.responseText);
+		}*/
+	});
+
+}
 function j2storesaveinventory(variant){	
 	var qty = jQuery('#quantity_'+variant).val();
 	var availability = jQuery('#availability_'+variant).val();

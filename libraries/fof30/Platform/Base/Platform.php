@@ -1,12 +1,13 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
 namespace FOF30\Platform\Base;
 
+use Exception;
 use FOF30\Container\Container;
 use FOF30\Input\Input;
 use FOF30\Platform\PlatformInterface;
@@ -347,6 +348,11 @@ abstract class Platform implements PlatformInterface
 		// The default implementation does nothing. Override this in your platform classes.
 	}
 
+	public function logUserAction($title, $logText, $extension)
+	{
+		// The default implementation does nothing. Override this in your platform classes.
+	}
+
 	/**
 	 * Returns the version number string of the platform, e.g. "4.5.6". If
 	 * implementation integrates with a CMS or a versioned foundation (e.g.
@@ -359,5 +365,17 @@ abstract class Platform implements PlatformInterface
 	public function getPlatformVersion()
 	{
 		return '';
+	}
+
+	/**
+	 * Handle an exception in a way that results to an error page.
+	 *
+	 * @param   Exception  $exception  The exception to handle
+	 *
+	 * @throws  Exception  Possibly rethrown exception
+	 */
+	public function showErrorPage(Exception $exception)
+	{
+		throw $exception;
 	}
 }

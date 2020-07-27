@@ -13,6 +13,11 @@ defined('_JEXEC') or die;
    JHtml::_('formbehavior.chosen', 'select');
    $sidebar = JHtmlSidebar::render();
 ?>
+<style type="text/css">
+	input[disabled] {
+		background-color: #46a546 !important;
+	}
+</style>
 <form
    action="<?php echo JRoute::_('index.php?option=com_j2store&view=cpanel'); ?>"
    method="post" name="adminForm" id="adminForm">
@@ -26,6 +31,9 @@ defined('_JEXEC') or die;
          <?php endif;?>
          <div  class ="box-widget-body ">
             <div id="container" class ="box-widget-body " style="clear:both;">
+                <div class="row-fluid">
+                    <?php echo J2Store::plugin()->eventWithHtml('BeforeCpanelView'); ?>
+                </div>
             	<div class="row-fluid">
             		<?php echo J2Store::help()->free_topbar(); ?>
             	</div>
@@ -44,14 +52,29 @@ defined('_JEXEC') or die;
 						    ); ?>
 					    <?php endif; ?>
 
+					    <?php $content_plugin = JPluginHelper::isEnabled('content', 'socialshare'); ?>
+					    <?php if($content_plugin):?>
+					        <?php echo J2Store::help()->alert_with_static_message(
+							    'danger',
+						        JText::_('J2STORE_ATTENTION'),
+						        JText::_('J2STORE_CONTENT_SOCIAL_SHARE_ENABLED_WARNING')
+							    );
+							 ?>
+					    <?php endif; ?>
+
 					 <?php if(J2Store::isPro()): ?>
+
 					  <?php $download_id = J2Store::config()->get('downloadid', ''); ?>
-					  <?php if(empty($download_id)) : ?>
-						<div class="alert alert-block alert-warning">
-					         <strong><?php echo JText::_('J2STORE_DOWNLOAD_ID_NOT_SET'); ?> </strong>&nbsp;
-							<a href="<?php echo J2Store::buildHelpLink('my-downloads.html', 'downloadid'); ?>" target="_blank" class="btn btn-danger"><?php echo JText::_('J2STORE_FIND_MY_DOWNLOAD_ID'); ?></a>
+						<div id="download-warning">
+
 						</div>
-					   <?php endif; ?>
+                             <div id="dlid-validate-container" class="alert alert-success" style="display: none;">
+
+                                <p> <?php echo JText::_('J2STORE_DOWNLOAD_ID_NOT_SET'); ?> </strong><a href="<?php echo J2Store::buildHelpLink('my-downloads.html', 'downloadid'); ?>" target="_blank"><?php echo JText::_('J2STORE_FIND_MY_DOWNLOAD_ID'); ?></a></p>
+                                 <p><?php echo JText::_('J2STORE_DOWNLOAD_ID_MESSAGE');?> <a class="btn btn-info" href="<?php echo JRoute::_('index.php?option=com_j2store&view=configuration#updates'); ?>"><?php echo JText::_('J2STORE_ENTER_DOWNLOAD_ID'); ?></a></p>
+	                             <p><?php echo JText::_('J2STORE_DOWNLOAD_ID_MESSAGE_AFTER');?></p>
+                             </div>
+
 					   <?php endif; ?>
 					<div class="subscription_message" style="display:none;">
 						<div class="alert alert-block alert-warning">
@@ -118,4 +141,42 @@ var sEupdates = setTimeout(function () {
 	})(j2store.jQuery);
 
 }, 2000);
+
+<?php if(J2Store::isPro() && empty($download_id)): ?>
+(function($){
+	$(document).ready(function() {
+
+		$('#dlid-validate-container').show();
+
+	});
+})(j2store.jQuery);
+<?php endif; ?>
+
+    function validateDlid() {
+        (function($){
+            var sdlid = $('#dlid').val();
+            $('#download-warning').html('');
+	        var button = $('#dlid-validate-button');
+            $.ajax({
+                url: "index.php?option=com_j2store&view=cpanels&task=getDownloadIdStatus&download_id="+sdlid,
+                dataType:'json',
+	            beforeSend: function() {
+		            $(button).attr('disabled', 'disabled');
+		            $(button).val('<?php echo addslashes(JText::_('J2STORE_APPLYING_DLID_PLEASE_WAIT')); ?>');
+
+	            }
+            }).done(function(json) {
+                if(json['valid'] == 1){
+                    $('#download-warning').html('<div class="alert alert-success"><?php echo JText::_('J2STORE_VAILD_DOWNLOAD_ID');?></div>');
+	                location.reload();
+                    //$('.subscription_message').show();
+                }else{
+	                $(button).removeAttr('disabled');
+	                $(button).val('<?php echo addslashes(JText::_('J2STORE_APPLY_DOWNLOAD_BUTTON')); ?>');
+                    $('#download-warning').html('<div class="alert alert-error"><?php echo JText::_('J2STORE_INVAILD_DOWNLOAD_ID');?></div>');
+                }
+            });
+
+        })(j2store.jQuery);
+    }
 </script>

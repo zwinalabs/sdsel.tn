@@ -50,16 +50,24 @@ defined ( '_JEXEC' ) or die ();?>
 		<div class="order-list-print">
 			<span class="action-buttons">
 			<?php
-			$url = JRoute::_( "index.php?option=com_j2store&view=orders&task=printOrder&tmpl=component&order_id=".$this->item->order_id);
-			echo J2StorePopup::popup($url, JText::_( "J2STORE_PRINT_ORDER" ), array('class'=>'fa fa-print btn btn-primary btn-large'));
+				$url = JRoute::_( "index.php?option=com_j2store&view=orders&task=printOrder&tmpl=component&order_id=".$this->item->order_id);
+				echo J2StorePopup::popup($url, JText::_( "J2STORE_PRINT_ORDER" ), array('class'=>'fa fa-print btn btn-primary btn-large'));
 			?>
-		</span>
-		<span class="action-buttons">
+			</span>
+			<span class="action-buttons">
 			<?php  $url = JRoute::_( "index.php?option=com_j2store&view=orders&task=printShipping&tmpl=component&order_id=".$this->orderinfo->order_id);
-			echo J2StorePopup::popupAdvanced($url,JText::_('J2STORE_PRINT_SHIPPING_ADDRESS'), array('class'=>'fa fa-print btn btn-inverse btn-large','width'=>800 , 'height'=>600));
+				echo J2StorePopup::popupAdvanced($url,JText::_('J2STORE_PRINT_SHIPPING_ADDRESS'), array('class'=>'fa fa-print btn btn-inverse btn-large'));
 			?>
 			</span>
 		</div>
+		<br>
+		<div class="span12 order-list-email">
+			<span class="action-buttons">
+				<?php  $url = JRoute::_( "index.php?option=com_j2store&view=orders&task=resendEmail&id=".$this->order->j2store_order_id); ?>
+				<a href="<?php echo $url;?>" class="fa fa-envelope  btn btn-success btn-large" ><?php echo JText::_('J2STORE_RESEND_MAIL')?></a>
+			</span>
+		</div>
+		<br>
 		<?php echo $this->loadTemplate('orderhistory');?>
 	</div>
 </div>

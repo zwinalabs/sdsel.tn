@@ -1,13 +1,20 @@
 <?php
+/**
+ * Akeeba Kickstart
+ * A JSON-powered archive extraction tool
+ *
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license     GNU GPL v2 or - at your option - any later version
+ * @package     kickstart
+ */
 
 /**
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 define('_AKEEBA_RESTORATION', 1);
@@ -82,6 +89,24 @@ if (!function_exists('akstringlen'))
 	}
 }
 
+if (!function_exists('aksubstr'))
+{
+	if (function_exists('mb_strlen'))
+	{
+		function aksubstr($string, $start, $length = null)
+		{
+			return mb_substr($string, $start, $length, '8bit');
+		}
+	}
+	else
+	{
+		function aksubstr($string, $start, $length = null)
+		{
+			return substr($string, $start, $length);
+		}
+	}
+}
+
 /**
  * Gets a query parameter from GET or POST data
  *
@@ -129,940 +154,9 @@ function debugMsg($msg)
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
- */
-
-/**
- * Akeeba Backup's JSON compatibility layer
- *
- * On systems where json_encode and json_decode are not available, Akeeba
- * Backup will attempt to use PEAR's Services_JSON library to emulate them.
- * A copy of this library is included in this file and will be used if and
- * only if it isn't already loaded, e.g. due to PEAR's auto-loading, or a
- * 3PD extension loading it for its own purposes.
- */
-
-/**
- * Converts to and from JSON format.
- *
- * JSON (JavaScript Object Notation) is a lightweight data-interchange
- * format. It is easy for humans to read and write. It is easy for machines
- * to parse and generate. It is based on a subset of the JavaScript
- * Programming Language, Standard ECMA-262 3rd Edition - December 1999.
- * This feature can also be found in  Python. JSON is a text format that is
- * completely language independent but uses conventions that are familiar
- * to programmers of the C-family of languages, including C, C++, C#, Java,
- * JavaScript, Perl, TCL, and many others. These properties make JSON an
- * ideal data-interchange language.
- *
- * This package provides a simple encoder and decoder for JSON notation. It
- * is intended for use with client-side Javascript applications that make
- * use of HTTPRequest to perform server communication functions - data can
- * be encoded into JSON notation for use in a client-side javascript, or
- * decoded from incoming Javascript requests. JSON format is native to
- * Javascript, and can be directly eval()'ed with no further parsing
- * overhead
- *
- * All strings should be in ASCII or UTF-8 format!
- *
- * LICENSE: Redistribution and use in source and binary forms, with or
- * without modification, are permitted provided that the following
- * conditions are met: Redistributions of source code must retain the
- * above copyright notice, this list of conditions and the following
- * disclaimer. Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN
- * NO EVENT SHALL CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
- * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
- * USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
- * DAMAGE.
- *
- * @category
- * @package     Services_JSON
- * @author      Michal Migurski <mike-json@teczno.com>
- * @author      Matt Knapp <mdknapp[at]gmail[dot]com>
- * @author      Brett Stimmerman <brettstimmerman[at]gmail[dot]com>
- * @copyright   2005 Michal Migurski
- * @version     CVS: $Id: restore.php 612 2011-05-19 08:26:26Z nikosdion $
- * @license     http://www.opensource.org/licenses/bsd-license.php
- * @link        http://pear.php.net/pepr/pepr-proposal-show.php?id=198
- */
-
-if (!defined('JSON_FORCE_OBJECT'))
-{
-	define('JSON_FORCE_OBJECT', 1);
-}
-
-if (!defined('SERVICES_JSON_SLICE'))
-{
-	/**
-	 * Marker constant for Services_JSON::decode(), used to flag stack state
-	 */
-	define('SERVICES_JSON_SLICE', 1);
-
-	/**
-	 * Marker constant for Services_JSON::decode(), used to flag stack state
-	 */
-	define('SERVICES_JSON_IN_STR', 2);
-
-	/**
-	 * Marker constant for Services_JSON::decode(), used to flag stack state
-	 */
-	define('SERVICES_JSON_IN_ARR', 3);
-
-	/**
-	 * Marker constant for Services_JSON::decode(), used to flag stack state
-	 */
-	define('SERVICES_JSON_IN_OBJ', 4);
-
-	/**
-	 * Marker constant for Services_JSON::decode(), used to flag stack state
-	 */
-	define('SERVICES_JSON_IN_CMT', 5);
-
-	/**
-	 * Behavior switch for Services_JSON::decode()
-	 */
-	define('SERVICES_JSON_LOOSE_TYPE', 16);
-
-	/**
-	 * Behavior switch for Services_JSON::decode()
-	 */
-	define('SERVICES_JSON_SUPPRESS_ERRORS', 32);
-}
-
-/**
- * Converts to and from JSON format.
- *
- * Brief example of use:
- *
- * <code>
- * // create a new instance of Services_JSON
- * $json = new Services_JSON();
- *
- * // convert a complexe value to JSON notation, and send it to the browser
- * $value = array('foo', 'bar', array(1, 2, 'baz'), array(3, array(4)));
- * $output = $json->encode($value);
- *
- * print($output);
- * // prints: ["foo","bar",[1,2,"baz"],[3,[4]]]
- *
- * // accept incoming POST data, assumed to be in JSON notation
- * $input = file_get_contents('php://input', 1000000);
- * $value = $json->decode($input);
- * </code>
- */
-if (!class_exists('Akeeba_Services_JSON'))
-{
-	class Akeeba_Services_JSON
-	{
-		/**
-		 * constructs a new JSON instance
-		 *
-		 * @param    int $use object behavior flags; combine with boolean-OR
-		 *
-		 *                           possible values:
-		 *                           - SERVICES_JSON_LOOSE_TYPE:  loose typing.
-		 *                                   "{...}" syntax creates associative arrays
-		 *                                   instead of objects in decode().
-		 *                           - SERVICES_JSON_SUPPRESS_ERRORS:  error suppression.
-		 *                                   Values which can't be encoded (e.g. resources)
-		 *                                   appear as NULL instead of throwing errors.
-		 *                                   By default, a deeply-nested resource will
-		 *                                   bubble up with an error, so all return values
-		 *                                   from encode() should be checked with isError()
-		 */
-		function __construct($use = 0)
-		{
-			$this->use = $use;
-		}
-
-		/**
-		 * convert a string from one UTF-16 char to one UTF-8 char
-		 *
-		 * Normally should be handled by mb_convert_encoding, but
-		 * provides a slower PHP-only method for installations
-		 * that lack the multibye string extension.
-		 *
-		 * @param    string $utf16 UTF-16 character
-		 *
-		 * @return   string  UTF-8 character
-		 * @access   private
-		 */
-		function utf162utf8($utf16)
-		{
-			// oh please oh please oh please oh please oh please
-			if (function_exists('mb_convert_encoding'))
-			{
-				return mb_convert_encoding($utf16, 'UTF-8', 'UTF-16');
-			}
-
-			$bytes = (ord($utf16{0}) << 8) | ord($utf16{1});
-
-			switch (true)
-			{
-				case ((0x7F & $bytes) == $bytes):
-					// this case should never be reached, because we are in ASCII range
-					// see: http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-					return chr(0x7F & $bytes);
-
-				case (0x07FF & $bytes) == $bytes:
-					// return a 2-byte UTF-8 character
-					// see: http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-					return chr(0xC0 | (($bytes >> 6) & 0x1F))
-					. chr(0x80 | ($bytes & 0x3F));
-
-				case (0xFFFF & $bytes) == $bytes:
-					// return a 3-byte UTF-8 character
-					// see: http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-					return chr(0xE0 | (($bytes >> 12) & 0x0F))
-					. chr(0x80 | (($bytes >> 6) & 0x3F))
-					. chr(0x80 | ($bytes & 0x3F));
-			}
-
-			// ignoring UTF-32 for now, sorry
-			return '';
-		}
-
-		/**
-		 * convert a string from one UTF-8 char to one UTF-16 char
-		 *
-		 * Normally should be handled by mb_convert_encoding, but
-		 * provides a slower PHP-only method for installations
-		 * that lack the multibye string extension.
-		 *
-		 * @param    string $utf8 UTF-8 character
-		 *
-		 * @return   string  UTF-16 character
-		 * @access   private
-		 */
-		function utf82utf16($utf8)
-		{
-			// oh please oh please oh please oh please oh please
-			if (function_exists('mb_convert_encoding'))
-			{
-				return mb_convert_encoding($utf8, 'UTF-16', 'UTF-8');
-			}
-
-			switch (strlen($utf8))
-			{
-				case 1:
-					// this case should never be reached, because we are in ASCII range
-					// see: http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-					return $utf8;
-
-				case 2:
-					// return a UTF-16 character from a 2-byte UTF-8 char
-					// see: http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-					return chr(0x07 & (ord($utf8{0}) >> 2))
-					. chr((0xC0 & (ord($utf8{0}) << 6))
-						| (0x3F & ord($utf8{1})));
-
-				case 3:
-					// return a UTF-16 character from a 3-byte UTF-8 char
-					// see: http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-					return chr((0xF0 & (ord($utf8{0}) << 4))
-						| (0x0F & (ord($utf8{1}) >> 2)))
-					. chr((0xC0 & (ord($utf8{1}) << 6))
-						| (0x7F & ord($utf8{2})));
-			}
-
-			// ignoring UTF-32 for now, sorry
-			return '';
-		}
-
-		/**
-		 * encodes an arbitrary variable into JSON format
-		 *
-		 * @param    mixed $var      any number, boolean, string, array, or object to be encoded.
-		 *                           see argument 1 to Services_JSON() above for array-parsing behavior.
-		 *                           if var is a strng, note that encode() always expects it
-		 *                           to be in ASCII or UTF-8 format!
-		 *
-		 * @return   mixed   JSON string representation of input var or an error if a problem occurs
-		 * @access   public
-		 */
-		function encode($var)
-		{
-			switch (gettype($var))
-			{
-				case 'boolean':
-					return $var ? 'true' : 'false';
-
-				case 'NULL':
-					return 'null';
-
-				case 'integer':
-					return (int) $var;
-
-				case 'double':
-				case 'float':
-					return (float) $var;
-
-				case 'string':
-					// STRINGS ARE EXPECTED TO BE IN ASCII OR UTF-8 FORMAT
-					$ascii      = '';
-					$strlen_var = strlen($var);
-
-					/*
-					 * Iterate over every character in the string,
-					 * escaping with a slash or encoding to UTF-8 where necessary
-					 */
-					for ($c = 0; $c < $strlen_var; ++$c)
-					{
-
-						$ord_var_c = ord($var{$c});
-
-						switch (true)
-						{
-							case $ord_var_c == 0x08:
-								$ascii .= '\b';
-								break;
-							case $ord_var_c == 0x09:
-								$ascii .= '\t';
-								break;
-							case $ord_var_c == 0x0A:
-								$ascii .= '\n';
-								break;
-							case $ord_var_c == 0x0C:
-								$ascii .= '\f';
-								break;
-							case $ord_var_c == 0x0D:
-								$ascii .= '\r';
-								break;
-
-							case $ord_var_c == 0x22:
-							case $ord_var_c == 0x2F:
-							case $ord_var_c == 0x5C:
-								// double quote, slash, slosh
-								$ascii .= '\\' . $var{$c};
-								break;
-
-							case (($ord_var_c >= 0x20) && ($ord_var_c <= 0x7F)):
-								// characters U-00000000 - U-0000007F (same as ASCII)
-								$ascii .= $var{$c};
-								break;
-
-							case (($ord_var_c & 0xE0) == 0xC0):
-								// characters U-00000080 - U-000007FF, mask 110XXXXX
-								// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-								$char = pack('C*', $ord_var_c, ord($var{$c + 1}));
-								$c += 1;
-								$utf16 = $this->utf82utf16($char);
-								$ascii .= sprintf('\u%04s', bin2hex($utf16));
-								break;
-
-							case (($ord_var_c & 0xF0) == 0xE0):
-								// characters U-00000800 - U-0000FFFF, mask 1110XXXX
-								// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-								$char = pack('C*', $ord_var_c,
-									ord($var{$c + 1}),
-									ord($var{$c + 2}));
-								$c += 2;
-								$utf16 = $this->utf82utf16($char);
-								$ascii .= sprintf('\u%04s', bin2hex($utf16));
-								break;
-
-							case (($ord_var_c & 0xF8) == 0xF0):
-								// characters U-00010000 - U-001FFFFF, mask 11110XXX
-								// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-								$char = pack('C*', $ord_var_c,
-									ord($var{$c + 1}),
-									ord($var{$c + 2}),
-									ord($var{$c + 3}));
-								$c += 3;
-								$utf16 = $this->utf82utf16($char);
-								$ascii .= sprintf('\u%04s', bin2hex($utf16));
-								break;
-
-							case (($ord_var_c & 0xFC) == 0xF8):
-								// characters U-00200000 - U-03FFFFFF, mask 111110XX
-								// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-								$char = pack('C*', $ord_var_c,
-									ord($var{$c + 1}),
-									ord($var{$c + 2}),
-									ord($var{$c + 3}),
-									ord($var{$c + 4}));
-								$c += 4;
-								$utf16 = $this->utf82utf16($char);
-								$ascii .= sprintf('\u%04s', bin2hex($utf16));
-								break;
-
-							case (($ord_var_c & 0xFE) == 0xFC):
-								// characters U-04000000 - U-7FFFFFFF, mask 1111110X
-								// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-								$char = pack('C*', $ord_var_c,
-									ord($var{$c + 1}),
-									ord($var{$c + 2}),
-									ord($var{$c + 3}),
-									ord($var{$c + 4}),
-									ord($var{$c + 5}));
-								$c += 5;
-								$utf16 = $this->utf82utf16($char);
-								$ascii .= sprintf('\u%04s', bin2hex($utf16));
-								break;
-						}
-					}
-
-					return '"' . $ascii . '"';
-
-				case 'array':
-					/*
-					 * As per JSON spec if any array key is not an integer
-					 * we must treat the the whole array as an object. We
-					 * also try to catch a sparsely populated associative
-					 * array with numeric keys here because some JS engines
-					 * will create an array with empty indexes up to
-					 * max_index which can cause memory issues and because
-					 * the keys, which may be relevant, will be remapped
-					 * otherwise.
-					 *
-					 * As per the ECMA and JSON specification an object may
-					 * have any string as a property. Unfortunately due to
-					 * a hole in the ECMA specification if the key is a
-					 * ECMA reserved word or starts with a digit the
-					 * parameter is only accessible using ECMAScript's
-					 * bracket notation.
-					 */
-
-					// treat as a JSON object
-					if (is_array($var) && count($var) && (array_keys($var) !== range(0, sizeof($var) - 1)))
-					{
-						$properties = array_map(array($this, 'name_value'),
-							array_keys($var),
-							array_values($var));
-
-						foreach ($properties as $property)
-						{
-							if (Akeeba_Services_JSON::isError($property))
-							{
-								return $property;
-							}
-						}
-
-						return '{' . join(',', $properties) . '}';
-					}
-
-					// treat it like a regular array
-					$elements = array_map(array($this, 'encode'), $var);
-
-					foreach ($elements as $element)
-					{
-						if (Akeeba_Services_JSON::isError($element))
-						{
-							return $element;
-						}
-					}
-
-					return '[' . join(',', $elements) . ']';
-
-				case 'object':
-					$vars = get_object_vars($var);
-
-					$properties = array_map(array($this, 'name_value'),
-						array_keys($vars),
-						array_values($vars));
-
-					foreach ($properties as $property)
-					{
-						if (Akeeba_Services_JSON::isError($property))
-						{
-							return $property;
-						}
-					}
-
-					return '{' . join(',', $properties) . '}';
-
-				default:
-					return ($this->use & SERVICES_JSON_SUPPRESS_ERRORS)
-						? 'null'
-						: new Akeeba_Services_JSON_Error(gettype($var) . " can not be encoded as JSON string");
-			}
-		}
-
-		/**
-		 * array-walking function for use in generating JSON-formatted name-value pairs
-		 *
-		 * @param    string $name  name of key to use
-		 * @param    mixed  $value reference to an array element to be encoded
-		 *
-		 * @return   string  JSON-formatted name-value pair, like '"name":value'
-		 * @access   private
-		 */
-		function name_value($name, $value)
-		{
-			$encoded_value = $this->encode($value);
-
-			if (Akeeba_Services_JSON::isError($encoded_value))
-			{
-				return $encoded_value;
-			}
-
-			return $this->encode(strval($name)) . ':' . $encoded_value;
-		}
-
-		/**
-		 * reduce a string by removing leading and trailing comments and whitespace
-		 *
-		 * @param    $str    string      string value to strip of comments and whitespace
-		 *
-		 * @return   string  string value stripped of comments and whitespace
-		 * @access   private
-		 */
-		function reduce_string($str)
-		{
-			$str = preg_replace(array(
-
-				// eliminate single line comments in '// ...' form
-				'#^\s*//(.+)$#m',
-
-				// eliminate multi-line comments in '/* ... */' form, at start of string
-				'#^\s*/\*(.+)\*/#Us',
-
-				// eliminate multi-line comments in '/* ... */' form, at end of string
-				'#/\*(.+)\*/\s*$#Us'
-
-			), '', $str);
-
-			// eliminate extraneous space
-			return trim($str);
-		}
-
-		/**
-		 * decodes a JSON string into appropriate variable
-		 *
-		 * @param    string $str JSON-formatted string
-		 *
-		 * @return   mixed   number, boolean, string, array, or object
-		 *                   corresponding to given JSON input string.
-		 *                   See argument 1 to Akeeba_Services_JSON() above for object-output behavior.
-		 *                   Note that decode() always returns strings
-		 *                   in ASCII or UTF-8 format!
-		 * @access   public
-		 */
-		function decode($str)
-		{
-			$str = $this->reduce_string($str);
-
-			switch (strtolower($str))
-			{
-				case 'true':
-					return true;
-
-				case 'false':
-					return false;
-
-				case 'null':
-					return null;
-
-				default:
-					$m = array();
-
-					if (is_numeric($str))
-					{
-						// Lookie-loo, it's a number
-
-						// This would work on its own, but I'm trying to be
-						// good about returning integers where appropriate:
-						// return (float)$str;
-
-						// Return float or int, as appropriate
-						return ((float) $str == (integer) $str)
-							? (integer) $str
-							: (float) $str;
-
-					}
-					elseif (preg_match('/^("|\').*(\1)$/s', $str, $m) && $m[1] == $m[2])
-					{
-						// STRINGS RETURNED IN UTF-8 FORMAT
-						$delim       = substr($str, 0, 1);
-						$chrs        = substr($str, 1, -1);
-						$utf8        = '';
-						$strlen_chrs = strlen($chrs);
-
-						for ($c = 0; $c < $strlen_chrs; ++$c)
-						{
-
-							$substr_chrs_c_2 = substr($chrs, $c, 2);
-							$ord_chrs_c      = ord($chrs{$c});
-
-							switch (true)
-							{
-								case $substr_chrs_c_2 == '\b':
-									$utf8 .= chr(0x08);
-									++$c;
-									break;
-								case $substr_chrs_c_2 == '\t':
-									$utf8 .= chr(0x09);
-									++$c;
-									break;
-								case $substr_chrs_c_2 == '\n':
-									$utf8 .= chr(0x0A);
-									++$c;
-									break;
-								case $substr_chrs_c_2 == '\f':
-									$utf8 .= chr(0x0C);
-									++$c;
-									break;
-								case $substr_chrs_c_2 == '\r':
-									$utf8 .= chr(0x0D);
-									++$c;
-									break;
-
-								case $substr_chrs_c_2 == '\\"':
-								case $substr_chrs_c_2 == '\\\'':
-								case $substr_chrs_c_2 == '\\\\':
-								case $substr_chrs_c_2 == '\\/':
-									if (($delim == '"' && $substr_chrs_c_2 != '\\\'') ||
-										($delim == "'" && $substr_chrs_c_2 != '\\"')
-									)
-									{
-										$utf8 .= $chrs{++$c};
-									}
-									break;
-
-								case preg_match('/\\\u[0-9A-F]{4}/i', substr($chrs, $c, 6)):
-									// single, escaped unicode character
-									$utf16 = chr(hexdec(substr($chrs, ($c + 2), 2)))
-										. chr(hexdec(substr($chrs, ($c + 4), 2)));
-									$utf8 .= $this->utf162utf8($utf16);
-									$c += 5;
-									break;
-
-								case ($ord_chrs_c >= 0x20) && ($ord_chrs_c <= 0x7F):
-									$utf8 .= $chrs{$c};
-									break;
-
-								case ($ord_chrs_c & 0xE0) == 0xC0:
-									// characters U-00000080 - U-000007FF, mask 110XXXXX
-									//see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-									$utf8 .= substr($chrs, $c, 2);
-									++$c;
-									break;
-
-								case ($ord_chrs_c & 0xF0) == 0xE0:
-									// characters U-00000800 - U-0000FFFF, mask 1110XXXX
-									// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-									$utf8 .= substr($chrs, $c, 3);
-									$c += 2;
-									break;
-
-								case ($ord_chrs_c & 0xF8) == 0xF0:
-									// characters U-00010000 - U-001FFFFF, mask 11110XXX
-									// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-									$utf8 .= substr($chrs, $c, 4);
-									$c += 3;
-									break;
-
-								case ($ord_chrs_c & 0xFC) == 0xF8:
-									// characters U-00200000 - U-03FFFFFF, mask 111110XX
-									// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-									$utf8 .= substr($chrs, $c, 5);
-									$c += 4;
-									break;
-
-								case ($ord_chrs_c & 0xFE) == 0xFC:
-									// characters U-04000000 - U-7FFFFFFF, mask 1111110X
-									// see http://www.cl.cam.ac.uk/~mgk25/unicode.html#utf-8
-									$utf8 .= substr($chrs, $c, 6);
-									$c += 5;
-									break;
-
-							}
-
-						}
-
-						return $utf8;
-
-					}
-					elseif (preg_match('/^\[.*\]$/s', $str) || preg_match('/^\{.*\}$/s', $str))
-					{
-						// array, or object notation
-
-						if ($str{0} == '[')
-						{
-							$stk = array(SERVICES_JSON_IN_ARR);
-							$arr = array();
-						}
-						else
-						{
-							if ($this->use & SERVICES_JSON_LOOSE_TYPE)
-							{
-								$stk = array(SERVICES_JSON_IN_OBJ);
-								$obj = array();
-							}
-							else
-							{
-								$stk = array(SERVICES_JSON_IN_OBJ);
-								$obj = new stdClass();
-							}
-						}
-
-						array_push($stk, array('what'  => SERVICES_JSON_SLICE,
-						                       'where' => 0,
-						                       'delim' => false));
-
-						$chrs = substr($str, 1, -1);
-						$chrs = $this->reduce_string($chrs);
-
-						if ($chrs == '')
-						{
-							if (reset($stk) == SERVICES_JSON_IN_ARR)
-							{
-								return $arr;
-
-							}
-							else
-							{
-								return $obj;
-
-							}
-						}
-
-						//print("\nparsing {$chrs}\n");
-
-						$strlen_chrs = strlen($chrs);
-
-						for ($c = 0; $c <= $strlen_chrs; ++$c)
-						{
-
-							$top             = end($stk);
-							$substr_chrs_c_2 = substr($chrs, $c, 2);
-
-							if (($c == $strlen_chrs) || (($chrs{$c} == ',') && ($top['what'] == SERVICES_JSON_SLICE)))
-							{
-								// found a comma that is not inside a string, array, etc.,
-								// OR we've reached the end of the character list
-								$slice = substr($chrs, $top['where'], ($c - $top['where']));
-								array_push($stk, array('what'  => SERVICES_JSON_SLICE, 'where' => ($c + 1),
-								                       'delim' => false));
-								//print("Found split at {$c}: ".substr($chrs, $top['where'], (1 + $c - $top['where']))."\n");
-
-								if (reset($stk) == SERVICES_JSON_IN_ARR)
-								{
-									// we are in an array, so just push an element onto the stack
-									array_push($arr, $this->decode($slice));
-
-								}
-								elseif (reset($stk) == SERVICES_JSON_IN_OBJ)
-								{
-									// we are in an object, so figure
-									// out the property name and set an
-									// element in an associative array,
-									// for now
-									$parts = array();
-
-									if (preg_match('/^\s*(["\'].*[^\\\]["\'])\s*:\s*(\S.*),?$/Uis', $slice, $parts))
-									{
-										// "name":value pair
-										$key = $this->decode($parts[1]);
-										$val = $this->decode($parts[2]);
-
-										if ($this->use & SERVICES_JSON_LOOSE_TYPE)
-										{
-											$obj[$key] = $val;
-										}
-										else
-										{
-											$obj->$key = $val;
-										}
-									}
-									elseif (preg_match('/^\s*(\w+)\s*:\s*(\S.*),?$/Uis', $slice, $parts))
-									{
-										// name:value pair, where name is unquoted
-										$key = $parts[1];
-										$val = $this->decode($parts[2]);
-
-										if ($this->use & SERVICES_JSON_LOOSE_TYPE)
-										{
-											$obj[$key] = $val;
-										}
-										else
-										{
-											$obj->$key = $val;
-										}
-									}
-
-								}
-
-							}
-							elseif ((($chrs{$c} == '"') || ($chrs{$c} == "'")) && ($top['what'] != SERVICES_JSON_IN_STR))
-							{
-								// found a quote, and we are not inside a string
-								array_push($stk, array('what'  => SERVICES_JSON_IN_STR, 'where' => $c,
-								                       'delim' => $chrs{$c}));
-								//print("Found start of string at {$c}\n");
-
-							}
-							elseif (($chrs{$c} == $top['delim']) &&
-								($top['what'] == SERVICES_JSON_IN_STR) &&
-								((strlen(substr($chrs, 0, $c)) - strlen(rtrim(substr($chrs, 0, $c), '\\'))) % 2 != 1)
-							)
-							{
-								// found a quote, we're in a string, and it's not escaped
-								// we know that it's not escaped becase there is _not_ an
-								// odd number of backslashes at the end of the string so far
-								array_pop($stk);
-								//print("Found end of string at {$c}: ".substr($chrs, $top['where'], (1 + 1 + $c - $top['where']))."\n");
-
-							}
-							elseif (($chrs{$c} == '[') &&
-								in_array($top['what'], array(SERVICES_JSON_SLICE, SERVICES_JSON_IN_ARR,
-									SERVICES_JSON_IN_OBJ))
-							)
-							{
-								// found a left-bracket, and we are in an array, object, or slice
-								array_push($stk, array('what'  => SERVICES_JSON_IN_ARR, 'where' => $c,
-								                       'delim' => false));
-								//print("Found start of array at {$c}\n");
-
-							}
-							elseif (($chrs{$c} == ']') && ($top['what'] == SERVICES_JSON_IN_ARR))
-							{
-								// found a right-bracket, and we're in an array
-								array_pop($stk);
-								//print("Found end of array at {$c}: ".substr($chrs, $top['where'], (1 + $c - $top['where']))."\n");
-
-							}
-							elseif (($chrs{$c} == '{') &&
-								in_array($top['what'], array(SERVICES_JSON_SLICE, SERVICES_JSON_IN_ARR,
-									SERVICES_JSON_IN_OBJ))
-							)
-							{
-								// found a left-brace, and we are in an array, object, or slice
-								array_push($stk, array('what'  => SERVICES_JSON_IN_OBJ, 'where' => $c,
-								                       'delim' => false));
-								//print("Found start of object at {$c}\n");
-
-							}
-							elseif (($chrs{$c} == '}') && ($top['what'] == SERVICES_JSON_IN_OBJ))
-							{
-								// found a right-brace, and we're in an object
-								array_pop($stk);
-								//print("Found end of object at {$c}: ".substr($chrs, $top['where'], (1 + $c - $top['where']))."\n");
-
-							}
-							elseif (($substr_chrs_c_2 == '/*') &&
-								in_array($top['what'], array(SERVICES_JSON_SLICE, SERVICES_JSON_IN_ARR,
-									SERVICES_JSON_IN_OBJ))
-							)
-							{
-								// found a comment start, and we are in an array, object, or slice
-								array_push($stk, array('what'  => SERVICES_JSON_IN_CMT, 'where' => $c,
-								                       'delim' => false));
-								$c++;
-								//print("Found start of comment at {$c}\n");
-
-							}
-							elseif (($substr_chrs_c_2 == '*/') && ($top['what'] == SERVICES_JSON_IN_CMT))
-							{
-								// found a comment end, and we're in one now
-								array_pop($stk);
-								$c++;
-
-								for ($i = $top['where']; $i <= $c; ++$i)
-								{
-									$chrs = substr_replace($chrs, ' ', $i, 1);
-								}
-
-								//print("Found end of comment at {$c}: ".substr($chrs, $top['where'], (1 + $c - $top['where']))."\n");
-
-							}
-
-						}
-
-						if (reset($stk) == SERVICES_JSON_IN_ARR)
-						{
-							return $arr;
-
-						}
-						elseif (reset($stk) == SERVICES_JSON_IN_OBJ)
-						{
-							return $obj;
-
-						}
-
-					}
-			}
-		}
-
-		function isError($data, $code = null)
-		{
-			if (class_exists('pear'))
-			{
-				return PEAR::isError($data, $code);
-			}
-			elseif (is_object($data) && (get_class($data) == 'services_json_error' ||
-					is_subclass_of($data, 'services_json_error'))
-			)
-			{
-				return true;
-			}
-
-			return false;
-		}
-	}
-
-	class Akeeba_Services_JSON_Error
-	{
-		function __construct($message = 'unknown error', $code = null,
-		                     $mode = null, $options = null, $userinfo = null)
-		{
-
-		}
-	}
-}
-
-if (!function_exists('json_encode'))
-{
-	function json_encode($value, $options = 0)
-	{
-		$flags = SERVICES_JSON_LOOSE_TYPE;
-		if ($options & JSON_FORCE_OBJECT)
-		{
-			$flags = 0;
-		}
-		$encoder = new Akeeba_Services_JSON($flags);
-
-		return $encoder->encode($value);
-	}
-}
-
-if (!function_exists('json_decode'))
-{
-	function json_decode($value, $assoc = false)
-	{
-		$flags = 0;
-		if ($assoc)
-		{
-			$flags = SERVICES_JSON_LOOSE_TYPE;
-		}
-		$decoder = new Akeeba_Services_JSON($flags);
-
-		return $decoder->decode($value);
-	}
-}
-
-/**
- * Akeeba Restore
- * A JSON-powered JPA, JPS and ZIP archive extraction library
- *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
- * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -1081,7 +175,7 @@ abstract class AKAbstractObject
 	private $_warnings = array();
 
 	/**
-	 * Public constructor, makes sure we are instanciated only by the factory class
+	 * Public constructor, makes sure we are instantiated only by the factory class
 	 */
 	public function __construct()
 	{
@@ -1197,7 +291,7 @@ abstract class AKAbstractObject
 	 * Propagates errors and warnings to a foreign object. The foreign object SHOULD
 	 * implement the setError() and/or setWarning() methods but DOESN'T HAVE TO be of
 	 * AKAbstractObject type. For example, this can even be used to propagate to a
-	 * JObject instance in Joomla!. Propagated items will be removed from ourself.
+	 * JObject instance in Joomla!. Propagated items will be removed from ourselves.
 	 *
 	 * @param object $object The object to propagate errors and warnings to.
 	 */
@@ -1290,7 +384,8 @@ abstract class AKAbstractObject
 				array_shift($this->_errors);
 			}
 		}
-		array_push($this->_errors, $error);
+
+		$this->_errors[] = $error;
 	}
 
 	/**
@@ -1308,7 +403,7 @@ abstract class AKAbstractObject
 			}
 		}
 
-		array_push($this->_warnings, $warning);
+		$this->_warnings[] = $warning;
 	}
 
 	/**
@@ -1337,10 +432,9 @@ abstract class AKAbstractObject
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -1422,9 +516,9 @@ abstract class AKAbstractPart extends AKAbstractObject
 	/**
 	 * The public interface to an engine part. This method takes care for
 	 * calling the correct method in order to perform the initialisation -
-	 * run - finalisation cycle of operation and return a proper reponse array.
+	 * run - finalisation cycle of operation and return a proper response array.
 	 *
-	 * @return    array    A Reponse Array
+	 * @return    array    A Response Array
 	 */
 	final public function tick()
 	{
@@ -1659,13 +753,13 @@ abstract class AKAbstractPart extends AKAbstractObject
 	}
 
 	/**
-	 * Dettaches an observer object
+	 * Detaches an observer object
 	 *
 	 * @param AKAbstractPartObserver $obs
 	 */
 	function detach(AKAbstractPartObserver $obs)
 	{
-		delete($this->observers["$obs"]);
+		unset($this->observers["$obs"]);
 	}
 
 	/**
@@ -1710,10 +804,9 @@ abstract class AKAbstractPart extends AKAbstractObject
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -2049,18 +1142,18 @@ abstract class AKAbstractUnarchiver extends AKAbstractPart
 					if ($status)
 					{
 						// Send start of file notification
-						$message          = new stdClass;
-						$message->type    = 'startfile';
-						$message->content = new stdClass;
+						$message                        = new stdClass;
+						$message->type                  = 'startfile';
+						$message->content               = new stdClass;
+						$message->content->realfile     = $this->fileHeader->file;
+						$message->content->file         = $this->fileHeader->file;
+						$message->content->uncompressed = $this->fileHeader->uncompressed;
+
 						if (array_key_exists('realfile', get_object_vars($this->fileHeader)))
 						{
 							$message->content->realfile = $this->fileHeader->realFile;
 						}
-						else
-						{
-							$message->content->realfile = $this->fileHeader->file;
-						}
-						$message->content->file = $this->fileHeader->file;
+
 						if (array_key_exists('compressed', get_object_vars($this->fileHeader)))
 						{
 							$message->content->compressed = $this->fileHeader->compressed;
@@ -2069,7 +1162,6 @@ abstract class AKAbstractUnarchiver extends AKAbstractPart
 						{
 							$message->content->compressed = 0;
 						}
-						$message->content->uncompressed = $this->fileHeader->uncompressed;
 
 						debugMsg(__CLASS__ . '::_run() - Preparing to extract ' . $message->content->realfile);
 
@@ -2126,7 +1218,8 @@ abstract class AKAbstractUnarchiver extends AKAbstractPart
 						$this->notify($message);
 					}
 					$this->runState = AK_STATE_NOFILE;
-					continue;
+
+					break;
 			}
 		}
 
@@ -2148,7 +1241,7 @@ abstract class AKAbstractUnarchiver extends AKAbstractPart
 	/**
 	 * Concrete classes must use this method to read the file header
 	 *
-	 * @return bool True if reading the file was successful, false if an error occured or we reached end of archive
+	 * @return bool True if reading the file was successful, false if an error occurred or we reached end of archive
 	 */
 	protected abstract function readFileHeader();
 
@@ -2156,7 +1249,7 @@ abstract class AKAbstractUnarchiver extends AKAbstractPart
 	 * Concrete classes must use this method to process file data. It must set $runState to AK_STATE_DATAREAD when
 	 * it's finished processing the file data.
 	 *
-	 * @return bool True if processing the file data was successful, false if an error occured
+	 * @return bool True if processing the file data was successful, false if an error occurred
 	 */
 	protected abstract function processFileData();
 
@@ -2326,16 +1419,129 @@ abstract class AKAbstractUnarchiver extends AKAbstractPart
 
 		return $path;
 	}
+
+	/**
+	 * Am I supposed to skip the extraction of the current file? This depends on
+	 *
+	 * @return bool
+	 */
+	protected function mustSkip()
+	{
+		static $isDryRun = null;
+
+		// List of files (and patterns) to extract
+		static $extractList = null;
+
+		// Internal cache of the last file we checked and whether it must be skipped
+		static $lastFileName = '';
+		static $mustSkip = false;
+
+		// Make sure the dry run flag is, indeed, populated
+		if (is_null($isDryRun))
+		{
+			$isDryRun = AKFactory::get('kickstart.setup.dryrun', '0');
+		}
+
+		// If it's a Kickstart dry run we have to skip the extraction of the file
+		if ($isDryRun)
+		{
+			return true;
+		}
+
+		// Make sure I have a list of files and patterns to extract
+		if (is_null($extractList))
+		{
+			$extractList = $this->getExtractList();
+		}
+
+		// No list of files to extract is given; we must extract everything.
+		if (empty($extractList))
+		{
+			return false;
+		}
+
+		// I am asked about the same file again. Return the cached result.
+		if ($this->fileHeader->file == $lastFileName)
+		{
+			return $mustSkip;
+		}
+
+		// Does the current file match the extract patterns or not?
+		$lastFileName = $this->fileHeader->file;
+		$lastFileName = (strpos($lastFileName, $this->addPath) === 0) ? substr($lastFileName, strlen(rtrim($this->addPath, "\\/")) + 1) : $lastFileName;
+		$mustSkip     = !$this->matchesGlobPatterns($lastFileName, $extractList);
+
+		return $mustSkip;
+	}
+
+	/**
+	 * Get the list of files / folders to extract. The list can contain filenames or glob patterns.
+	 *
+	 * @return  array
+	 */
+	private function getExtractList()
+	{
+		$rawList = AKFactory::get('kickstart.setup.extract_list', '');
+
+		// Sometimes I could get an array, e.g. from CLI
+		if (is_array($rawList))
+		{
+			$rawList = implode("\n", $rawList);
+		}
+
+		// Remove any whitespace
+		$rawList = trim($rawList);
+
+		if (empty($rawList))
+		{
+			return array();
+		}
+
+		// Convert commas to newlines so we can support both ways to express lists
+		$rawList = str_replace(",", "\n", $rawList);
+		$rawList = trim($rawList);
+
+		// Convert the list to an array and clean it
+		$list = explode("\n", $rawList);
+		$list = array_map('trim', $list);
+
+		return array_unique($list);
+	}
+
+	/**
+	 * Tests whether the item $item matches the list of shell patterns $list.
+	 *
+	 * @param   string  $item  The file name to test
+	 * @param   array   $list  The list of glob patterns to match
+	 *
+	 * @return  bool
+	 */
+	private function matchesGlobPatterns($item, array $list)
+	{
+		if (empty($list))
+		{
+			return true;
+		}
+
+		foreach ($list as $pattern)
+		{
+			if (fnmatch($pattern, $item))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 }
 
 /**
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -2351,6 +1557,8 @@ abstract class AKAbstractPostproc extends AKAbstractObject
 	protected $perms = 0755;
 	/** @var string The temporary file path we gave to the unarchiver engine */
 	protected $tempFilename = null;
+	/** @var string The temporary directory where the data will be stored */
+	protected $tempDir = '';
 
 	/**
 	 * Processes the current file, e.g. moves it from temp to final location by FTP
@@ -2383,6 +1591,16 @@ abstract class AKAbstractPostproc extends AKAbstractObject
 	abstract public function rmdir($directory);
 
 	abstract public function rename($from, $to);
+
+	/**
+	 * Returns the configured temporary directory
+	 *
+	 * @return string
+	 */
+	public function getTempDir()
+	{
+		return $this->tempDir;
+	}
 }
 
 
@@ -2390,10 +1608,9 @@ abstract class AKAbstractPostproc extends AKAbstractObject
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -2412,10 +1629,9 @@ abstract class AKAbstractPartObserver
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -2463,6 +1679,7 @@ class AKPostprocDirect extends AKAbstractPostproc
 		{
 			return true;
 		}
+
 		if (@mkdir($dirName, 0755, true))
 		{
 			@chmod($dirName, 0755);
@@ -2547,10 +1764,9 @@ class AKPostprocDirect extends AKAbstractPostproc
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -2574,8 +1790,6 @@ class AKPostprocFTP extends AKAbstractPostproc
 	public $dir = '';
 	/** @var resource The FTP handle */
 	private $handle = null;
-	/** @var string The temporary directory where the data will be stored */
-	private $tempDir = '';
 
 	public function __construct()
 	{
@@ -3124,10 +2338,9 @@ class AKPostprocFTP extends AKAbstractPostproc
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -3158,9 +2371,6 @@ class AKPostprocSFTP extends AKAbstractPostproc
 
 	/** @var string Current remote directory, including the remote directory string */
 	private $_currentdir;
-
-	/** @var string The temporary directory where the data will be stored */
-	private $tempDir = '';
 
 	public function __construct()
 	{
@@ -3772,10 +2982,9 @@ class AKPostprocSFTP extends AKAbstractPostproc
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -3810,9 +3019,6 @@ class AKPostprocHybrid extends AKAbstractPostproc
 
 	/** @var resource The FTP handle */
 	private $handle = null;
-
-	/** @var string The temporary directory where the data will be stored */
-	private $tempDir = '';
 
 	/** @var null The FTP connection handle */
 	private $_handle = null;
@@ -4160,7 +3366,7 @@ class AKPostprocHybrid extends AKAbstractPostproc
 		// Turn off error reporting
 		if (!defined('KSDEBUG'))
 		{
-			$oldErrorReporting = @error_reporting(E_NONE);
+			$oldErrorReporting = error_reporting(0);
 		}
 
 		// Get UNIX style paths
@@ -4537,10 +3743,9 @@ class AKPostprocHybrid extends AKAbstractPostproc
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -4636,7 +3841,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 	/**
 	 * Concrete classes must use this method to read the file header
 	 *
-	 * @return bool True if reading the file was successful, false if an error occured or we reached end of archive
+	 * @return bool True if reading the file was successful, false if an error occurred or we reached end of archive
 	 */
 	protected function readFileHeader()
 	{
@@ -4883,41 +4088,46 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 
 		// Get the translated path name
 		$restorePerms = AKFactory::get('kickstart.setup.restoreperms', false);
-		if ($this->fileHeader->type == 'file')
+
+		if (!$this->mustSkip())
 		{
-			// Regular file; ask the postproc engine to process its filename
-			if ($restorePerms)
+			if ($this->fileHeader->type == 'file')
 			{
-				$this->fileHeader->realFile =
-					$this->postProcEngine->processFilename($this->fileHeader->file, $this->fileHeader->permissions);
+				// Regular file; ask the postproc engine to process its filename
+				if ($restorePerms)
+				{
+					$this->fileHeader->realFile =
+						$this->postProcEngine->processFilename($this->fileHeader->file, $this->fileHeader->permissions);
+				}
+				else
+				{
+					$this->fileHeader->realFile = $this->postProcEngine->processFilename($this->fileHeader->file);
+				}
+			}
+			elseif ($this->fileHeader->type == 'dir')
+			{
+				$dir = $this->fileHeader->file;
+
+				// Directory; just create it
+				if ($restorePerms)
+				{
+					$this->postProcEngine->createDirRecursive($dir, $this->fileHeader->permissions);
+				}
+				else
+				{
+					$this->postProcEngine->createDirRecursive($dir, 0755);
+				}
+
+				$this->postProcEngine->processFilename(null);
 			}
 			else
 			{
-				$this->fileHeader->realFile = $this->postProcEngine->processFilename($this->fileHeader->file);
+				// Symlink; do not post-process
+				$this->postProcEngine->processFilename(null);
 			}
-		}
-		elseif ($this->fileHeader->type == 'dir')
-		{
-			$dir = $this->fileHeader->file;
 
-			// Directory; just create it
-			if ($restorePerms)
-			{
-				$this->postProcEngine->createDirRecursive($this->fileHeader->file, $this->fileHeader->permissions);
-			}
-			else
-			{
-				$this->postProcEngine->createDirRecursive($this->fileHeader->file, 0755);
-			}
-			$this->postProcEngine->processFilename(null);
+			$this->createDirectory();
 		}
-		else
-		{
-			// Symlink; do not post-process
-			$this->postProcEngine->processFilename(null);
-		}
-
-		$this->createDirectory();
 
 		// Header is read
 		$this->runState = AK_STATE_HEADER;
@@ -4975,7 +4185,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 	 */
 	protected function createDirectory()
 	{
-		if (AKFactory::get('kickstart.setup.dryrun', '0'))
+		if ($this->mustSkip())
 		{
 			return true;
 		}
@@ -5007,7 +4217,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 	 * Concrete classes must use this method to process file data. It must set $runState to AK_STATE_DATAREAD when
 	 * it's finished processing the file data.
 	 *
-	 * @return bool True if processing the file data was successful, false if an error occured
+	 * @return bool True if processing the file data was successful, false if an error occurred
 	 */
 	protected function processFileData()
 	{
@@ -5096,7 +4306,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 
 		$filename = isset($this->fileHeader->realFile) ? $this->fileHeader->realFile : $this->fileHeader->file;
 
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			// Try to remove an existing file or directory by the same name
 			if (file_exists($filename))
@@ -5122,14 +4332,14 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 	private function processTypeFileUncompressed()
 	{
 		// Uncompressed files are being processed in small chunks, to avoid timeouts
-		if (($this->dataReadLength == 0) && !AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (($this->dataReadLength == 0) && !$this->mustSkip())
 		{
 			// Before processing file data, ensure permissions are adequate
 			$this->setCorrectPermissions($this->fileHeader->file);
 		}
 
 		// Open the output file
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			$ignore =
 				AKFactory::get('kickstart.setup.ignoreerrors', false) || $this->isIgnoredDirectory($this->fileHeader->file);
@@ -5146,7 +4356,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 			// Can we write to the file?
 			if (($outfp === false) && (!$ignore))
 			{
-				// An error occured
+				// An error occurred
 				debugMsg('Could not write to output file');
 				$this->setError(AKText::sprintf('COULDNT_WRITE_FILE', $this->fileHeader->realFile));
 
@@ -5158,7 +4368,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 		if ($this->fileHeader->compressed == 0)
 		{
 			// No file data!
-			if (!AKFactory::get('kickstart.setup.dryrun', '0') && is_resource($outfp))
+			if (!$this->mustSkip() && is_resource($outfp))
 			{
 				@fclose($outfp);
 			}
@@ -5201,7 +4411,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 				}
 			}
 
-			if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+			if (!$this->mustSkip())
 			{
 				if (is_resource($outfp))
 				{
@@ -5211,7 +4421,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 		}
 
 		// Close the file pointer
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			if (is_resource($outfp))
 			{
@@ -5236,7 +4446,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 
 	private function processTypeFileCompressedSimple()
 	{
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			// Before processing file data, ensure permissions are adequate
 			$this->setCorrectPermissions($this->fileHeader->file);
@@ -5250,7 +4460,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 
 			if (($outfp === false) && (!$ignore))
 			{
-				// An error occured
+				// An error occurred
 				debugMsg('Could not write to output file');
 				$this->setError(AKText::sprintf('COULDNT_WRITE_FILE', $this->fileHeader->realFile));
 
@@ -5262,7 +4472,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 		if ($this->fileHeader->compressed == 0)
 		{
 			// No file data!
-			if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+			if (!$this->mustSkip())
 			{
 				if (is_resource($outfp))
 				{
@@ -5306,7 +4516,7 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
 		unset($zipData);
 
 		// Write to the file.
-		if (!AKFactory::get('kickstart.setup.dryrun', '0') && is_resource($outfp))
+		if (!$this->mustSkip() && is_resource($outfp))
 		{
 			@fwrite($outfp, $unzipData, $this->fileHeader->uncompressed);
 			@fclose($outfp);
@@ -5323,10 +4533,9 @@ class AKUnarchiverJPA extends AKAbstractUnarchiver
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -5398,7 +4607,7 @@ class AKUnarchiverZIP extends AKUnarchiverJPA
 	/**
 	 * Concrete classes must use this method to read the file header
 	 *
-	 * @return bool True if reading the file was successful, false if an error occured or we reached end of archive
+	 * @return bool True if reading the file was successful, false if an error occurred or we reached end of archive
 	 */
 	protected function readFileHeader()
 	{
@@ -5615,27 +4824,30 @@ class AKUnarchiverZIP extends AKUnarchiverJPA
 		}
 
 		// Get the translated path name
-		if ($this->fileHeader->type == 'file')
+		if (!$this->mustSkip())
 		{
-			$this->fileHeader->realFile = $this->postProcEngine->processFilename($this->fileHeader->file);
-		}
-		elseif ($this->fileHeader->type == 'dir')
-		{
-			$this->fileHeader->timestamp = 0;
+			if ($this->fileHeader->type == 'file')
+			{
+				$this->fileHeader->realFile = $this->postProcEngine->processFilename($this->fileHeader->file);
+			}
+			elseif ($this->fileHeader->type == 'dir')
+			{
+				$this->fileHeader->timestamp = 0;
 
-			$dir = $this->fileHeader->file;
+				$dir = $this->fileHeader->file;
 
-			$this->postProcEngine->createDirRecursive($this->fileHeader->file, 0755);
-			$this->postProcEngine->processFilename(null);
-		}
-		else
-		{
-			// Symlink; do not post-process
-			$this->fileHeader->timestamp = 0;
-			$this->postProcEngine->processFilename(null);
-		}
+				$this->postProcEngine->createDirRecursive($dir, 0755);
+				$this->postProcEngine->processFilename(null);
+			}
+			else
+			{
+				// Symlink; do not post-process
+				$this->fileHeader->timestamp = 0;
+				$this->postProcEngine->processFilename(null);
+			}
 
-		$this->createDirectory();
+			$this->createDirectory();
+		}
 
 		// Header is read
 		$this->runState = AK_STATE_HEADER;
@@ -5649,10 +4861,9 @@ class AKUnarchiverZIP extends AKUnarchiverJPA
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -5660,9 +4871,54 @@ class AKUnarchiverZIP extends AKUnarchiverJPA
  */
 class AKUnarchiverJPS extends AKUnarchiverJPA
 {
+	/**
+	 * Header data for the archive
+	 *
+	 * @var   array
+	 */
 	protected $archiveHeaderData = array();
 
+	/**
+	 * Plaintext password from which the encryption key will be derived with PBKDF2
+	 *
+	 * @var   string
+	 */
 	protected $password = '';
+
+	/**
+	 * Which hash algorithm should I use for key derivation with PBKDF2.
+	 *
+	 * @var   string
+	 */
+	private $pbkdf2Algorithm = 'sha1';
+
+	/**
+	 * How many iterations should I use for key derivation with PBKDF2
+	 *
+	 * @var   int
+	 */
+	private $pbkdf2Iterations = 1000;
+
+	/**
+	 * Should I use a static salt for key derivation with PBKDF2?
+	 *
+	 * @var   bool
+	 */
+	private $pbkdf2UseStaticSalt = 0;
+
+	/**
+	 * Static salt for key derivation with PBKDF2
+	 *
+	 * @var   string
+	 */
+	private $pbkdf2StaticSalt = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
+
+	/**
+	 * How much compressed data I have read since the last file header read
+	 *
+	 * @var   int
+	 */
+	private $compressedSizeReadSinceLastFileHeader = 0;
 
 	public function __construct()
 	{
@@ -5670,6 +4926,18 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 
 		$this->password = AKFactory::get('kickstart.jps.password', '');
 	}
+
+	public function __wakeup()
+	{
+		parent::__wakeup();
+
+		// Make sure the decryption is all set up (required!)
+		AKEncryptionAES::setPbkdf2Algorithm($this->pbkdf2Algorithm);
+		AKEncryptionAES::setPbkdf2Iterations($this->pbkdf2Iterations);
+		AKEncryptionAES::setPbkdf2UseStaticSalt($this->pbkdf2UseStaticSalt);
+		AKEncryptionAES::setPbkdf2StaticSalt($this->pbkdf2StaticSalt);
+	}
+
 
 	protected function readArchiveHeader()
 	{
@@ -5700,15 +4968,24 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		$bin_data    = fread($this->fp, 5);
 		$header_data = unpack('Cmajor/Cminor/cspanned/vextra', $bin_data);
 
-		// Load any remaining header data (forward compatibility)
+		// Is this a v2 archive?
+		$versionHumanReadable = $header_data['major'] . '.' . $header_data['minor'];
+		$isV2Archive = version_compare($versionHumanReadable, '2.0', 'ge');
+
+		// Load any remaining header data
 		$rest_length = $header_data['extra'];
-		if ($rest_length > 0)
+
+		if ($isV2Archive && $rest_length)
+		{
+			// V2 archives only have one kind of extra header
+			if (!$this->readKeyExpansionExtraHeader())
+			{
+				return false;
+			}
+		}
+		elseif ($rest_length > 0)
 		{
 			$junk = fread($this->fp, $rest_length);
-		}
-		else
-		{
-			$junk = '';
 		}
 
 		// Temporary array with all the data we read
@@ -5734,7 +5011,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 	/**
 	 * Concrete classes must use this method to read the file header
 	 *
-	 * @return bool True if reading the file was successful, false if an error occured or we reached end of archive
+	 * @return bool True if reading the file was successful, false if an error occurred or we reached end of archive
 	 */
 	protected function readFileHeader()
 	{
@@ -5791,17 +5068,27 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 				return false;
 			}
 		}
-		// This a JPA Entity Block. Process the header.
+
+		// This a JPS Entity Block. Process the header.
 
 		$isBannedFile = false;
+
+		// Make sure the decryption is all set up
+		AKEncryptionAES::setPbkdf2Algorithm($this->pbkdf2Algorithm);
+		AKEncryptionAES::setPbkdf2Iterations($this->pbkdf2Iterations);
+		AKEncryptionAES::setPbkdf2UseStaticSalt($this->pbkdf2UseStaticSalt);
+		AKEncryptionAES::setPbkdf2StaticSalt($this->pbkdf2StaticSalt);
 
 		// Read and decrypt the header
 		$edbhData = fread($this->fp, 4);
 		$edbh     = unpack('vencsize/vdecsize', $edbhData);
 		$bin_data = fread($this->fp, $edbh['encsize']);
 
+		// Add the header length to the data read
+		$this->compressedSizeReadSinceLastFileHeader += $edbh['encsize'] + 4;
+
 		// Decrypt and truncate
-		$bin_data = AKEncryptionAES::AESDecryptCBC($bin_data, $this->password, 128);
+		$bin_data = AKEncryptionAES::AESDecryptCBC($bin_data, $this->password);
 		$bin_data = substr($bin_data, 0, $edbh['decsize']);
 
 		// Read length of EDB and of the Entity Path Data
@@ -5905,11 +5192,14 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 					// Skip forward by the amount of compressed data
 					$miniHead = unpack('Vencsize/Vdecsize', $binMiniHead);
 					@fseek($this->fp, $miniHead['encsize'], SEEK_CUR);
+					$this->compressedSizeReadSinceLastFileHeader += 8 + $miniHead['encsize'];
 				}
 			}
 
-			$this->currentPartOffset = @ftell($this->fp);
-			$this->runState          = AK_STATE_DONE;
+			$this->currentPartOffset                     = @ftell($this->fp);
+			$this->runState                              = AK_STATE_DONE;
+			$this->fileHeader->compressed                = $this->compressedSizeReadSinceLastFileHeader;
+			$this->compressedSizeReadSinceLastFileHeader = 0;
 
 			return true;
 		}
@@ -5925,42 +5215,51 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 
 		// Get the translated path name
 		$restorePerms = AKFactory::get('kickstart.setup.restoreperms', false);
-		if ($this->fileHeader->type == 'file')
+
+		if (!$this->mustSkip())
 		{
-			// Regular file; ask the postproc engine to process its filename
-			if ($restorePerms)
+			if ($this->fileHeader->type == 'file')
 			{
-				$this->fileHeader->realFile =
-					$this->postProcEngine->processFilename($this->fileHeader->file, $this->fileHeader->permissions);
+				// Regular file; ask the postproc engine to process its filename
+				if ($restorePerms)
+				{
+					$this->fileHeader->realFile =
+						$this->postProcEngine->processFilename($this->fileHeader->file, $this->fileHeader->permissions);
+				}
+				else
+				{
+					$this->fileHeader->realFile = $this->postProcEngine->processFilename($this->fileHeader->file);
+				}
+			}
+			elseif ($this->fileHeader->type == 'dir')
+			{
+				$dir                        = $this->fileHeader->file;
+				$this->fileHeader->realFile = $dir;
+
+				// Directory; just create it
+				if ($restorePerms)
+				{
+					$this->postProcEngine->createDirRecursive($this->fileHeader->file, $this->fileHeader->permissions);
+				}
+				else
+				{
+					$this->postProcEngine->createDirRecursive($this->fileHeader->file, 0755);
+				}
+
+				$this->postProcEngine->processFilename(null);
 			}
 			else
 			{
-				$this->fileHeader->realFile = $this->postProcEngine->processFilename($this->fileHeader->file);
+				// Symlink; do not post-process
+				$this->postProcEngine->processFilename(null);
 			}
-		}
-		elseif ($this->fileHeader->type == 'dir')
-		{
-			$dir                        = $this->fileHeader->file;
-			$this->fileHeader->realFile = $dir;
 
-			// Directory; just create it
-			if ($restorePerms)
-			{
-				$this->postProcEngine->createDirRecursive($this->fileHeader->file, $this->fileHeader->permissions);
-			}
-			else
-			{
-				$this->postProcEngine->createDirRecursive($this->fileHeader->file, 0755);
-			}
-			$this->postProcEngine->processFilename(null);
-		}
-		else
-		{
-			// Symlink; do not post-process
-			$this->postProcEngine->processFilename(null);
+			$this->createDirectory();
 		}
 
-		$this->createDirectory();
+
+		$this->fileHeader->compressed                = $this->compressedSizeReadSinceLastFileHeader;
+		$this->compressedSizeReadSinceLastFileHeader = 0;
 
 		// Header is read
 		$this->runState = AK_STATE_HEADER;
@@ -5975,7 +5274,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 	 */
 	protected function createDirectory()
 	{
-		if (AKFactory::get('kickstart.setup.dryrun', '0'))
+		if ($this->mustSkip())
 		{
 			return true;
 		}
@@ -5983,25 +5282,24 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		// Do we need to create a directory?
 		$lastSlash = strrpos($this->fileHeader->realFile, '/');
 		$dirName   = substr($this->fileHeader->realFile, 0, $lastSlash);
-		$perms     = $this->flagRestorePermissions ? $retArray['permissions'] : 0755;
+		$perms     = 0755;
 		$ignore    = AKFactory::get('kickstart.setup.ignoreerrors', false) || $this->isIgnoredDirectory($dirName);
+
 		if (($this->postProcEngine->createDirRecursive($dirName, $perms) == false) && (!$ignore))
 		{
 			$this->setError(AKText::sprintf('COULDNT_CREATE_DIR', $dirName));
 
 			return false;
 		}
-		else
-		{
-			return true;
-		}
+
+		return true;
 	}
 
 	/**
 	 * Concrete classes must use this method to process file data. It must set $runState to AK_STATE_DATAREAD when
 	 * it's finished processing the file data.
 	 *
-	 * @return bool True if processing the file data was successful, false if an error occured
+	 * @return bool True if processing the file data was successful, false if an error occurred
 	 */
 	protected function processFileData()
 	{
@@ -6065,6 +5363,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		// Read the mini header
 		$binMiniHeader   = fread($this->fp, 8);
 		$reallyReadBytes = akstringlen($binMiniHeader);
+
 		if ($reallyReadBytes < 8)
 		{
 			// We read less than requested! Why? Did we hit local EOF?
@@ -6097,6 +5396,8 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		$toReadBytes     = $miniHeader['encsize'];
 		$data            = $this->fread($this->fp, $toReadBytes);
 		$reallyReadBytes = akstringlen($data);
+		$this->compressedSizeReadSinceLastFileHeader += 8 + $miniHeader['encsize'];
+
 		if ($reallyReadBytes < $toReadBytes)
 		{
 			// We read less than requested! Why? Did we hit local EOF?
@@ -6126,7 +5427,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		}
 
 		// Decrypt the data
-		$data = AKEncryptionAES::AESDecryptCBC($data, $this->password, 128);
+		$data = AKEncryptionAES::AESDecryptCBC($data, $this->password);
 
 		// Is the length of the decrypted data less than expected?
 		$data_length = akstringlen($data);
@@ -6140,7 +5441,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		// Trim the data
 		$data = substr($data, 0, $miniHeader['decsize']);
 
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			// Try to remove an existing file or directory by the same name
 			if (file_exists($this->fileHeader->file))
@@ -6165,14 +5466,14 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 	private function processTypeFileUncompressed()
 	{
 		// Uncompressed files are being processed in small chunks, to avoid timeouts
-		if (($this->dataReadLength == 0) && !AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (($this->dataReadLength == 0) && !$this->mustSkip())
 		{
 			// Before processing file data, ensure permissions are adequate
 			$this->setCorrectPermissions($this->fileHeader->file);
 		}
 
 		// Open the output file
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			$ignore =
 				AKFactory::get('kickstart.setup.ignoreerrors', false) || $this->isIgnoredDirectory($this->fileHeader->file);
@@ -6188,7 +5489,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 			// Can we write to the file?
 			if (($outfp === false) && (!$ignore))
 			{
-				// An error occured
+				// An error occurred
 				$this->setError(AKText::sprintf('COULDNT_WRITE_FILE', $this->fileHeader->realFile));
 
 				return false;
@@ -6199,7 +5500,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		if ($this->fileHeader->uncompressed == 0)
 		{
 			// No file data!
-			if (!AKFactory::get('kickstart.setup.dryrun', '0') && is_resource($outfp))
+			if (!$this->mustSkip() && is_resource($outfp))
 			{
 				@fclose($outfp);
 			}
@@ -6207,14 +5508,10 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 
 			return true;
 		}
-		else
-		{
-			$this->setError('An uncompressed file was detected; this is not supported by this archive extraction utility');
 
-			return false;
-		}
+		$this->setError('An uncompressed file was detected; this is not supported by this archive extraction utility');
 
-		return true;
+		return false;
 	}
 
 	private function processTypeFileCompressedSimple()
@@ -6222,14 +5519,14 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		$timer = AKFactory::getTimer();
 
 		// Files are being processed in small chunks, to avoid timeouts
-		if (($this->dataReadLength == 0) && !AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (($this->dataReadLength == 0) && !$this->mustSkip())
 		{
 			// Before processing file data, ensure permissions are adequate
 			$this->setCorrectPermissions($this->fileHeader->file);
 		}
 
 		// Open the output file
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			// Open the output file
 			$outfp = @fopen($this->fileHeader->realFile, 'wb');
@@ -6239,7 +5536,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 				AKFactory::get('kickstart.setup.ignoreerrors', false) || $this->isIgnoredDirectory($this->fileHeader->file);
 			if (($outfp === false) && (!$ignore))
 			{
-				// An error occured
+				// An error occurred
 				$this->setError(AKText::sprintf('COULDNT_WRITE_FILE', $this->fileHeader->realFile));
 
 				return false;
@@ -6250,7 +5547,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		if ($this->fileHeader->uncompressed == 0)
 		{
 			// No file data!
-			if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+			if (!$this->mustSkip())
 			{
 				if (is_resource($outfp))
 				{
@@ -6302,6 +5599,9 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 			$toReadBytes     = $miniHeader['encsize'];
 			$data            = $this->fread($this->fp, $toReadBytes);
 			$reallyReadBytes = akstringlen($data);
+
+			$this->compressedSizeReadSinceLastFileHeader += $miniHeader['encsize'] + 8;
+
 			if ($reallyReadBytes < $toReadBytes)
 			{
 				// We read less than requested! Why? Did we hit local EOF?
@@ -6338,7 +5638,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 			}
 
 			// Decrypt the data
-			$data = AKEncryptionAES::AESDecryptCBC($data, $this->password, 128);
+			$data = AKEncryptionAES::AESDecryptCBC($data, $this->password);
 
 			// Is the length of the decrypted data less than expected?
 			$data_length = akstringlen($data);
@@ -6357,7 +5657,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 			$unc_len = akstringlen($data);
 
 			// Write the decrypted data
-			if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+			if (!$this->mustSkip())
 			{
 				if (is_resource($outfp))
 				{
@@ -6371,7 +5671,7 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 		}
 
 		// Close the file pointer
-		if (!AKFactory::get('kickstart.setup.dryrun', '0'))
+		if (!$this->mustSkip())
 		{
 			if (is_resource($outfp))
 			{
@@ -6393,16 +5693,68 @@ class AKUnarchiverJPS extends AKUnarchiverJPA
 
 		return true;
 	}
+
+	private function readKeyExpansionExtraHeader()
+	{
+		$signature = fread($this->fp, 4);
+
+		if ($signature != "JH\x00\x01")
+		{
+			// Not a valid JPS file
+			$this->setError(AKText::_('ERR_NOT_A_JPS_FILE'));
+
+			return false;
+		}
+
+		$bin_data    = fread($this->fp, 8);
+		$header_data = unpack('vlength/Calgo/Viterations/CuseStaticSalt', $bin_data);
+
+		if ($header_data['length'] != 76)
+		{
+			// Not a valid JPS file
+			$this->setError(AKText::_('ERR_NOT_A_JPS_FILE'));
+
+			return false;
+		}
+
+		switch ($header_data['algo'])
+		{
+			case 0:
+				$algorithm = 'sha1';
+				break;
+
+			case 1:
+				$algorithm = 'sha256';
+				break;
+
+			case 2:
+				$algorithm = 'sha512';
+				break;
+
+			default:
+				// Not a valid JPS file
+				$this->setError(AKText::_('ERR_NOT_A_JPS_FILE'));
+
+				return false;
+				break;
+		}
+
+		$this->pbkdf2Algorithm     = $algorithm;
+		$this->pbkdf2Iterations    = $header_data['iterations'];
+		$this->pbkdf2UseStaticSalt = $header_data['useStaticSalt'];
+		$this->pbkdf2StaticSalt    = fread($this->fp, 64);
+
+		return true;
+	}
 }
 
 /**
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -6419,7 +5771,7 @@ class AKCoreTimer extends AKAbstractObject
 	/**
 	 * Public constructor, creates the timer object and calculates the execution time limits
 	 *
-	 * @return AECoreTimer
+	 * @return  void
 	 */
 	public function __construct()
 	{
@@ -6545,11 +5897,13 @@ class AKCoreTimer extends AKAbstractObject
 
 		// Get current running time
 		$elapsed_time = $this->getRunningTime() * 1000;
+		$minexectime = 1000.0 * $minexectime;
 
 		// Only run a sleep delay if we haven't reached the minexectime execution time
 		if (($minexectime > $elapsed_time) && ($elapsed_time > 0))
 		{
 			$sleep_msec = $minexectime - $elapsed_time;
+
 			if (function_exists('usleep'))
 			{
 				usleep(1000 * $sleep_msec);
@@ -6571,10 +5925,6 @@ class AKCoreTimer extends AKAbstractObject
 				sleep($sleep_sec);
 			}
 		}
-		elseif ($elapsed_time > 0)
-		{
-			// No sleep required, even if user configured us to be able to do so.
-		}
 	}
 
 	/**
@@ -6584,16 +5934,23 @@ class AKCoreTimer extends AKAbstractObject
 	{
 		$this->start_time = $this->microtime_float();
 	}
+
+	/**
+	 * @param int $max_exec_time
+	 */
+	public function setMaxExecTime($max_exec_time)
+	{
+		$this->max_exec_time = $max_exec_time;
+	}
 }
 
 /**
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
@@ -6696,10 +6053,807 @@ class AKUtilsLister extends AKAbstractObject
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
+ */
+
+/**
+ * A filesystem zapper - removes all files and folders under a root
+ */
+class AKUtilsZapper extends AKAbstractPart
+{
+	/** @var array Directories left to be deleted */
+	private $directory_list;
+
+	/** @var array Files left to be deleted */
+	private $file_list;
+
+	/**
+	 * Have we finished scanning all subdirectories of the current directory?
+	 *
+	 * @var   boolean
+	 */
+	private $done_subdir_scanning = false;
+
+	/**
+	 * Have we finished scanning all files of the current directory?
+	 *
+	 * @var   boolean
+	 */
+	private $done_file_scanning = true;
+
+	/**
+	 * Is the current directory completely excluded?
+	 *
+	 * @var boolean
+	 */
+	private $excluded_folder = false;
+
+	/** @var   integer  How many files have been processed in the current step */
+	private $processed_files_counter;
+
+	/** @var   string  Current directory being scanned */
+	private $current_directory;
+
+	/** @var   string  Current root directory being processed */
+	private $root = '';
+
+	/** @var   integer  Total files to process */
+	private $total_files = 0;
+
+	/** @var   integer  Total files already processed */
+	private $done_files = 0;
+
+	/** @var   integer  Total folders to process */
+	private $total_folders = 0;
+
+	/** @var   integer  Total folders already processed */
+	private $done_folders = 0;
+
+	/** @var array Absolute filesystem patterns to never delete (e.g. /var/www/html/*.jpa) */
+	private $excluded = array();
+
+	/** @var bool Are we in a dry-run? */
+	private $dryRun = false;
+
+	/**
+	 * Implements the _prepare() abstract method
+	 *
+	 * Configuration parameters:
+	 *
+	 * root      The root under which we are going to be deleting files
+	 * excluded  Absolute filesystem patterns to never delete (e.g. /var/www/html/*.jpa)
+	 *
+	 * @return  void
+	 */
+	protected function _prepare()
+	{
+		debugMsg(__CLASS__ . " :: Starting _prepare()");
+
+		$defaultExcluded = $this->getDefaultExclusions();
+
+		$parameters = array_merge(array(
+			'root'     => rtrim(AKFactory::get('kickstart.setup.destdir'), '/' . DIRECTORY_SEPARATOR),
+			'excluded' => $defaultExcluded,
+            'dryRun'   => AKFactory::get('kickstart.setup.dryrun', false)
+		), $this->_parametersArray);
+
+		$this->root                 = $parameters['root'];
+		$this->excluded             = $parameters['excluded'];
+		$this->directory_list[]     = $this->root;
+		$this->done_subdir_scanning = true;
+		$this->done_file_scanning   = true;
+		$this->total_files          = 0;
+		$this->done_files           = 0;
+		$this->total_folders        = 0;
+		$this->done_folders         = 0;
+		$this->dryRun               = $parameters['dryRun'];
+
+		if (empty($this->root))
+		{
+			$error = "The folder to delete was not specified.";
+
+			debugMsg(__CLASS__ . " :: " . $error);
+			$this->setError($error);
+
+			return;
+		}
+
+		if (!is_dir($this->root))
+		{
+			$error = sprintf("Folder %s does not exist", $this->root);
+
+			debugMsg(__CLASS__ . " :: " . $error);
+			$this->setError($error);
+
+			return;
+		}
+
+		$this->setState('prepared');
+
+		debugMsg(__CLASS__ . " :: prepared");
+	}
+
+	protected function _run()
+	{
+		if ($this->getState() == 'postrun')
+		{
+			debugMsg(__CLASS__ . " :: Already finished");
+			$this->setStep("-");
+			$this->setSubstep("");
+
+			return true;
+		}
+
+		// If I'm done scanning files and subdirectories and there are no more files to pack get the next
+		// directory. This block is triggered in the first step in a new root.
+		if (empty($this->file_list) && $this->done_subdir_scanning && $this->done_file_scanning)
+		{
+			$this->progressMarkFolderDone();
+
+			if (!$this->getNextDirectory())
+			{
+			    $this->setState('postrun');
+				return true;
+			}
+		}
+
+		// If I'm not done scanning for files and the file list is empty then scan for more files
+		if (!$this->done_file_scanning && empty($this->file_list))
+		{
+			$this->scanFiles();
+		}
+		// If I have files left, delete them
+		elseif (!empty($this->file_list))
+		{
+			$this->delete_files();
+		}
+		// If I'm not done scanning subdirectories, go ahead and scan some more of them
+		elseif (!$this->done_subdir_scanning)
+		{
+			$this->scanSubdirs();
+		}
+
+		// Do I have an error?
+		if ($this->getError())
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Implements the _finalize() abstract method
+	 *
+	 */
+	protected function _finalize()
+	{
+		// No finalization is required
+		$this->setState('finished');
+	}
+
+	// ============================================================================================
+	// PRIVATE METHODS
+	// ============================================================================================
+
+	/**
+	 * Gets the next directory to scan from the stack. It also applies folder
+	 * filters (directory exclusion, subdirectory exclusion, file exclusion),
+	 * updating the operation toggle properties of the class.
+	 *
+	 * @return   boolean  True if we found a directory, false if the directory
+	 *                    stack is empty. It also returns true if the folder is
+	 *                    filtered (we are told to skip it)
+	 */
+	private function getNextDirectory()
+	{
+		// Reset the file / folder scanning positions
+		$this->done_file_scanning   = false;
+		$this->done_subdir_scanning = false;
+		$this->excluded_folder      = false;
+
+		if (count($this->directory_list) == 0)
+		{
+			// No directories left to scan
+			return false;
+		}
+
+		// Get and remove the last entry from the $directory_list array
+		$this->current_directory = array_pop($this->directory_list);
+		$this->setStep($this->current_directory);
+		$this->processed_files_counter = 0;
+
+		// Apply directory exclusion filters
+		if ($this->isFiltered($this->current_directory))
+		{
+			debugMsg("Skipping directory " . $this->current_directory);
+			$this->done_subdir_scanning = true;
+			$this->done_file_scanning   = true;
+			$this->excluded_folder      = true;
+
+			return true;
+		}
+
+		return true;
+	}
+
+	/**
+	 * Try to delete some files from the $file_list
+	 *
+	 * @return   boolean   True if there were files deleted , false otherwise
+	 *                     (empty filelist or fatal error)
+	 */
+	protected function delete_files()
+	{
+		// Get a reference to the archiver and the timer classes
+		$timer = AKFactory::getTimer();
+
+		// Normal file removal loop; we keep on processing the file list, removing files as we go.
+		if (count($this->file_list) == 0)
+		{
+			// No files left to pack. Return true and let the engine loop
+			$this->progressMarkFolderDone();
+
+			return true;
+		}
+
+		debugMsg("Deleting files");
+
+		$numberOfFiles = 0;
+		$postProc = AKFactory::getPostProc();
+
+		while ((count($this->file_list) > 0))
+		{
+			$file = @array_shift($this->file_list);
+
+			$numberOfFiles++;
+
+			// Remove the file
+            $this->setSubstep($file);
+            $this->notify((object) array(
+                'type' => 'deleteFile',
+                'file' => $file
+            ));
+
+            if (!$this->dryRun)
+            {
+                $postProc->unlink($file);
+            }
+
+			// Mark a done file
+			$this->progressMarkFileDone();
+
+			if ($this->getError())
+			{
+				return false;
+			}
+
+			// I am running out of time.
+			if ($timer->getTimeLeft() <= 0)
+			{
+				return true;
+			}
+		}
+
+		// True if we have more files, false if we're done packing
+		return (count($this->file_list) > 0);
+	}
+
+	protected function progressAddFile()
+	{
+		$this->total_files++;
+	}
+
+	protected function progressMarkFileDone()
+	{
+		$this->done_files++;
+	}
+
+	protected function progressAddFolder()
+	{
+		$this->total_folders++;
+	}
+
+	protected function progressMarkFolderDone()
+	{
+        debugMsg("Deleting directory " . $this->current_directory);
+
+        $this->setSubstep($this->current_directory);
+        $this->notify((object) array(
+            'type' => 'deleteFolder',
+            'file' => $this->current_directory
+        ));
+
+        if (!$this->dryRun)
+        {
+            /**
+             * The scanner goes from shallow to deep directory. However this means that when it scans
+             * <root>/foo/bar/baz/bat
+             * it will only be able to remove the 'bat' directory, thus leaving foo/bar/baz on the disk. The following
+             * method will check if the directory is a subdirectory of the site root and work its way up the tree until
+             * it finds the site root. Therefore it will end up deleting the parent folders as well.
+             */
+            $this->deleteParentFolders($this->current_directory);
+        }
+	}
+
+	/**
+	 * Returns the site root, the translated site root and the translated current directory
+	 *
+	 * @return array
+	 */
+	protected function getCleanDirectoryComponents()
+	{
+		$root            = $this->root;
+		$translated_root = $root;
+		$dir             = TrimTrailingSlash($this->current_directory);
+
+		if (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN')
+		{
+			$translated_root = TranslateWinPath($translated_root);
+			$dir             = TranslateWinPath($dir);
+		}
+
+		if (substr($dir, 0, strlen($translated_root)) == $translated_root)
+		{
+			$dir = substr($dir, strlen($translated_root));
+		}
+		elseif (in_array(substr($translated_root, -1), array('/', '\\')))
+		{
+			$new_translated_root = rtrim($translated_root, '/\\');
+
+			if (substr($dir, 0, strlen($new_translated_root)) == $new_translated_root)
+			{
+				$dir = substr($dir, strlen($new_translated_root));
+			}
+		}
+
+		if (substr($dir, 0, 1) == '/')
+		{
+			$dir = substr($dir, 1);
+		}
+
+		return array($root, $translated_root, $dir);
+	}
+
+	/**
+	 * Steps the subdirectory scanning of the current directory
+	 *
+	 * @return  boolean  True on success, false on fatal error
+	 */
+	protected function scanSubdirs()
+	{
+		$lister = new AKUtilsLister();
+
+		list($root, $translated_root, $dir) = $this->getCleanDirectoryComponents();
+
+		debugMsg("Scanning directories of " . $this->current_directory);
+
+		// Get subdirectories
+		$subdirectories = $lister->getFolders($this->current_directory);
+
+		// Error propagation
+		$this->propagateFromObject($lister);
+
+		// Error control
+		if ($this->getError())
+		{
+			return false;
+		}
+
+		// Start adding the subdirectories
+		if (!empty($subdirectories) && is_array($subdirectories))
+		{
+			// Treat symlinks to directories as simple symlink files
+			foreach ($subdirectories as $subdirectory)
+			{
+				if (is_link($subdirectory))
+				{
+					// Symlink detected; apply directory filters to it
+					if (empty($dir))
+					{
+						$dirSlash = $dir;
+					}
+					else
+					{
+						$dirSlash = $dir . '/';
+					}
+
+					$check = $dirSlash . basename($subdirectory);
+					debugMsg("Directory symlink detected: $check");
+
+					if (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN')
+					{
+						$check = TranslateWinPath($check);
+					}
+
+					$check = $translated_root . '/' . $check;
+
+					// Check for excluded symlinks
+					if ($this->isFiltered($check))
+					{
+						debugMsg("Skipping directory symlink " . $check);
+
+						continue;
+					}
+
+					debugMsg('Adding folder symlink: ' . $check);
+
+					$this->file_list[] = $subdirectory;
+					$this->progressAddFile();
+				}
+
+				$this->directory_list[] = $subdirectory;
+				$this->progressAddFolder();
+			}
+		}
+
+		$this->done_subdir_scanning = true;
+
+		return true;
+	}
+
+	/**
+	 * Steps the files scanning of the current directory
+	 *
+	 * @return  boolean  True on success, false on fatal error
+	 */
+	protected function scanFiles()
+	{
+		$lister = new AKUtilsLister();
+
+		list($root, $translated_root, $dir) = $this->getCleanDirectoryComponents();
+
+		debugMsg("Scanning files of " . $this->current_directory);
+		$this->processed_files_counter = 0;
+
+		// Get file listing
+		$fileList = $lister->getFiles($this->current_directory);
+
+		// Error propagation
+		$this->propagateFromObject($lister);
+
+		// Error control
+		if ($this->getError())
+		{
+			return false;
+		}
+
+		// Do I have an unreadable directory?
+		if (($fileList === false))
+		{
+			$this->setWarning('Unreadable directory ' . $this->current_directory);
+
+			$this->done_file_scanning = true;
+
+			return true;
+		}
+
+		// Directory was readable, process the file list
+		if (is_array($fileList) && !empty($fileList))
+		{
+			// Add required trailing slash to $dir
+			if (!empty($dir))
+			{
+				$dir .= '/';
+			}
+
+			// Scan all directory entries
+			foreach ($fileList as $fileName)
+			{
+				$check = $dir . basename($fileName);
+
+				if (strtoupper(substr(PHP_OS, 0, 3)) == 'WIN')
+				{
+					$check = TranslateWinPath($check);
+				}
+
+				$check        = $translated_root . '/' . $check;
+				$skipThisFile = $this->isFiltered($check);
+
+				if ($skipThisFile)
+				{
+					debugMsg("Skipping file $fileName");
+
+					continue;
+				}
+
+				$this->file_list[] = $fileName;
+				$this->processed_files_counter++;
+				$this->progressAddFile();
+			}
+		}
+
+		$this->done_file_scanning = true;
+
+		return true;
+	}
+
+	/**
+	 * Is a file or folder filtered (protected from deletion)
+	 *
+	 * @param   string  $fileOrFolder
+	 *
+	 * @return  bool
+	 */
+	private function isFiltered($fileOrFolder)
+	{
+		foreach ($this->excluded as $pattern)
+		{
+			if (fnmatch($pattern, $fileOrFolder))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Get the default exceptions from deletion
+	 *
+	 * @return  array
+	 */
+	private function getDefaultExclusions()
+	{
+		$ret     = array();
+		$destDir = AKFactory::get('kickstart.setup.destdir');
+
+		/**
+		 * Exclude Kickstart / restore.php itself. Otherwise it'd crash!
+		 */
+		$myName = defined('KSSELFNAME') ? KSSELFNAME : basename(__FILE__);
+		$ret[] = KSROOTDIR . '/' . $myName;
+
+		/**
+		 * Cheat: exclude the directory used in development (see source/buildscripts/kickstart_test.php)
+		 *
+		 * This directory contains the non-concatenated source code for Kickstart. We need to keep it protected.
+		 */
+		if (defined('MINIBUILD') && (MINIBUILD != $destDir))
+		{
+			$ret[] = TranslateWinPath(MINIBUILD);
+		}
+
+		/**
+		 * Exclude the backup archive directory if it's not the site's root. This prevents mindlessly deleting all your
+		 * backups before you restore from a previous backup which might not be the one you actually wanted. I will call
+		 * this feature "clumsy-proofing".
+		 */
+		$backupArchive   = AKFactory::get('kickstart.setup.sourcefile');
+		$backupDirectory = AKFactory::get('kickstart.setup.sourcepath');
+		$backupDirectory = empty($backupDirectory) ? dirname($backupArchive) : $backupDirectory;
+
+		if ($backupDirectory != $destDir)
+		{
+			$ret[] = TranslateWinPath($backupDirectory);
+		}
+
+		/**
+		 * Exclude the backup archive files
+		 *
+		 * This obviously only makes sense when the backup archives are stored in the extraction target folder which is
+		 * the most common use of Kickstart. In this case the backups folder is not excluded above.
+		 */
+		$plainBackupName = basename($backupArchive, '.jpa');
+		$plainBackupName = basename($plainBackupName, '.jps');
+		$plainBackupName = basename($plainBackupName, '.zip');
+		$ret[]           = TranslateWinPath($backupDirectory . '/' . $plainBackupName) . '.*';
+
+		/**
+		 * Exclude Kickstart language files. Only applies in Kickstart mode.
+		 */
+		if (defined('KICKSTART'))
+		{
+			$langDir        = defined('KSLANGDIR') ? KSLANGDIR : KSROOTDIR;
+            $iniFilePattern = basename(KSSELFNAME, '.php') . '.*.ini';
+
+			if ($langDir != KSROOTDIR)
+            {
+                $ret[] = KSLANGDIR;
+            }
+
+            $ret[]   = $langDir . '/' . $iniFilePattern;
+            $ret[]   = KSROOTDIR . '/' . $iniFilePattern;
+		}
+
+		/**
+		 * Exclude Kickstart resources (cacert.pem). Only applies in Kickstart mode.
+		 */
+		if (defined('KICKSTART'))
+		{
+			$ret[] = TranslateWinPath(KSROOTDIR . '/cacert.pem');
+		}
+
+		// Exclude the Kickstart temporary directory, if one is used by the post-processing engine
+		$postProc = AKFactory::getPostProc();
+		$tempDir  = $postProc->getTempDir();
+
+		if (!empty($tempDir) && (realpath($tempDir) != realpath($destDir)))
+		{
+			$ret[] = TranslateWinPath($tempDir);
+		}
+
+		/**
+		 * Exclude the configured Skipped Files ('kickstart.setup.skipfiles'). Also exclude the various restoration.php
+		 * files if we are in restore.php mode and the files are present. These are required for the integrated
+		 * restoration to actually work :)
+		 */
+		$skippedFiles = AKFactory::get('kickstart.setup.skipfiles', array(
+			basename(__FILE__), 'kickstart.php', 'abiautomation.ini', 'htaccess.bak', 'php.ini.bak',
+			'cacert.pem',
+		));
+
+		if (!defined('KICKSTART'))
+		{
+			// In restore.php mode we have to exclude the various restoration.php files
+			$skippedFiles = array_merge(array(
+				// Akeeba Backup for Joomla!
+				'administrator/components/com_akeeba/restoration.php',
+				// Joomla! Update
+				'administrator/components/com_joomlaupdate/restoration.php',
+				// Akeeba Backup for WordPress
+				'wp-content/plugins/akeebabackupwp/app/restoration.php',
+				'wp-content/plugins/akeebabackupcorewp/app/restoration.php',
+				'wp-content/plugins/akeebabackup/app/restoration.php',
+				'wp-content/plugins/akeebabackupwpcore/app/restoration.php',
+				// Akeeba Solo
+				'app/restoration.php',
+			), $skippedFiles);
+		}
+
+		foreach ($skippedFiles as $file)
+		{
+			$checkFile = $destDir . '/' . $file;
+
+			if (file_exists($checkFile))
+			{
+				$ret[] = TranslateWinPath($checkFile);
+			}
+		}
+
+		/**
+		 * Exclude .htaccess if the stealth feature is enabled. Otherwise we'd unset the stealth mode.
+		 */
+		if (AKFactory::get('kickstart.stealth.enable'))
+		{
+			$ret[] = $destDir . '/.htaccess';
+		}
+
+		// Remove any duplicate lines
+        $ret = array_unique($ret);
+
+		return $ret;
+	}
+
+    /**
+     * Recursively delete an empty folder and any of its empty parent folders.
+     *
+     * @param   string  $folder  The folder to deletes
+     */
+	private function deleteParentFolders($folder)
+    {
+        // Don't try to delete an empty folder or the filesystem root
+        if (empty($folder) || ($folder == '/'))
+        {
+            return;
+        }
+
+        $folder = TranslateWinPath($folder);
+        $root   = TranslateWinPath($this->root);
+
+        // Don't try to delete the site's root
+        if ($folder === $root)
+        {
+            return;
+        }
+
+        // Delete the leaf folder
+        $postProc = AKFactory::getPostProc();
+        $postProc->rmdir($folder);
+
+        // If the leaf folder is not under the site's root don't delete its parents
+        if (strpos($folder, $root) !== 0)
+        {
+            return;
+        }
+
+        // Get and recursively delete the parent folder
+        $this->deleteParentFolders(dirname($folder));
+    }
+}
+
+/**
+ * Runs the Zapper and returns a status table. The Zapper only runs if the feature is enabled (kickstart.setup.zapbefore
+ * is 1) and there are more Zapper steps to run (its state is not postrun). If any of these conditions is not met we
+ * return boolean false.
+ *
+ * @param   AKAbstractPartObserver  $observer  Optional observer to attack to the Zapper instance
+ *
+ * @return  bool|array  Boolean false or a status array
+ */
+function runZapper(AKAbstractPartObserver $observer = null)
+{
+	// This method should only run in restore.php mode or when we have Kickstart Professional.
+	$isKickstart = defined('KICKSTART');
+	$isPro       = defined('KICKSTARTPRO') ? KICKSTARTPRO : false;
+	$isDebug     = defined('KSDEBUG') ? KSDEBUG : false;
+
+	if ($isKickstart && (!$isPro && !$isDebug))
+	{
+		return false;
+	}
+
+	// Is the feature enabled?
+    $enabled = AKFactory::get('kickstart.setup.zapbefore', 0);
+
+    if (!$enabled)
+    {
+        return false;
+    }
+
+    // Do I still have work to do?
+    $zapper = AKFactory::getZapper();
+
+    if ($zapper->getState() == 'finished')
+    {
+        return false;
+    }
+
+    // Attach the observer
+    if (is_object($observer))
+    {
+        $zapper->attach($observer);
+    }
+
+    // Run a step, create and return a status array
+	$timer = AKFactory::getTimer();
+
+    while ($timer->getTimeLeft() > 0)
+    {
+	    $ret = $zapper->tick();
+
+	    if ($ret['Error'] != '')
+	    {
+	    	break;
+	    }
+    }
+
+    $retArray = array(
+        'status'  => true,
+        'message' => null,
+        'done' => false,
+    );
+
+    if ($ret['Error'] != '')
+    {
+        $retArray['status']  = false;
+        $retArray['done']    = true;
+        $retArray['message'] = $ret['Error'];
+    }
+    else
+    {
+        $retArray['files']    = 0;
+        $retArray['bytesIn']  = 0;
+        $retArray['bytesOut'] = 0;
+        $retArray['factory']  = AKFactory::serialize();
+        $retArray['lastfile'] = 'Deleting: ' . $zapper->getSubstep();
+    }
+
+	$timer->enforce_min_exec_time();
+
+    return $retArray;
+}
+
+/**
+ * Akeeba Restore
+ * A JSON-powered JPA, JPS and ZIP archive extraction library
+ *
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license     GNU GPL v2 or - at your option - any later version
+ * @package     kickstart
  */
 
 /**
@@ -6782,9 +6936,9 @@ class AKText extends AKAbstractObject
 		'BTN_TESTSFTPCON'                 => 'Test SFTP connection',
 		'BTN_GOTOSTART'                   => 'Start over',
 		'FINE_TUNE'                       => 'Fine tune',
-		'BTN_SHOW_FINE_TUNE'              => 'Show advanced options (for experts)',
 		'MIN_EXEC_TIME'                   => 'Minimum execution time:',
 		'MAX_EXEC_TIME'                   => 'Maximum execution time:',
+		'TIME_SETTINGS_HELP'              => "Increase the minimum to 3 if you get AJAX errors. Increase the maximum to 10 for faster extraction, decrease back to 5 if you get AJAX errors. Try minimum 5, maximum 1 (not a typo!) if you keep getting AJAX errors.",
 		'SECONDS_PER_STEP'                => 'seconds per step',
 		'EXTRACT_FILES'                   => 'Extract files',
 		'BTN_START'                       => 'Start',
@@ -6793,11 +6947,12 @@ class AKText extends AKAbstractObject
 		'RESTACLEANUP'                    => 'Restoration and Clean Up',
 		'BTN_RUNINSTALLER'                => 'Run the Installer',
 		'BTN_CLEANUP'                     => 'Clean Up',
-		'BTN_SITEFE'                      => 'Visit your site\'s front-end',
-		'BTN_SITEBE'                      => 'Visit your site\'s back-end',
+		'BTN_SITEFE'                      => 'Visit your site\'s frontend',
+		'BTN_SITEBE'                      => 'Visit your site\'s backend',
 		'WARNINGS'                        => 'Extraction Warnings',
-		'ERROR_OCCURED'                   => 'An error occured',
+		'ERROR_OCCURED'                   => 'An error occurred',
 		'STEALTH_MODE'                    => 'Stealth mode',
+		'STEALTH_MODE_HELP'               => 'When enabled, only visitors from your IP address will be able to see the site until the restoration is complete. Everyone else will be redirected to and only see the URL above. Your server must see the real IP of the visitor (this is controlled by your host, not you or us).',
 		'STEALTH_URL'                     => 'HTML file to show to web visitors',
 		'ERR_NOT_A_JPS_FILE'              => 'The file is not a JPA archive',
 		'ERR_INVALID_JPS_PASSWORD'        => 'The password you gave is wrong or the archive is corrupt',
@@ -6818,7 +6973,14 @@ class AKText extends AKAbstractObject
 		'RELOAD_ARCHIVES'                 => 'Reload',
 		'CONFIG_UI_SFTPBROWSER_TITLE'     => 'SFTP Directory Browser',
 		'ERR_COULD_NOT_OPEN_ARCHIVE_PART' => 'Could not open archive part file %s for reading. Check that the file exists, is readable by the web server and is not in a directory made out of reach by chroot, open_basedir restrictions or any other restriction put in place by your host.',
-		'RENAME_FILES'                    => 'Rename server configuration files'
+		'RENAME_FILES'                    => 'Rename server configuration files',
+		'RENAME_FILES_HELP'               => 'Renames .htaccess, web.config, php.ini and .user.ini contained in the archive while extracting. Files are renamed with a .bak extension. The file names are restored when you click on Clean Up.',
+		'RESTORE_PERMISSIONS'             => 'Restore file permissions',
+		'RESTORE_PERMISSIONS_HELP'        => 'Applies the file permissions (but NOT file ownership) which was stored at backup time. Only works with JPA and JPS archives. Does not work on Windows (PHP does not offer such a feature).',
+		'EXTRACT_LIST'                    => 'Files to extract',
+		'EXTRACT_LIST_HELP'               => 'Enter a file path such as <code>images/cat.png</code> or shell pattern such as <code>images/*.png</code> on each line. Only files matching this list will be written to disk. Leave empty to extract everything (default).',
+		'ZAPBEFORE'                       => 'Delete everything before extraction',
+		'ZAPBEFORE_HELP'                  => 'Tries to delete all existing files and folders under the directory where Kickstart is stored before extracting the backup archive. It DOES NOT take into account which files and folders exist in the backup archive. Files and folders deleted by this feature CAN NOT be recovered. <strong>WARNING! THIS MAY DELETE FILES AND FOLDERS WHICH DO NOT BELONG TO YOUR SITE. USE WITH EXTREME CAUTION. BY ENABLING THIS FEATURE YOU ASSUME ALL RESPONSIBILITY AND LIABILITY.</strong>',
 	);
 
 	/**
@@ -6863,7 +7025,10 @@ class AKText extends AKAbstractObject
 		{
 			$dirname = KSROOTDIR;
 		}
-		$basename = basename(__FILE__, '.php') . '.ini';
+
+		$myName = defined('KSSELFNAME') ? KSSELFNAME : basename(__FILE__);
+		$basename = basename($myName, '.php') . '.ini';
+
 		if (empty($lang))
 		{
 			$lang = $this->language;
@@ -7243,25 +7408,34 @@ class AKText extends AKAbstractObject
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 /**
  * The Akeeba Kickstart Factory class
- * This class is reponssible for instanciating all Akeeba Kicsktart classes
+ *
+ * This class is reponssible for instantiating all Akeeba Kickstart classes
  */
 class AKFactory
 {
-	/** @var array A list of instanciated objects */
+	/** @var   array  A list of instantiated objects */
 	private $objectlist = array();
 
-	/** @var array Simple hash data storage */
+	/** @var   array  Simple hash data storage */
 	private $varlist = array();
 
-	/** Private constructor makes sure we can't directly instanciate the class */
+	/** @var   self   Static instance */
+	private static $instance = null;
+
+	/**
+	 * AKFactory constructor.
+	 *
+	 * This is a private constructor makes sure we can't instantiate the class unless we go through the static
+	 * getInstance singleton method. This is different than making the class abstract (preventing any kind of object
+	 * instantiation).
+	 */
 	private function __construct()
 	{
 	}
@@ -7287,17 +7461,16 @@ class AKFactory
 
 	/**
 	 * Gets the unarchiver engine
+	 *
+	 * @return AKAbstractUnarchiver
 	 */
 	public static function &getUnarchiver($configOverride = null)
 	{
 		static $class_name;
 
-		if (!empty($configOverride))
+		if (!empty($configOverride) && isset($configOverride['reset']) && $configOverride['reset'])
 		{
-			if ($configOverride['reset'])
-			{
-				$class_name = null;
-			}
+			$class_name = null;
 		}
 
 		if (empty($class_name))
@@ -7309,6 +7482,7 @@ class AKFactory
 				$filename      = self::get('kickstart.setup.sourcefile', null);
 				$basename      = basename($filename);
 				$baseextension = strtoupper(substr($basename, -3));
+
 				switch ($baseextension)
 				{
 					case 'JPA':
@@ -7333,12 +7507,15 @@ class AKFactory
 		}
 
 		$destdir = self::get('kickstart.setup.destdir', null);
+
 		if (empty($destdir))
 		{
 			$destdir = KSROOTDIR;
 		}
 
+		/** @var AKAbstractUnarchiver $object */
 		$object = self::getClassInstance($class_name);
+
 		if ($object->getState() == 'init')
 		{
 			$sourcePath = self::get('kickstart.setup.sourcepath', '');
@@ -7358,14 +7535,14 @@ class AKFactory
 				'remove_path'         => self::get('kickstart.setup.removepath', ''),
 				'rename_files'        => self::get('kickstart.setup.renamefiles', array(
 					'.htaccess' => 'htaccess.bak', 'php.ini' => 'php.ini.bak', 'web.config' => 'web.config.bak',
-					'.user.ini' => '.user.ini.bak'
+					'.user.ini' => '.user.ini.bak',
 				)),
 				'skip_files'          => self::get('kickstart.setup.skipfiles', array(
 					basename(__FILE__), 'kickstart.php', 'abiautomation.ini', 'htaccess.bak', 'php.ini.bak',
-					'cacert.pem'
+					'cacert.pem',
 				)),
 				'ignoredirectories'   => self::get('kickstart.setup.ignoredirectories', array(
-					'tmp', 'log', 'logs'
+					'tmp', 'log', 'logs',
 				)),
 			);
 
@@ -7385,6 +7562,7 @@ class AKFactory
 					// Akeeba Solo
 					'app/restoration.php',
 				);
+
 				$config['skip_files'] = array_merge($config['skip_files'], $moreSkippedFiles);
 			}
 
@@ -7406,14 +7584,13 @@ class AKFactory
 	public static function get($key, $default = null)
 	{
 		$self = self::getInstance();
+
 		if (array_key_exists($key, $self->varlist))
 		{
 			return $self->varlist[$key];
 		}
-		else
-		{
-			return $default;
-		}
+
+		return $default;
 	}
 
 	/**
@@ -7425,24 +7602,23 @@ class AKFactory
 	 */
 	protected static function &getInstance($serialized_data = null)
 	{
-		static $myInstance;
-		if (!is_object($myInstance) || !is_null($serialized_data))
+		if (!is_object(self::$instance) || !is_null($serialized_data))
 		{
 			if (!is_null($serialized_data))
 			{
-				$myInstance = unserialize($serialized_data);
+				self::$instance = unserialize($serialized_data);
+
+				return self::$instance;
 			}
-			else
-			{
-				$myInstance = new self();
-			}
+
+			self::$instance = new self();
 		}
 
-		return $myInstance;
+		return self::$instance;
 	}
 
 	/**
-	 * Internal function which instanciates a class named $class_name.
+	 * Internal function which instantiates a class named $class_name.
 	 * The autoloader
 	 *
 	 * @param string $class_name
@@ -7452,6 +7628,7 @@ class AKFactory
 	protected static function &getClassInstance($class_name)
 	{
 		$self = self::getInstance();
+
 		if (!isset($self->objectlist[$class_name]))
 		{
 			$self->objectlist[$class_name] = new $class_name;
@@ -7475,6 +7652,7 @@ class AKFactory
 		{
 			$serialized_data = base64_decode($serialized_data);
 		}
+
 		self::getInstance($serialized_data);
 	}
 
@@ -7483,12 +7661,7 @@ class AKFactory
 	 */
 	public static function nuke()
 	{
-		$self = self::getInstance();
-		foreach ($self->objectlist as $key => $object)
-		{
-			$self->objectlist[$key] = null;
-		}
-		$self->objectlist = array();
+		self::$instance = null;
 	}
 
 	// ========================================================================
@@ -7505,16 +7678,20 @@ class AKFactory
 	 * Gets the post processing engine
 	 *
 	 * @param string $proc_engine
+	 *
+	 * @return AKAbstractPostproc
 	 */
 	public static function &getPostProc($proc_engine = null)
 	{
 		static $class_name;
+
 		if (empty($class_name))
 		{
 			if (empty($proc_engine))
 			{
 				$proc_engine = self::get('kickstart.procengine', 'direct');
 			}
+
 			$class_name = 'AKPostproc' . ucfirst($proc_engine);
 		}
 
@@ -7531,16 +7708,355 @@ class AKFactory
 		return self::getClassInstance('AKCoreTimer');
 	}
 
+	/**
+	 * Get an instance of the filesystem zapper
+	 *
+	 * @return AKUtilsZapper
+	 */
+	public static function &getZapper()
+	{
+		return self::getClassInstance('AKUtilsZapper');
+	}
 }
 
 /**
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
+ */
+
+/**
+ * Interface for AES encryption adapters
+ */
+interface AKEncryptionAESAdapterInterface
+{
+	/**
+	 * Decrypts a string. Returns the raw binary ciphertext, zero-padded.
+	 *
+	 * @param   string       $plainText  The plaintext to encrypt
+	 * @param   string       $key        The raw binary key (will be zero-padded or chopped if its size is different than the block size)
+	 *
+	 * @return  string  The raw encrypted binary string.
+	 */
+	public function decrypt($plainText, $key);
+
+	/**
+	 * Returns the encryption block size in bytes
+	 *
+	 * @return  int
+	 */
+	public function getBlockSize();
+
+	/**
+	 * Is this adapter supported?
+	 *
+	 * @return  bool
+	 */
+	public function isSupported();
+}
+
+/**
+ * Akeeba Restore
+ * A JSON-powered JPA, JPS and ZIP archive extraction library
+ *
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license     GNU GPL v2 or - at your option - any later version
+ * @package     kickstart
+ */
+
+/**
+ * Abstract AES encryption class
+ */
+abstract class AKEncryptionAESAdapterAbstract
+{
+	/**
+	 * Trims or zero-pads a key / IV
+	 *
+	 * @param   string $key  The key or IV to treat
+	 * @param   int    $size The block size of the currently used algorithm
+	 *
+	 * @return  null|string  Null if $key is null, treated string of $size byte length otherwise
+	 */
+	public function resizeKey($key, $size)
+	{
+		if (empty($key))
+		{
+			return null;
+		}
+
+		$keyLength = strlen($key);
+
+		if (function_exists('mb_strlen'))
+		{
+			$keyLength = mb_strlen($key, 'ASCII');
+		}
+
+		if ($keyLength == $size)
+		{
+			return $key;
+		}
+
+		if ($keyLength > $size)
+		{
+			if (function_exists('mb_substr'))
+			{
+				return mb_substr($key, 0, $size, 'ASCII');
+			}
+
+			return substr($key, 0, $size);
+		}
+
+		return $key . str_repeat("\0", ($size - $keyLength));
+	}
+
+	/**
+	 * Returns null bytes to append to the string so that it's zero padded to the specified block size
+	 *
+	 * @param   string $string    The binary string which will be zero padded
+	 * @param   int    $blockSize The block size
+	 *
+	 * @return  string  The zero bytes to append to the string to zero pad it to $blockSize
+	 */
+	protected function getZeroPadding($string, $blockSize)
+	{
+		$stringSize = strlen($string);
+
+		if (function_exists('mb_strlen'))
+		{
+			$stringSize = mb_strlen($string, 'ASCII');
+		}
+
+		if ($stringSize == $blockSize)
+		{
+			return '';
+		}
+
+		if ($stringSize < $blockSize)
+		{
+			return str_repeat("\0", $blockSize - $stringSize);
+		}
+
+		$paddingBytes = $stringSize % $blockSize;
+
+		return str_repeat("\0", $blockSize - $paddingBytes);
+	}
+}
+
+/**
+ * Akeeba Restore
+ * A JSON-powered JPA, JPS and ZIP archive extraction library
+ *
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license     GNU GPL v2 or - at your option - any later version
+ * @package     kickstart
+ */
+
+class Mcrypt extends AKEncryptionAESAdapterAbstract implements AKEncryptionAESAdapterInterface
+{
+	protected $cipherType = MCRYPT_RIJNDAEL_128;
+
+	protected $cipherMode = MCRYPT_MODE_CBC;
+
+	public function decrypt($cipherText, $key)
+	{
+		$iv_size    = $this->getBlockSize();
+		$key        = $this->resizeKey($key, $iv_size);
+		$iv         = substr($cipherText, 0, $iv_size);
+		$cipherText = substr($cipherText, $iv_size);
+		$plainText  = mcrypt_decrypt($this->cipherType, $key, $cipherText, $this->cipherMode, $iv);
+
+		return $plainText;
+	}
+
+	public function isSupported()
+	{
+		if (!function_exists('mcrypt_get_key_size'))
+		{
+			return false;
+		}
+
+		if (!function_exists('mcrypt_get_iv_size'))
+		{
+			return false;
+		}
+
+		if (!function_exists('mcrypt_create_iv'))
+		{
+			return false;
+		}
+
+		if (!function_exists('mcrypt_encrypt'))
+		{
+			return false;
+		}
+
+		if (!function_exists('mcrypt_decrypt'))
+		{
+			return false;
+		}
+
+		if (!function_exists('mcrypt_list_algorithms'))
+		{
+			return false;
+		}
+
+		if (!function_exists('hash'))
+		{
+			return false;
+		}
+
+		if (!function_exists('hash_algos'))
+		{
+			return false;
+		}
+
+		$algorightms = mcrypt_list_algorithms();
+
+		if (!in_array('rijndael-128', $algorightms))
+		{
+			return false;
+		}
+
+		if (!in_array('rijndael-192', $algorightms))
+		{
+			return false;
+		}
+
+		if (!in_array('rijndael-256', $algorightms))
+		{
+			return false;
+		}
+
+		$algorightms = hash_algos();
+
+		if (!in_array('sha256', $algorightms))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	public function getBlockSize()
+	{
+		return mcrypt_get_iv_size($this->cipherType, $this->cipherMode);
+	}
+}
+
+/**
+ * Akeeba Restore
+ * A JSON-powered JPA, JPS and ZIP archive extraction library
+ *
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license     GNU GPL v2 or - at your option - any later version
+ * @package     kickstart
+ */
+
+class OpenSSL extends AKEncryptionAESAdapterAbstract implements AKEncryptionAESAdapterInterface
+{
+	/**
+	 * The OpenSSL options for encryption / decryption
+	 *
+	 * @var  int
+	 */
+	protected $openSSLOptions = 0;
+
+	/**
+	 * The encryption method to use
+	 *
+	 * @var  string
+	 */
+	protected $method = 'aes-128-cbc';
+
+	public function __construct()
+	{
+		$this->openSSLOptions = OPENSSL_RAW_DATA | OPENSSL_ZERO_PADDING;
+	}
+
+	public function decrypt($cipherText, $key)
+	{
+		$iv_size    = $this->getBlockSize();
+		$key        = $this->resizeKey($key, $iv_size);
+		$iv         = substr($cipherText, 0, $iv_size);
+		$cipherText = substr($cipherText, $iv_size);
+		$plainText  = openssl_decrypt($cipherText, $this->method, $key, $this->openSSLOptions, $iv);
+
+		return $plainText;
+	}
+
+	public function isSupported()
+	{
+		if (!function_exists('openssl_get_cipher_methods'))
+		{
+			return false;
+		}
+
+		if (!function_exists('openssl_random_pseudo_bytes'))
+		{
+			return false;
+		}
+
+		if (!function_exists('openssl_cipher_iv_length'))
+		{
+			return false;
+		}
+
+		if (!function_exists('openssl_encrypt'))
+		{
+			return false;
+		}
+
+		if (!function_exists('openssl_decrypt'))
+		{
+			return false;
+		}
+
+		if (!function_exists('hash'))
+		{
+			return false;
+		}
+
+		if (!function_exists('hash_algos'))
+		{
+			return false;
+		}
+
+		$algorightms = openssl_get_cipher_methods();
+
+		if (!in_array('aes-128-cbc', $algorightms))
+		{
+			return false;
+		}
+
+		$algorightms = hash_algos();
+
+		if (!in_array('sha256', $algorightms))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	/**
+	 * @return int
+	 */
+	public function getBlockSize()
+	{
+		return openssl_cipher_iv_length($this->method);
+	}
+}
+
+/**
+ * Akeeba Restore
+ * A JSON-powered JPA, JPS and ZIP archive extraction library
+ *
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license     GNU GPL v2 or - at your option - any later version
+ * @package     kickstart
  */
 
 /**
@@ -7548,7 +8064,9 @@ class AKFactory
  * Right to use and adapt is granted for under a simple creative commons attribution
  * licence. No warranty of any form is offered.
  *
- * Modified for Akeeba Backup by Nicholas K. Dionysopoulos
+ * Heavily modified for Akeeba Backup by Nicholas K. Dionysopoulos
+ * Also added AES-128 CBC mode (with mcrypt and OpenSSL) on top of AES CTR
+ * Removed CTR encrypt / decrypt (no longer used)
  */
 class AKEncryptionAES
 {
@@ -7588,114 +8106,50 @@ class AKEncryptionAES
 	protected static $passwords = array();
 
 	/**
-	 * Encrypt a text using AES encryption in Counter mode of operation
-	 *  - see http://csrc.nist.gov/publications/nistpubs/800-38a/sp800-38a.pdf
+	 * The algorithm to use for PBKDF2. Must be a supported hash_hmac algorithm. Default: sha1
 	 *
-	 * Unicode multi-byte character safe
-	 *
-	 * @param plaintext source text to be encrypted
-	 * @param password  the password to use to generate a key
-	 * @param nBits     number of bits to be used in the key (128, 192, or 256)
-	 *
-	 * @return          encrypted text
+	 * @var  string
 	 */
-	public static function AESEncryptCtr($plaintext, $password, $nBits)
-	{
-		$blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
-		if (!($nBits == 128 || $nBits == 192 || $nBits == 256))
-		{
-			return '';
-		}  // standard allows 128/192/256 bit keys
-		// note PHP (5) gives us plaintext and password in UTF8 encoding!
+	private static $pbkdf2Algorithm = 'sha1';
 
-		// use AES itself to encrypt password to get cipher key (using plain password as source for
-		// key expansion) - gives us well encrypted key
-		$nBytes  = $nBits / 8;  // no bytes in key
-		$pwBytes = array();
-		for ($i = 0; $i < $nBytes; $i++)
-		{
-			$pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
-		}
-		$key = self::Cipher($pwBytes, self::KeyExpansion($pwBytes));
-		$key = array_merge($key, array_slice($key, 0, $nBytes - 16));  // expand key to 16/24/32 bytes long
+	/**
+	 * Number of iterations to use for PBKDF2
+	 *
+	 * @var  int
+	 */
+	private static $pbkdf2Iterations = 1000;
 
-		// initialise counter block (NIST SP800-38A �B.2): millisecond time-stamp for nonce in
-		// 1st 8 bytes, block counter in 2nd 8 bytes
-		$counterBlock = array();
-		$nonce        = floor(microtime(true) * 1000);   // timestamp: milliseconds since 1-Jan-1970
-		$nonceSec     = floor($nonce / 1000);
-		$nonceMs      = $nonce % 1000;
-		// encode nonce with seconds in 1st 4 bytes, and (repeated) ms part filling 2nd 4 bytes
-		for ($i = 0; $i < 4; $i++)
-		{
-			$counterBlock[$i] = self::urs($nonceSec, $i * 8) & 0xff;
-		}
-		for ($i = 0; $i < 4; $i++)
-		{
-			$counterBlock[$i + 4] = $nonceMs & 0xff;
-		}
-		// and convert it to a string to go on the front of the ciphertext
-		$ctrTxt = '';
-		for ($i = 0; $i < 8; $i++)
-		{
-			$ctrTxt .= chr($counterBlock[$i]);
-		}
+	/**
+	 * Should we use a static salt for PBKDF2?
+	 *
+	 * @var  int
+	 */
+	private static $pbkdf2UseStaticSalt = 0;
 
-		// generate key schedule - an expansion of the key into distinct Key Rounds for each round
-		$keySchedule = self::KeyExpansion($key);
-
-		$blockCount = ceil(strlen($plaintext) / $blockSize);
-		$ciphertxt  = array();  // ciphertext as array of strings
-
-		for ($b = 0; $b < $blockCount; $b++)
-		{
-			// set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
-			// done in two stages for 32-bit ops: using two words allows us to go past 2^32 blocks (68GB)
-			for ($c = 0; $c < 4; $c++)
-			{
-				$counterBlock[15 - $c] = self::urs($b, $c * 8) & 0xff;
-			}
-			for ($c = 0; $c < 4; $c++)
-			{
-				$counterBlock[15 - $c - 4] = self::urs($b / 0x100000000, $c * 8);
-			}
-
-			$cipherCntr = self::Cipher($counterBlock, $keySchedule);  // -- encrypt counter block --
-
-			// block size is reduced on final block
-			$blockLength = $b < $blockCount - 1 ? $blockSize : (strlen($plaintext) - 1) % $blockSize + 1;
-			$cipherByte  = array();
-
-			for ($i = 0; $i < $blockLength; $i++)
-			{  // -- xor plaintext with ciphered counter byte-by-byte --
-				$cipherByte[$i] = $cipherCntr[$i] ^ ord(substr($plaintext, $b * $blockSize + $i, 1));
-				$cipherByte[$i] = chr($cipherByte[$i]);
-			}
-			$ciphertxt[$b] = implode('', $cipherByte);  // escape troublesome characters in ciphertext
-		}
-
-		// implode is more efficient than repeated string concatenation
-		$ciphertext = $ctrTxt . implode('', $ciphertxt);
-		$ciphertext = base64_encode($ciphertext);
-
-		return $ciphertext;
-	}
+	/**
+	 * The static salt to use for PBKDF2
+	 *
+	 * @var  string
+	 */
+	private static $pbkdf2StaticSalt = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
 	/**
 	 * AES Cipher function: encrypt 'input' with Rijndael algorithm
 	 *
-	 * @param input message as byte-array (16 bytes)
-	 * @param w     key schedule as 2D byte-array (Nr+1 x Nb bytes) -
-	 *              generated from the cipher key by KeyExpansion()
+	 * @param   array $input    Message as byte-array (16 bytes)
+	 * @param   array $w        key schedule as 2D byte-array (Nr+1 x Nb bytes) -
+	 *                          generated from the cipher key by KeyExpansion()
 	 *
-	 * @return      ciphertext as byte-array (16 bytes)
+	 * @return  string  Ciphertext as byte-array (16 bytes)
 	 */
 	protected static function Cipher($input, $w)
-	{    // main Cipher function [�5.1]
+	{
+		// main Cipher function [�5.1]
 		$Nb = 4;                 // block size (in words): no of columns in state (fixed at 4 for AES)
 		$Nr = count($w) / $Nb - 1; // no of rounds: 10/12/14 for 128/192/256-bit keys
 
 		$state = array();  // initialise 4xNb byte-array 'state' with input [�3.4]
+
 		for ($i = 0; $i < 4 * $Nb; $i++)
 		{
 			$state[$i % 4][floor($i / 4)] = $input[$i];
@@ -7707,7 +8161,7 @@ class AKEncryptionAES
 		{  // apply Nr rounds
 			$state = self::SubBytes($state, $Nb);
 			$state = self::ShiftRows($state, $Nb);
-			$state = self::MixColumns($state, $Nb);
+			$state = self::MixColumns($state);
 			$state = self::AddRoundKey($state, $w, $round, $Nb);
 		}
 
@@ -7716,6 +8170,7 @@ class AKEncryptionAES
 		$state = self::AddRoundKey($state, $w, $Nr, $Nb);
 
 		$output = array(4 * $Nb);  // convert state to 1-d array before returning [�3.4]
+
 		for ($i = 0; $i < 4 * $Nb; $i++)
 		{
 			$output[$i] = $state[$i % 4][floor($i / 4)];
@@ -7725,7 +8180,8 @@ class AKEncryptionAES
 	}
 
 	protected static function AddRoundKey($state, $w, $rnd, $Nb)
-	{  // xor Round Key into state S [�5.1.4]
+	{
+		// xor Round Key into state S [�5.1.4]
 		for ($r = 0; $r < 4; $r++)
 		{
 			for ($c = 0; $c < $Nb; $c++)
@@ -7738,7 +8194,8 @@ class AKEncryptionAES
 	}
 
 	protected static function SubBytes($s, $Nb)
-	{    // apply SBox to state S [�5.1.1]
+	{
+		// apply SBox to state S [�5.1.1]
 		for ($r = 0; $r < 4; $r++)
 		{
 			for ($c = 0; $c < $Nb; $c++)
@@ -7751,33 +8208,40 @@ class AKEncryptionAES
 	}
 
 	protected static function ShiftRows($s, $Nb)
-	{    // shift row r of state S left by r bytes [�5.1.2]
+	{
+		// shift row r of state S left by r bytes [�5.1.2]
 		$t = array(4);
+
 		for ($r = 1; $r < 4; $r++)
 		{
 			for ($c = 0; $c < 4; $c++)
 			{
 				$t[$c] = $s[$r][($c + $r) % $Nb];
 			}  // shift into temp copy
+
 			for ($c = 0; $c < 4; $c++)
 			{
 				$s[$r][$c] = $t[$c];
 			}         // and copy back
 		}          // note that this will work for Nb=4,5,6, but not 7,8 (always 4 for AES):
+
 		return $s;  // see fp.gladman.plus.com/cryptography_technology/rijndael/aes.spec.311.pdf
 	}
 
-	protected static function MixColumns($s, $Nb)
-	{   // combine bytes of each col of state S [�5.1.3]
+	protected static function MixColumns($s)
+	{
+		// combine bytes of each col of state S [�5.1.3]
 		for ($c = 0; $c < 4; $c++)
 		{
 			$a = array(4);  // 'a' is a copy of the current column from 's'
 			$b = array(4);  // 'b' is a�{02} in GF(2^8)
+
 			for ($i = 0; $i < 4; $i++)
 			{
 				$a[$i] = $s[$i][$c];
 				$b[$i] = $s[$i][$c] & 0x80 ? $s[$i][$c] << 1 ^ 0x011b : $s[$i][$c] << 1;
 			}
+
 			// a[n] ^ b[n] is a�{03} in GF(2^8)
 			$s[0][$c] = $b[0] ^ $a[1] ^ $b[1] ^ $a[2] ^ $a[3]; // 2*a0 + 3*a1 + a2 + a3
 			$s[1][$c] = $a[0] ^ $b[1] ^ $a[2] ^ $b[2] ^ $a[3]; // a0 * 2*a1 + 3*a2 + a3
@@ -7792,15 +8256,20 @@ class AKEncryptionAES
 	 * Key expansion for Rijndael Cipher(): performs key expansion on cipher key
 	 * to generate a key schedule
 	 *
-	 * @param key cipher key byte-array (16 bytes)
+	 * @param   array $key Cipher key byte-array (16 bytes)
 	 *
-	 * @return    key schedule as 2D byte-array (Nr+1 x Nb bytes)
+	 * @return  array  Key schedule as 2D byte-array (Nr+1 x Nb bytes)
 	 */
 	protected static function KeyExpansion($key)
-	{  // generate Key Schedule from Cipher Key [�5.2]
-		$Nb = 4;              // block size (in words): no of columns in state (fixed at 4 for AES)
-		$Nk = count($key) / 4;  // key length (in words): 4/6/8 for 128/192/256-bit keys
-		$Nr = $Nk + 6;        // no of rounds: 10/12/14 for 128/192/256-bit keys
+	{
+		// generate Key Schedule from Cipher Key [�5.2]
+
+		// block size (in words): no of columns in state (fixed at 4 for AES)
+		$Nb = 4;
+		// key length (in words): 4/6/8 for 128/192/256-bit keys
+		$Nk = (int) (count($key) / 4);
+		// no of rounds: 10/12/14 for 128/192/256-bit keys
+		$Nr = $Nk + 6;
 
 		$w    = array();
 		$temp = array();
@@ -7823,7 +8292,8 @@ class AKEncryptionAES
 				$temp = self::SubWord(self::RotWord($temp));
 				for ($t = 0; $t < 4; $t++)
 				{
-					$temp[$t] ^= self::$Rcon[$i / $Nk][$t];
+					$rConIndex = (int) ($i / $Nk);
+					$temp[$t] ^= self::$Rcon[$rConIndex][$t];
 				}
 			}
 			else if ($Nk > 6 && $i % $Nk == 4)
@@ -7840,7 +8310,8 @@ class AKEncryptionAES
 	}
 
 	protected static function SubWord($w)
-	{    // apply SBox to 4-byte word w
+	{
+		// apply SBox to 4-byte word w
 		for ($i = 0; $i < 4; $i++)
 		{
 			$w[$i] = self::$Sbox[$w[$i]];
@@ -7858,7 +8329,8 @@ class AKEncryptionAES
 	 */
 
 	protected static function RotWord($w)
-	{    // rotate 4-byte word w left by one byte
+	{
+		// rotate 4-byte word w left by one byte
 		$tmp = $w[0];
 		for ($i = 0; $i < 3; $i++)
 		{
@@ -7887,156 +8359,74 @@ class AKEncryptionAES
 	}
 
 	/**
-	 * Decrypt a text encrypted by AES in counter mode of operation
-	 *
-	 * @param ciphertext source text to be decrypted
-	 * @param password   the password to use to generate a key
-	 * @param nBits      number of bits to be used in the key (128, 192, or 256)
-	 *
-	 * @return           decrypted text
-	 */
-	public static function AESDecryptCtr($ciphertext, $password, $nBits)
-	{
-		$blockSize = 16;  // block size fixed at 16 bytes / 128 bits (Nb=4) for AES
-		if (!($nBits == 128 || $nBits == 192 || $nBits == 256))
-		{
-			return '';
-		}  // standard allows 128/192/256 bit keys
-		$ciphertext = base64_decode($ciphertext);
-
-		// use AES to encrypt password (mirroring encrypt routine)
-		$nBytes  = $nBits / 8;  // no bytes in key
-		$pwBytes = array();
-		for ($i = 0; $i < $nBytes; $i++)
-		{
-			$pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
-		}
-		$key = self::Cipher($pwBytes, self::KeyExpansion($pwBytes));
-		$key = array_merge($key, array_slice($key, 0, $nBytes - 16));  // expand key to 16/24/32 bytes long
-
-		// recover nonce from 1st element of ciphertext
-		$counterBlock = array();
-		$ctrTxt       = substr($ciphertext, 0, 8);
-		for ($i = 0; $i < 8; $i++)
-		{
-			$counterBlock[$i] = ord(substr($ctrTxt, $i, 1));
-		}
-
-		// generate key schedule
-		$keySchedule = self::KeyExpansion($key);
-
-		// separate ciphertext into blocks (skipping past initial 8 bytes)
-		$nBlocks = ceil((strlen($ciphertext) - 8) / $blockSize);
-		$ct      = array();
-		for ($b = 0; $b < $nBlocks; $b++)
-		{
-			$ct[$b] = substr($ciphertext, 8 + $b * $blockSize, 16);
-		}
-		$ciphertext = $ct;  // ciphertext is now array of block-length strings
-
-		// plaintext will get generated block-by-block into array of block-length strings
-		$plaintxt = array();
-
-		for ($b = 0; $b < $nBlocks; $b++)
-		{
-			// set counter (block #) in last 8 bytes of counter block (leaving nonce in 1st 8 bytes)
-			for ($c = 0; $c < 4; $c++)
-			{
-				$counterBlock[15 - $c] = self::urs($b, $c * 8) & 0xff;
-			}
-			for ($c = 0; $c < 4; $c++)
-			{
-				$counterBlock[15 - $c - 4] = self::urs(($b + 1) / 0x100000000 - 1, $c * 8) & 0xff;
-			}
-
-			$cipherCntr = self::Cipher($counterBlock, $keySchedule);  // encrypt counter block
-
-			$plaintxtByte = array();
-			for ($i = 0; $i < strlen($ciphertext[$b]); $i++)
-			{
-				// -- xor plaintext with ciphered counter byte-by-byte --
-				$plaintxtByte[$i] = $cipherCntr[$i] ^ ord(substr($ciphertext[$b], $i, 1));
-				$plaintxtByte[$i] = chr($plaintxtByte[$i]);
-
-			}
-			$plaintxt[$b] = implode('', $plaintxtByte);
-		}
-
-		// join array of blocks into single plaintext string
-		$plaintext = implode('', $plaintxt);
-
-		return $plaintext;
-	}
-
-	/**
 	 * AES decryption in CBC mode. This is the standard mode (the CTR methods
 	 * actually use Rijndael-128 in CTR mode, which - technically - isn't AES).
 	 *
-	 * Supports AES-128, AES-192 and AES-256. It supposes that the last 4 bytes
-	 * contained a little-endian unsigned long integer representing the unpadded
+	 * It supports AES-128 only. It assumes that the last 4 bytes
+	 * contain a little-endian unsigned long integer representing the unpadded
 	 * data length.
 	 *
 	 * @since  3.0.1
 	 * @author Nicholas K. Dionysopoulos
 	 *
-	 * @param string $ciphertext The data to encrypt
-	 * @param string $password   Encryption password
-	 * @param int    $nBits      Encryption key size. Can be 128, 192 or 256
+	 * @param   string $ciphertext The data to encrypt
+	 * @param   string $password   Encryption password
 	 *
-	 * @return string The plaintext
+	 * @return  string  The plaintext
 	 */
-	public static function AESDecryptCBC($ciphertext, $password, $nBits = 128)
+	public static function AESDecryptCBC($ciphertext, $password)
 	{
-		if (!($nBits == 128 || $nBits == 192 || $nBits == 256))
+		$adapter = self::getAdapter();
+
+		if (!$adapter->isSupported())
 		{
 			return false;
-		}  // standard allows 128/192/256 bit keys
-		if (!function_exists('mcrypt_module_open'))
-		{
-			return false;
-		}
-
-		// Try to fetch cached key/iv or create them if they do not exist
-		$lookupKey = $password . '-' . $nBits;
-		if (array_key_exists($lookupKey, self::$passwords))
-		{
-			$key = self::$passwords[$lookupKey];
-		}
-		else
-		{
-			// use AES itself to encrypt password to get cipher key (using plain password as source for
-			// key expansion) - gives us well encrypted key
-			$nBytes  = $nBits / 8;  // no bytes in key
-			$pwBytes = array();
-			for ($i = 0; $i < $nBytes; $i++)
-			{
-				$pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
-			}
-			$key    = self::Cipher($pwBytes, self::KeyExpansion($pwBytes));
-			$key    = array_merge($key, array_slice($key, 0, $nBytes - 16));  // expand key to 16/24/32 bytes long
-			$newKey = '';
-			foreach ($key as $int)
-			{
-				$newKey .= chr($int);
-			}
-			$key = $newKey;
-
-			self::$passwords[$lookupKey] = $key;
 		}
 
 		// Read the data size
 		$data_size = unpack('V', substr($ciphertext, -4));
 
+		// Do I have a PBKDF2 salt?
+		$salt             = substr($ciphertext, -92, 68);
+		$rightStringLimit = -4;
+
+		$params        = self::getKeyDerivationParameters();
+		$keySizeBytes  = $params['keySize'];
+		$algorithm     = $params['algorithm'];
+		$iterations    = $params['iterations'];
+		$useStaticSalt = $params['useStaticSalt'];
+
+		if (substr($salt, 0, 4) == 'JPST')
+		{
+			// We have a stored salt. Retrieve it and tell decrypt to process the string minus the last 44 bytes
+			// (4 bytes for JPST, 16 bytes for the salt, 4 bytes for JPIV, 16 bytes for the IV, 4 bytes for the
+			// uncompressed string length - note that using PBKDF2 means we're also using a randomized IV per the
+			// format specification).
+			$salt             = substr($salt, 4);
+			$rightStringLimit -= 68;
+
+			$key          = self::pbkdf2($password, $salt, $algorithm, $iterations, $keySizeBytes);
+		}
+		elseif ($useStaticSalt)
+		{
+			// We have a static salt. Use it for PBKDF2.
+			$key = self::getStaticSaltExpandedKey($password);
+		}
+		else
+		{
+			// Get the expanded key from the password. THIS USES THE OLD, INSECURE METHOD.
+			$key = self::expandKey($password);
+		}
+
 		// Try to get the IV from the data
 		$iv               = substr($ciphertext, -24, 20);
-		$rightStringLimit = -4;
 
 		if (substr($iv, 0, 4) == 'JPIV')
 		{
 			// We have a stored IV. Retrieve it and tell mdecrypt to process the string minus the last 24 bytes
 			// (4 bytes for JPIV, 16 bytes for the IV, 4 bytes for the uncompressed string length)
 			$iv               = substr($iv, 4);
-			$rightStringLimit = -24;
+			$rightStringLimit -= 20;
 		}
 		else
 		{
@@ -8045,10 +8435,7 @@ class AKEncryptionAES
 		}
 
 		// Decrypt
-		$td = mcrypt_module_open(MCRYPT_RIJNDAEL_128, '', MCRYPT_MODE_CBC, '');
-		mcrypt_generic_init($td, $key, $iv);
-		$plaintext = mdecrypt_generic($td, substr($ciphertext, 0, $rightStringLimit));
-		mcrypt_generic_deinit($td);
+		$plaintext = $adapter->decrypt($iv . substr($ciphertext, 0, $rightStringLimit), $key);
 
 		// Trim padding, if necessary
 		if (strlen($plaintext) > $data_size)
@@ -8060,7 +8447,7 @@ class AKEncryptionAES
 	}
 
 	/**
-	 * That's the old way of craeting an IV that's definitely not cryptographically sound.
+	 * That's the old way of creating an IV that's definitely not cryptographically sound.
 	 *
 	 * DO NOT USE, EVER, UNLESS YOU WANT TO DECRYPT LEGACY DATA
 	 *
@@ -8094,17 +8481,287 @@ class AKEncryptionAES
 
 		return $ivs[$key];
 	}
+
+	/**
+	 * Expand the password to an appropriate 128-bit encryption key
+	 *
+	 * @param   string $password
+	 *
+	 * @return  string
+	 *
+	 * @since   5.2.0
+	 * @author  Nicholas K. Dionysopoulos
+	 */
+	public static function expandKey($password)
+	{
+		// Try to fetch cached key or create it if it doesn't exist
+		$nBits     = 128;
+		$lookupKey = md5($password . '-' . $nBits);
+
+		if (array_key_exists($lookupKey, self::$passwords))
+		{
+			$key = self::$passwords[$lookupKey];
+
+			return $key;
+		}
+
+		// use AES itself to encrypt password to get cipher key (using plain password as source for
+		// key expansion) - gives us well encrypted key.
+		$nBytes  = $nBits / 8; // Number of bytes in key
+		$pwBytes = array();
+
+		for ($i = 0; $i < $nBytes; $i++)
+		{
+			$pwBytes[$i] = ord(substr($password, $i, 1)) & 0xff;
+		}
+
+		$key    = self::Cipher($pwBytes, self::KeyExpansion($pwBytes));
+		$key    = array_merge($key, array_slice($key, 0, $nBytes - 16)); // expand key to 16/24/32 bytes long
+		$newKey = '';
+
+		foreach ($key as $int)
+		{
+			$newKey .= chr($int);
+		}
+
+		$key = $newKey;
+
+		self::$passwords[$lookupKey] = $key;
+
+		return $key;
+	}
+
+	/**
+	 * Returns the correct AES-128 CBC encryption adapter
+	 *
+	 * @return  AKEncryptionAESAdapterInterface
+	 *
+	 * @since   5.2.0
+	 * @author  Nicholas K. Dionysopoulos
+	 */
+	public static function getAdapter()
+	{
+		static $adapter = null;
+
+		if (is_object($adapter) && ($adapter instanceof AKEncryptionAESAdapterInterface))
+		{
+			return $adapter;
+		}
+
+		$adapter = new OpenSSL();
+
+		if (!$adapter->isSupported())
+		{
+			$adapter = new Mcrypt();
+		}
+
+		return $adapter;
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function getPbkdf2Algorithm()
+	{
+		return self::$pbkdf2Algorithm;
+	}
+
+	/**
+	 * @param string $pbkdf2Algorithm
+	 * @return void
+	 */
+	public static function setPbkdf2Algorithm($pbkdf2Algorithm)
+	{
+		self::$pbkdf2Algorithm = $pbkdf2Algorithm;
+	}
+
+	/**
+	 * @return int
+	 */
+	public static function getPbkdf2Iterations()
+	{
+		return self::$pbkdf2Iterations;
+	}
+
+	/**
+	 * @param int $pbkdf2Iterations
+	 * @return void
+	 */
+	public static function setPbkdf2Iterations($pbkdf2Iterations)
+	{
+		self::$pbkdf2Iterations = $pbkdf2Iterations;
+	}
+
+	/**
+	 * @return int
+	 */
+	public static function getPbkdf2UseStaticSalt()
+	{
+		return self::$pbkdf2UseStaticSalt;
+	}
+
+	/**
+	 * @param int $pbkdf2UseStaticSalt
+	 * @return void
+	 */
+	public static function setPbkdf2UseStaticSalt($pbkdf2UseStaticSalt)
+	{
+		self::$pbkdf2UseStaticSalt = $pbkdf2UseStaticSalt;
+	}
+
+	/**
+	 * @return string
+	 */
+	public static function getPbkdf2StaticSalt()
+	{
+		return self::$pbkdf2StaticSalt;
+	}
+
+	/**
+	 * @param string $pbkdf2StaticSalt
+	 * @return void
+	 */
+	public static function setPbkdf2StaticSalt($pbkdf2StaticSalt)
+	{
+		self::$pbkdf2StaticSalt = $pbkdf2StaticSalt;
+	}
+
+	/**
+	 * Get the parameters fed into PBKDF2 to expand the user password into an encryption key. These are the static
+	 * parameters (key size, hashing algorithm and number of iterations). A new salt is used for each encryption block
+	 * to minimize the risk of attacks against the password.
+	 *
+	 * @return  array
+	 */
+	public static function getKeyDerivationParameters()
+	{
+		return array(
+			'keySize'       => 16,
+			'algorithm'     => self::$pbkdf2Algorithm,
+			'iterations'    => self::$pbkdf2Iterations,
+			'useStaticSalt' => self::$pbkdf2UseStaticSalt,
+			'staticSalt'    => self::$pbkdf2StaticSalt,
+		);
+	}
+
+	/**
+	 * PBKDF2 key derivation function as defined by RSA's PKCS #5: https://www.ietf.org/rfc/rfc2898.txt
+	 *
+	 * Test vectors can be found here: https://www.ietf.org/rfc/rfc6070.txt
+	 *
+	 * This implementation of PBKDF2 was originally created by https://defuse.ca
+	 * With improvements by http://www.variations-of-shadow.com
+	 * Modified for Akeeba Engine by Akeeba Ltd (removed unnecessary checks to make it faster)
+	 *
+	 * @param   string  $password    The password.
+	 * @param   string  $salt        A salt that is unique to the password.
+	 * @param   string  $algorithm   The hash algorithm to use. Default is sha1.
+	 * @param   int     $count       Iteration count. Higher is better, but slower. Default: 1000.
+	 * @param   int     $key_length  The length of the derived key in bytes.
+	 *
+	 * @return  string  A string of $key_length bytes
+	 */
+	public static function pbkdf2($password, $salt, $algorithm = 'sha1', $count = 1000, $key_length = 16)
+	{
+		if (function_exists("hash_pbkdf2"))
+		{
+			return hash_pbkdf2($algorithm, $password, $salt, $count, $key_length, true);
+		}
+
+		$hash_length = akstringlen(hash($algorithm, "", true));
+		$block_count = ceil($key_length / $hash_length);
+
+		$output = "";
+
+		for ($i = 1; $i <= $block_count; $i++)
+		{
+			// $i encoded as 4 bytes, big endian.
+			$last = $salt . pack("N", $i);
+
+			// First iteration
+			$xorResult = hash_hmac($algorithm, $last, $password, true);
+			$last      = $xorResult;
+
+			// Perform the other $count - 1 iterations
+			for ($j = 1; $j < $count; $j++)
+			{
+				$last = hash_hmac($algorithm, $last, $password, true);
+				$xorResult ^= $last;
+			}
+
+			$output .= $xorResult;
+		}
+
+		return aksubstr($output, 0, $key_length);
+	}
+
+	/**
+	 * Get the expanded key from the user supplied password using a static salt. The results are cached for performance
+	 * reasons.
+	 *
+	 * @param   string  $password  The user-supplied password, UTF-8 encoded.
+	 *
+	 * @return  string  The expanded key
+	 */
+	private static function getStaticSaltExpandedKey($password)
+	{
+		$params        = self::getKeyDerivationParameters();
+		$keySizeBytes  = $params['keySize'];
+		$algorithm     = $params['algorithm'];
+		$iterations    = $params['iterations'];
+		$staticSalt    = $params['staticSalt'];
+
+		$lookupKey = "PBKDF2-$algorithm-$iterations-" . md5($password . $staticSalt);
+
+		if (!array_key_exists($lookupKey, self::$passwords))
+		{
+			self::$passwords[$lookupKey] = self::pbkdf2($password, $staticSalt, $algorithm, $iterations, $keySizeBytes);
+		}
+
+		return self::$passwords[$lookupKey];
+	}
+
 }
 
 /**
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
+
+/**
+ * A timing safe equals comparison
+ *
+ * @param   string  $safe  The internal (safe) value to be checked
+ * @param   string  $user  The user submitted (unsafe) value
+ *
+ * @return  boolean  True if the two strings are identical.
+ *
+ * @see     http://blog.ircmaxell.com/2014/11/its-all-about-time.html
+ */
+function timingSafeEquals($safe, $user)
+{
+	$safeLen = strlen($safe);
+	$userLen = strlen($user);
+
+	if ($userLen != $safeLen)
+	{
+		return false;
+	}
+
+	$result = 0;
+
+	for ($i = 0; $i < $userLen; $i++)
+	{
+		$result |= (ord($safe[$i]) ^ ord($user[$i]));
+	}
+
+	// They are only identical strings if $result is exactly 0...
+	return $result === 0;
+}
 
 /**
  * The Master Setup will read the configuration parameters from restoration.php or
@@ -8128,6 +8785,28 @@ function masterSetup()
 		$setupFile = 'restoration.php';
 
 		if (!file_exists($setupFile))
+		{
+			AKFactory::set('kickstart.enabled', false);
+
+			return false;
+		}
+
+		/**
+		 * If the setup file was created more than 1.5 hours ago we can assume that it's stale and someone forgot to
+		 * remove it from the server. This hinders brute force attacks against the Kickstart password. Even a simple
+		 * 8 character simple alphanum (a-z, 0-9) password yields over 2.8e12. Assuming a very fast server which can
+		 * serve 100 requests to restore.php per second and an easy to attack password requiring going over just 1% of
+		 * the search space it'd still take over 282 million seconds to brute force it. Our limit is more than 4 orders
+		 * of magnitude lower than this best practical case scenario, giving us adequate protection against all but the
+		 * luckiest attacker (spoiler alert: the mathematics of probabilities say you're not gonna get lucky).
+		 *
+		 * It is still advisable to remove the restoration.php file once you are done with the extraction. This check
+		 * here is only meant as a failsafe in case of a server error during the extraction and subsequent lack of user
+		 * action to remove the restoration.php file from their server.
+		 */
+		$setupFieCreationTime = filectime($setupFile);
+
+		if (abs(time() - $setupFieCreationTime) > 5400)
 		{
 			AKFactory::set('kickstart.enabled', false);
 
@@ -8177,12 +8856,44 @@ function masterSetup()
 	// Reinitialize $ini_data
 	$ini_data = null;
 
+	/**
+	 * August 2018. Some third party developer with a dubious skill level (or complete lack thereof) wrote a piece of
+	 * code which uses restore.php with an empty password (and never deleted the restoration.php file he created).
+	 * According to his code comments he did this because he couldn't figure out how to make encrypted requests work,
+	 * DESPITE THE FACT that com_joomlaupdate (part of Joomla! itself) has working code which does EXACTLY THAT. >:-o
+	 *
+	 * As a result of his actions all sites running his software have a massive vulnerability inflicted upon them. An
+	 * attacker can absuse the (unlocked) restore.php to upload and install any arbitrary code in a ZIP archive,
+	 * possibly overwriting core code. Discovering this problem takes a few seconds and there is code which is doing
+	 * exactly that published years ago (during the active maintenance period of Joomla! 3.4, that long ago).
+	 *
+	 * This bit of code here detects an empty password and disables restore.php. His badly written software fails to
+	 * execute and, most importantly, the unlucky users of his software will no longer have a remote code upload /
+	 * remote code execution vulnerability on their sites.
+	 *
+	 * Remember, people, if you can't be bothered to take web application security seriously DO NOT SELL WEB SOFTWARE
+	 * FOR A LIVING. There are other honest jobs you can do which don't involve using a computer in a dangerous and
+	 * irresponsible manner.
+	 */
+	$password = AKFactory::get('kickstart.security.password', null);
+
+	if (empty($password) || (trim($password) == '') || (strlen(trim($password)) < 10))
+	{
+		AKFactory::set('kickstart.enabled', false);
+
+		return false;
+	}
+
+
 	// ------------------------------------------------------------
 	// 2. Explode JSON parameters into $_REQUEST scope
 	// ------------------------------------------------------------
 
 	// Detect a JSON string in the request variable and store it.
 	$json = getQueryParam('json', null);
+
+	// Detect a password in the request variable and store it.
+	$userPassword = getQueryParam('password', '');
 
 	// Remove everything from the request, post and get arrays
 	if (!empty($_REQUEST))
@@ -8209,41 +8920,75 @@ function masterSetup()
 		}
 	}
 
-	// Decrypt a possibly encrypted JSON string
+	// Authentication - Akeeba Restore 5.4.0 or later
 	$password = AKFactory::get('kickstart.security.password', null);
+	$isAuthenticated = false;
 
-	if (!empty($json))
+	/**
+	 * Akeeba Restore 5.3.1 and earlier use a custom implementation of AES-128 in CTR mode to encrypt the JSON data
+	 * between client and server. This is not used as a means to maintain secrecy (it's symmetrical encryption and the
+	 * key is, by necessity, transmitted with the HTML page to the client). It's meant as a form of authentication, so
+	 * that the server part can ensure that it only receives commands by an authorized client.
+	 *
+	 * The downside is that encryption in CTR mode (like CBC) is an all-or-nothing affair. This opens the possibility
+	 * for a padding oracle attack (https://en.wikipedia.org/wiki/Padding_oracle_attack). While Akeeba Restore was
+	 * hardened in 2014 to prevent the bulk of suck attacks it is still possible to attack the encryption using a very
+	 * large number of requests (several dozens of thousands).
+	 *
+	 * Since Akeeba Restore 5.4.0 we have removed this authentication method and replaced it with the transmission of a
+	 * very large length password. On the server side we use a timing safe password comparison. By its very nature, it
+	 * will only leak the (well known, constant and large) length of the password but no more information about the
+	 * password itself. See http://blog.ircmaxell.com/2014/11/its-all-about-time.html  As a result this form of
+	 * authentication is many orders of magnitude harder to crack than regular encryption.
+	 *
+	 * Now you may wonder "how is sending a password in the clear hardier than encryption?". If you ask that question
+	 * you were not paying attention. The password needs to be known by BOTH the server AND the client (browser). Since
+	 * this password is generated programmatically by the server, it MUST be sent to the client by the server. If an
+	 * attacker is able to intercept this transmission (man in the middle attack) using encryption is irrelevant: the
+	 * attacker already knows your password. This situation also applies when the user sends their own password to the
+	 * server, e.g. when logging into their site. The ONLY way to avoid security issues regarding information being
+	 * stolen in transit is using HTTPS with a commercially signed SSL certificate. Unlike 2008, when Kickstart was
+	 * originally written, obtaining such a certificate nowadays is trivial and costs absolutely nothing thanks to Let's
+	 * Encrypt (https://letsencrypt.org/).
+	 *
+	 * TL;DR: Use HTTPS with a commercially signed SSL certificate, e.g. a free certificate from Let's Encrypt. Client-
+	 * side cryptography does NOT protect you against an attacker (see
+	 * https://www.nccgroup.trust/us/about-us/newsroom-and-events/blog/2011/august/javascript-cryptography-considered-harmful/).
+	 * Moreover, sending a plaintext password is safer than relying on client-side encryption for authentication as it
+	 * removes the possibility of an attacker inferring the contents of the authentication key (password) in a relatively
+	 * easy and automated manner.
+	 */
+	if (!empty($password))
 	{
-		if (!empty($password))
-		{
-			$json = AKEncryptionAES::AESDecryptCtr($json, $password, 128);
-
-			if (empty($json))
-			{
-				die('###{"status":false,"message":"Invalid login"}###');
-			}
-		}
-
-		// Get the raw data
-		$raw = json_decode($json, true);
-
-		if (!empty($password) && (empty($raw)))
+		// Timing-safe password comparison. See http://blog.ircmaxell.com/2014/11/its-all-about-time.html
+		if (!timingSafeEquals($password, $userPassword))
 		{
 			die('###{"status":false,"message":"Invalid login"}###');
 		}
-
-		// Pass all JSON data to the request array
-		if (!empty($raw))
-		{
-			foreach ($raw as $key => $value)
-			{
-				$_REQUEST[$key] = $value;
-			}
-		}
 	}
-	elseif (!empty($password))
+
+	// No JSON data? Die.
+	if (empty($json))
 	{
-		die('###{"status":false,"message":"Invalid login"}###');
+		die('###{"status":false,"message":"Invalid JSON data"}###');
+	}
+
+	// Handle the JSON string
+	$raw = json_decode($json, true);
+
+	// Invalid JSON data?
+	if (empty($raw))
+	{
+		die('###{"status":false,"message":"Invalid JSON data"}###');
+	}
+
+	// Pass all JSON data to the request array
+	if (!empty($raw))
+	{
+		foreach ($raw as $key => $value)
+		{
+			$_REQUEST[$key] = $value;
+		}
 	}
 
 	// ------------------------------------------------------------
@@ -8298,10 +9043,9 @@ function masterSetup()
  * Akeeba Restore
  * A JSON-powered JPA, JPS and ZIP archive extraction library
  *
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd.
+ * @copyright   Copyright (c)2008-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL v2 or - at your option - any later version
- * @package     akeebabackup
- * @subpackage  kickstart
+ * @package     kickstart
  */
 
 // Mini-controller for restore.php
@@ -8358,17 +9102,37 @@ if (!defined('KICKSTART'))
 		switch ($task)
 		{
 			case 'ping':
-				// ping task - realy does nothing!
+				// ping task - really does nothing!
 				$timer = AKFactory::getTimer();
 				$timer->enforce_min_exec_time();
 				break;
 
+			/**
+			 * There are two separate steps here since we were using an inefficient restoration initialization method in
+			 * the past. Now both startRestore and stepRestore are identical. The difference in behavior depends
+			 * exclusively on the calling Javascript. If no serialized factory was passed in the request then we start a
+			 * new restoration. If a serialized factory was passed in the request then the restoration is resumed. For
+			 * this reason we should NEVER call AKFactory::nuke() in startRestore anymore: that would simply reset the
+			 * extraction engine configuration which was done in masterSetup() leading to an error about the file being
+			 * invalid (since no file is found).
+			 */
 			case 'startRestore':
-				AKFactory::nuke(); // Reset the factory
-
-			// Let the control flow to the next step (the rest of the code is common!!)
-
 			case 'stepRestore':
+				/**
+				 * First try to run the filesystem zapper (remove all existing files and folders). If the Zapper is
+				 * disabled or has already finished running we will get a FALSE result. Otherwise it's a status array
+				 * which we can pass directly back to the caller.
+				 */
+				$ret = runZapper();
+
+				// If the Zapper had a step to run we stop here and return its status array to the caller.
+				if ($ret !== false)
+				{
+					$retArray = array_merge($retArray, $ret);
+
+					break;
+				}
+
 				$engine   = AKFactory::getUnarchiver(); // Get the engine
 				$observer = new RestorationObserver(); // Create a new observer
 				$engine->attach($observer); // Attach the observer
@@ -8398,6 +9162,9 @@ if (!defined('KICKSTART'))
 					$retArray['done']     = false;
 					$retArray['factory']  = AKFactory::serialize();
 				}
+
+				$timer = AKFactory::getTimer();
+				$timer->enforce_min_exec_time();
 				break;
 
 			case 'finalizeRestore':
@@ -8407,24 +9174,32 @@ if (!defined('KICKSTART'))
 
 				$postproc = AKFactory::getPostProc();
 
-				// Rename htaccess.bak to .htaccess
-				if (file_exists($root . '/htaccess.bak'))
-				{
-					if (file_exists($root . '/.htaccess'))
-					{
-						$postproc->unlink($root . '/.htaccess');
-					}
-					$postproc->rename($root . '/htaccess.bak', $root . '/.htaccess');
-				}
+				/**
+				 * Should I rename the htaccess.bak and web.config.bak files back to their live filenames...?
+				 */
+				$renameFiles = AKFactory::get('kickstart.setup.postrenamefiles', true);
 
-				// Rename htaccess.bak to .htaccess
-				if (file_exists($root . '/web.config.bak'))
+				if ($renameFiles)
 				{
-					if (file_exists($root . '/web.config'))
+					// Rename htaccess.bak to .htaccess
+					if (file_exists($root . '/htaccess.bak'))
 					{
-						$postproc->unlink($root . '/web.config');
+						if (file_exists($root . '/.htaccess'))
+						{
+							$postproc->unlink($root . '/.htaccess');
+						}
+						$postproc->rename($root . '/htaccess.bak', $root . '/.htaccess');
 					}
-					$postproc->rename($root . '/web.config.bak', $root . '/web.config');
+
+					// Rename htaccess.bak to .htaccess
+					if (file_exists($root . '/web.config.bak'))
+					{
+						if (file_exists($root . '/web.config'))
+						{
+							$postproc->unlink($root . '/web.config');
+						}
+						$postproc->rename($root . '/web.config.bak', $root . '/web.config');
+					}
 				}
 
 				// Remove restoration.php
@@ -8451,7 +9226,7 @@ if (!defined('KICKSTART'))
 					}
 					if (function_exists('wincache_refresh_if_changed'))
 					{
-						wincache_refresh_if_changed(array($filename));
+						wincache_refresh_if_changed([$filename]);
 					}
 					if (function_exists('xcache_asm'))
 					{
@@ -8484,12 +9259,6 @@ if (!defined('KICKSTART'))
 
 	// JSON encode the message
 	$json = json_encode($retArray);
-	// Do I have to encrypt?
-	$password = AKFactory::get('kickstart.security.password', null);
-	if (!empty($password))
-	{
-		$json = AKEncryptionAES::AESEncryptCtr($json, $password, 128);
-	}
 
 	// Return the message
 	echo "###$json###";

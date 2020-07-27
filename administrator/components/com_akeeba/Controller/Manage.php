@@ -1,7 +1,7 @@
 <?php
 /**
- * @package   AkeebaBackup
- * @copyright Copyright (c)2006-2016 Nicholas K. Dionysopoulos
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license   GNU General Public License version 3, or later
  */
 
@@ -79,15 +79,6 @@ class Manage extends Controller
 			return;
 		}
 
-		// For a certain unmentionable browser -- Thank you, Nooku, for the tip
-		if (function_exists('ini_get') && function_exists('ini_set'))
-		{
-			if (ini_get('zlib.output_compression'))
-			{
-				ini_set('zlib.output_compression', 'Off');
-			}
-		}
-
 		// Remove php's time limit
 		if (function_exists('ini_get') && function_exists('set_time_limit'))
 		{
@@ -147,7 +138,7 @@ class Manage extends Controller
 		}
 
 		// If the filesize is reported, use 1M chunks for echoing the data to the browser
-		$blocksize = 1048756; //1M chunks
+		$blocksize = 1048576; //1M chunks
 		$handle    = @fopen($filename, "r");
 
 		// Now we need to loop through the file and echo out chunks of file data

@@ -1,8 +1,8 @@
 <?php
 /**
- * @package   Akeeba Backup 5.x
- * @copyright 2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
- * @license   GNU GPL version 3 or later
+ * @package   akeebabackup
+ * @copyright Copyright (c)2006-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @license   GNU General Public License version 3, or later
  */
 
 // Protect from unauthorized access
@@ -65,8 +65,8 @@ function akeebaBackupOnAfterRenderToFixBrokenCloudFlareRocketLoader()
 	$head = substr($buffer, $from, $to - $from);
 
 	// Replace '<script...src' with '<script...data-cfasync="false" src'
-	$regEx = '/<script([^>]*)src/im';
-	$head = preg_replace($regEx, '<script$1 data-cfasync="false" src', $head);
+	$regEx = '/<script([^>]*)src\s?=\s?(\'|")/im';
+	$head = preg_replace($regEx, '<script$1 data-cfasync="false" src=$2', $head);
 
 	// Reconstruct the page's HTML and set it back to the buffer
 	$buffer = substr($buffer, 0, $from) . $head . substr($buffer, $to);

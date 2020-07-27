@@ -65,7 +65,12 @@ $key = 0;
 							<label class="attribute_option_label">
 							<?php echo JText::_('J2STORE_SEARCH_AND_ADD_VARIANT_OPTION');?>
 							</label>
-							<?php echo J2Html::text('Selectoption' ,'',array('id'=>'optionselector'));?>
+                            <select name="option_select_id" id="option_select_id">
+                                <?php foreach ($this->product_option_list as $option_list):?>
+                                    <option value="<?php echo $option_list->j2store_option_id?>"><?php echo $option_list->option_name .' ('.$option_list->option_unique_name.')';?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <a onclick="addOption()" class="btn btn-success"> <?php echo JText::_('J2STORE_ADD_OPTIONS')?></a>
 						</td>
 					</tr>
 				</tbody>
@@ -90,48 +95,17 @@ $key = 0;
 
 <script type="text/javascript">
 var key =<?php echo $key;?>;
-(function($) {
-		$(document).ready(function() {
-			$('#optionselector').autocomplete({
-				source : function(request, response) {
-					var data = {
-						option: 'com_j2store',
-						view: 'options',
-						task: 'getOptions',
-						product_type: '<?php echo $this->item->product_type;?>',
-						q:request.term
-					};
-					$.ajax({
-						type : 'post',
-						url :  '<?php echo JRoute::_('index.php');?>',
-						data : data,
-						dataType : 'json',
-						success : function(data) {
-							$('#optionselector').removeClass('optionsLoading');
-							response($.map(data, function(item) {
-								return {
-									label: item.option_name+' ('+item.option_unique_name+')',
-									value: item.j2store_option_id
-								}
-							}));
-						}
-					});
-				},
-				minLength : 2,
-				select : function(event, ui) {
-					$('<tr id=\"j2store-op-tr-'+key+'\"><td class=\"addedOption\">' + ui.item.label+ '</td><td><select name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key+'][required]\" ><option value=\"0\"><?php echo Jtext::_('J2STORE_NO');?></option><option value=\"1\"><?php echo JText::_('J2STORE_YES'); ?></option></select></td><td><input class=\"input-small\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key+'][ordering]\" value=\"0\"></td><td><span class=\"optionRemove\" onclick=\"j2store.jQuery(this).parent().parent().remove();\">x</span><input type=\"hidden\" value=\"' + ui.item.value+ '\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key+'][option_id]\" /><input type=\"hidden\" value="" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key +'][j2store_productoption_id]\" /> </td></tr>').insertBefore('.j2store_a_options');
-					this.value = '';
-					return false;
-				},
-				search : function(event, ui) {
-					$('#optionselector').addClass('optionsLoading');
-					key++;
-				}
-			});
+function addOption() {
+    (function ($) {
+        var option_value = $('#option_select_id').val();
+        var option_name = $('#option_select_id option[value='+option_value+']').html();
+        console.log(option_value);
+        console.log(option_name);
+        $('<tr id=\"j2store-op-tr-'+key+'\"><td class=\"addedOption\">' + option_name + '</td><td><select name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key+'][required]\" ><option value=\"0\"><?php echo Jtext::_('J2STORE_NO');?></option><option value=\"1\"><?php echo JText::_('J2STORE_YES'); ?></option></select></td><td><input class=\"input-small\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key+'][ordering]\" value=\"0\"></td><td><span class=\"optionRemove\" onclick=\"j2store.jQuery(this).parent().parent().remove();\">x</span><input type=\"hidden\" value=\"' + option_value+ '\" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key+'][option_id]\" /><input type=\"hidden\" value="" name=\"<?php echo $this->form_prefix.'[item_options]' ;?>['+ key +'][j2store_productoption_id]\" /> </td></tr>').insertBefore('.j2store_a_options');
+        key++;
+    })(j2store.jQuery);
 
-		});
-		})(j2store.jQuery);
-
+}
 
 
 function removePAOption(pao_id) {

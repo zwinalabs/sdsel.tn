@@ -12,7 +12,7 @@ class J2StoreViewProduct extends F0FViewHtml
 {	
 	
 	protected function onRead($tpl = null) {
-		
+		JFactory::getLanguage ()->load ('com_j2store', JPATH_ADMINISTRATOR);
 		/* JRequest::setVar('hidemainmenu', true);
 		$model = $this->getModel('Products');
 		$product_id = $this->input->getInt('id', 0);
@@ -32,3 +32,4 @@ class J2StoreViewProduct extends F0FViewHtml
 	}
 
 }
+

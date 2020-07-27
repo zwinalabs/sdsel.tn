@@ -2,11 +2,11 @@
 /**
  * @package SP Page Builder
  * @author JoomShaper http://www.joomshaper.com
- * @copyright Copyright (c) 2010 - 2016 JoomShaper
+ * @copyright Copyright (c) 2010 - 2015 JoomShaper
  * @license http://www.gnu.org/licenses/gpl-2.0.html GNU/GPLv2 or later
 */
 //no direct accees
-defined ('_JEXEC') or die ('restricted aceess');
+defined ('_JEXEC') or die ('Restricted access');
 
 abstract class SppagebuilderHelperRoute
 {
@@ -43,7 +43,7 @@ abstract class SppagebuilderHelperRoute
 
 	protected static function buildLanguageLookup()
 	{
-		if (count(self::$lang_lookup) == 0)
+		if (count((array) self::$lang_lookup) == 0)
 		{
 			$db    = JFactory::getDbo();
 			$query = $db->getQuery(true)

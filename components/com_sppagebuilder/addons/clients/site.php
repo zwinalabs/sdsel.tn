@@ -2,85 +2,74 @@
 /**
  * @package SP Page Builder
  * @author JoomShaper http://www.joomshaper.com
- * @copyright Copyright (c) 2010 - 2016 JoomShaper
+ * @copyright Copyright (c) 2010 - 2019 JoomShaper
  * @license http://www.gnu.org/licenses/gpl-2.0.html GNU/GPLv2 or later
 */
 //no direct accees
-defined ('_JEXEC') or die ('restricted aceess');
+defined ('_JEXEC') or die ('Restricted access');
 
-AddonParser::addAddon('sp_clients','sp_clients_addon');
-AddonParser::addAddon('sp_clients_item','sp_clients_item_addon');
+class SppagebuilderAddonClients extends SppagebuilderAddons {
 
-$sppbClientsParam = array();
+	public function render() {
 
-function sp_clients_addon($atts, $content){
+		$settings = $this->addon->settings;
+		$class = (isset($settings->class) && $settings->class) ? $settings->class : '';
+		$title = (isset($settings->title) && $settings->title) ? $settings->title : '';
+		$alignment = (isset($settings->alignment) && $settings->alignment) ? $settings->alignment : '';
+		$columns = (isset($settings->count) && $settings->count) ? $settings->count : 2;
+		$heading_selector = (isset($settings->heading_selector) && $settings->heading_selector) ? $settings->heading_selector : 'h3';
 
-	global $sppbClientsParam;
+		$output   = '';
+		$output  = '<div class="sppb-addon sppb-addon-clients ' . $alignment . ' ' . $class . '">';
 
-	extract(spAddonAtts(array(
-		'title'					=> '',
-		"heading_selector" 		=> 'h3',
-		"title_fontsize" 		=> '',
-		"title_fontweight" 		=> '',
-		"title_text_color" 		=> '',
-		"title_margin_top" 		=> '',
-		"title_margin_bottom" 	=> '',
-		'count'					=> '',
-		'alignment'				=> '',
-		"class"					=> '',
-		), $atts));
+		if($title) {
+			$output .= '<'.$heading_selector.' class="sppb-addon-title">' . $title . '</'.$heading_selector.'>';
+		}
 
-	$sppbClientsParam['col'] = $count;
+		$output .= '<div class="sppb-addon-content">';
+		$output .= '<div class="sppb-row">';
 
-	$output  = '<div class="sppb-addon sppb-addon-clients ' . $alignment . ' ' . $class . '">';
+		foreach ($settings->sp_clients_item as $key => $value) {
+			if(isset($value->image) && $value->image) {
+				$output .= '<div class="' . $columns . '">';
+				if(isset($value->url) && $value->url) $output .= '<a '.(isset($value->url_same_window) && $value->url_same_window ? '' : 'target="_blank" rel="noopener noreferrer"').' rel="nofollow" href="'. $value->url .'">';
+				$output .= '<img class="sppb-img-responsive" src="' . $value->image . '" alt="' . $value->title . '">';
+				if(isset($value->url) && $value->url) $output .= '</a>';
+				$output .= '</div>';
+			}
+		}
 
-	if($title) {
+		$output  .= '</div>';
+		$output  .= '</div>';
+		$output  .= '</div>';
 
-		$title_style = '';
-		if($title_margin_top !='') $title_style .= 'margin-top:' . (int) $title_margin_top . 'px;';
-		if($title_margin_bottom !='') $title_style .= 'margin-bottom:' . (int) $title_margin_bottom . 'px;';
-		if($title_text_color) $title_style .= 'color:' . $title_text_color  . ';';
-		if($title_fontsize) $title_style .= 'font-size:'.$title_fontsize.'px;line-height:'.$title_fontsize.'px;';
-		if($title_fontweight) $title_style .= 'font-weight:'.$title_fontweight.';';
-
-		$output .= '<'.$heading_selector.' class="sppb-addon-title" style="' . $title_style . '">' . $title . '</'.$heading_selector.'>';
+		return $output;
 	}
 
-	$output .= '<div class="sppb-addon-content">';
-	$output .= '<div class="sppb-row">';
-	$output .= AddonParser::spDoAddon($content);
-	$output .= '</div>';
-	$output	.= '</div>';
-	
-	$output .= '</div>';
+	public static function getTemplate(){
+		$output = '
+		<div class="sppb-addon sppb-addon-clients {{ data.class }} {{ data.alignment }}">
+			<# if( !_.isEmpty( data.title ) ){ #><{{ data.heading_selector }} class="sppb-addon-title sp-inline-editable-element" data-id={{data.id}} data-fieldName="title" contenteditable="true">{{ data.title }}</{{ data.heading_selector }}><# } #>
+			<div class="sppb-addon-content">
+				<div class="sppb-row">
+					<# _.each(data.sp_clients_item, function(clients_item, key){ #>
+						<# if(clients_item.image){ #>
+							<div class="{{ data.count }}">
+								<# if(clients_item.url){ #><a {{(clients_item.url_same_window ? "" : \'target=_blank\')}} rel="nofollow" href=\'{{clients_item.url}}\'><# } #>
+									<# if(clients_item.image && clients_item.image.indexOf("https://") == -1 && clients_item.image.indexOf("http://") == -1){ #>
+										<img class="sppb-img-responsive" src=\'{{ pagebuilder_base + clients_item.image }}\' alt="{{ clients_item.title }}">
+									<# } else if(clients_item.image){ #>
+										<img class="sppb-img-responsive" src=\'{{ clients_item.image }}\' alt="{{ clients_item.title }}">
+									<# } #>
+								<# if(clients_item.url){ #></a><# } #>
+							</div>
+						<# } #>
+					<# }); #>
+				</div>
+			</div>
+		</div>
+		';
 
-	$sppbClientsParam = array();
-
-	return $output;
-
-}
-
-function sp_clients_item_addon( $atts ){
-
-	global $sppbClientsParam;
-
-	extract(spAddonAtts(array(
-		"image"	=> '',
-		"url"	=> '',
-		"title"	=> '',
-		), $atts));
-
-	$output = '';
-
-	if($image) {
-
-		$output .= '<div class="' . $sppbClientsParam['col'] . '">';
-		if($url) $output .= '<a target="_blank" href="'. $url .'">';
-		$output .= '<img class="sppb-img-responsive" src="' . $image . '" alt="' . $title . '">';
-		if($url) $output .= '</a>';
-		$output .= '</div>';
+		return $output;
 	}
-
-	return $output;
-
 }

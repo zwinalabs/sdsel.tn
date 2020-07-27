@@ -1,7 +1,7 @@
 <?php
 /**
  * @package     FOF
- * @copyright   2010-2016 Nicholas K. Dionysopoulos / Akeeba Ltd
+ * @copyright   Copyright (c)2010-2019 Nicholas K. Dionysopoulos / Akeeba Ltd
  * @license     GNU GPL version 2 or later
  */
 
@@ -14,6 +14,8 @@ defined('_JEXEC') or die;
 
 /**
  * Generic field header, with text input (search) filter
+ *
+ * @deprecated 3.1  Support for XML forms will be removed in FOF 4
  */
 class Date extends Field
 {
@@ -55,11 +57,11 @@ class Date extends Field
 
 		if ($this->element['onchange'])
 		{
-			$attributes['onchange'] = (string) $this->element['onchange'];
+			$attributes['onChange'] = (string) $this->element['onchange'];
 		}
 		else
 		{
-			$attributes['onchange'] = 'document.adminForm.submit()';
+			$attributes['onChange'] = 'document.adminForm.submit()';
 		}
 
 		if ((string) $this->element['placeholder'])

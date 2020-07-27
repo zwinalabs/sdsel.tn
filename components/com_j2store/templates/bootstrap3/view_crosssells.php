@@ -10,6 +10,7 @@
 defined('_JEXEC') or die;
 $columns = $this->params->get('item_related_product_columns', 3);
 $total = count($this->cross_sells); $counter = 0;
+$cross_image_width = $this->params->get('item_product_cross_image_width', '100');
 ?>
 
 <div class="row product-crosssells-container">
@@ -18,7 +19,7 @@ $total = count($this->cross_sells); $counter = 0;
 
 				<?php foreach($this->cross_sells as $cross_sell_product):?>
 					<?php
-
+						$cross_sell_product->product_link = JRoute::_('index.php?option=com_j2store&view=products&task=view&id='.$cross_sell_product->j2store_product_id);
 						if(!empty($cross_sell_product->addtocart_text)) {
 							$cart_text = JText::_($cross_sell_product->addtocart_text);
 						} else {
@@ -33,7 +34,7 @@ $total = count($this->cross_sells); $counter = 0;
 						<div class="crosssell-product-row <?php echo 'row-'.$row; ?> row">
 					<?php endif;?>
 
-					<div class="col-sm-<?php echo round((12 / $columns));?>">
+					<div class="col-sm-<?php echo round((12 / $columns));?> crosssell-product product-<?php echo $cross_sell_product->j2store_product_id;?> <?php echo $cross_sell_product->params->get('product_css_class','');?>">
 						<span class="cross-sell-product-image">
 						<?php
 							$thumb_image = '';
@@ -43,7 +44,7 @@ $total = count($this->cross_sells); $counter = 0;
 
 	      				?>
 		   				<?php if(isset($thumb_image) &&  JFile::exists(JPATH::clean(JPATH_SITE.'/'.$thumb_image))):?>
-		   					<img alt="<?php echo $cross_sell_product->product_name ;?>" class="j2store-product-thumb-image-<?php echo $cross_sell_product->j2store_product_id; ?>"  src="<?php echo JUri::root().JPath::clean($thumb_image);?>" />
+		   					<img title="<?php echo $cross_sell_product->product_name ;?>" alt="<?php echo $cross_sell_product->product_name ;?>" class="j2store-product-thumb-image-<?php echo $cross_sell_product->j2store_product_id; ?>"  src="<?php echo JUri::root().JPath::clean($thumb_image);?>" width="<?php echo intval($cross_image_width);?>"/>
 					   	<?php endif; ?>
 
 						</span>
@@ -57,8 +58,9 @@ $total = count($this->cross_sells); $counter = 0;
 						$this->singleton_product = $cross_sell_product;
 						$this->singleton_params = $this->params;
 						echo $this->loadAnyTemplate('site:com_j2store/products/price');
+						
 						?>
-
+						<?php if(J2Store::product()->canShowCart($this->params)): ?>
 						<?php if(count($cross_sell_product->options) || $cross_sell_product->product_type == 'variable'): ?>
 							<a class="<?php echo $this->params->get('choosebtn_class', 'btn btn-success'); ?>"
 								href="<?php echo $cross_sell_product->product_link; ?>">
@@ -71,6 +73,7 @@ $total = count($this->cross_sells); $counter = 0;
 							$this->singleton_cartext = $cart_text;
 							echo $this->loadAnyTemplate('site:com_j2store/products/cart');
 						?>
+						<?php endif; ?>
 						<?php endif; ?>
 					</div>
 				<?php $counter++; ?>

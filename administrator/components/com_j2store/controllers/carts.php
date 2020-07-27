@@ -14,9 +14,6 @@ class J2StoreControllerCarts extends F0FController
 	 *   */
 	function addOrderitems(){
 		$app = JFactory::getApplication();
-		$data = $this->input->getArray($_POST);
-		
-		$json = array();
 		//if($app->input->getInt('user_id',0)){
 		$model = $this->getModel('Cartadmins', 'J2StoreModel')->getClone();
 		$result = $model->addAdminCartItem();
@@ -39,17 +36,13 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 		$app = JFactory::getApplication();
-		$layout =  $app->input->getString('layout','summary');
 		$id = $app->input->getInt('oid', '');
-		$session = JFactory::getSession();
-		$model = F0FModel::getTmpInstance('Cartadmins', 'J2StoreModel');
 		//coupon
-		$post_coupon = $this->input->getString('coupon', '');
+		$post_coupon = $app->input->getString('coupon', '');
 		//first time applying? then set coupon to session
 		if (isset($post_coupon) && !empty($post_coupon)) {
-			$session->set('coupon', $post_coupon, 'j2store');			
+			F0FModel::getTmpInstance ( 'Coupons', 'J2StoreModel' )->set_coupon($post_coupon);
 		}
-		$order_id = $app->input->getInt('oid', '');		
 		$url = 'index.php?option=com_j2store&view=orders&task=saveAdminOrder&layout=payment_shipping_methods&next_layout=summary&oid='.$id;
 		$json['success']=1;
 		$json['redirect']= $url;
@@ -66,14 +59,11 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 		$app = JFactory::getApplication();		
-		$model = $this->getModel('Cartadmins' ,'J2StoreModel');
+
 		//coupon
 		$id = $app->input->getInt('oid', '');
 		$order_id = $app->input->getInt('order_id', '');
-		$session = JFactory::getSession();
-		if($session->has('coupon', 'j2store')) {
-			$session->clear('coupon', 'j2store');						
-		}
+		F0FModel::getTmpInstance ( 'Coupons', 'J2StoreModel' )->remove_coupon();
 		
 		$discount_table = F0FTable::getInstance('Orderdiscount', 'J2StoreTable')->getClone();
 		$discount_table->load(array(
@@ -99,13 +89,11 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 		$app = JFactory::getApplication();
-		$session = JFactory::getSession();
-		$model = F0FModel::getTmpInstance('Cartadmins', 'J2StoreModel');
-		//coupon
+		
 		$voucher = $app->input->getString('voucher', '');
 		//first time applying? then set coupon to session
 		if (isset($voucher) && !empty($voucher)) {
-			$session->set('voucher', $voucher, 'j2store');
+			F0FModel::getTmpInstance ( 'Vouchers', 'J2StoreModel' )->set_voucher($voucher);
 		}
 	
 		$order_id = $app->input->getInt('oid', '');		
@@ -126,12 +114,9 @@ class J2StoreControllerCarts extends F0FController
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 		$app = JFactory::getApplication();
-		$model = $this->getModel('Cartadmins' ,'J2StoreModel');
-		//coupon
-		$session = JFactory::getSession();
-		if($session->has('voucher', 'j2store')) {
-			$session->clear('voucher', 'j2store');						
-		}
+
+		F0FModel::getTmpInstance ( 'Vouchers', 'J2StoreModel' )->remove_voucher();
+
 		$id = $app->input->getInt('oid', '');
 		$order_id = $app->input->getInt('order_id', '');		
 		$discount_table = F0FTable::getInstance('Orderdiscount', 'J2StoreTable')->getClone();

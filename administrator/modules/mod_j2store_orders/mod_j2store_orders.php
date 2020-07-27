@@ -17,7 +17,7 @@ $moduleclass_sfx = $params->get('moduleclass_sfx','');
 $params = J2Store::config();
 
 $order_model = F0FModel::getTmpInstance('Orders','J2StoreModel');
-$orders = $order_model->clearState()->limit(5)->limitstart(0)->filter_order('created_on')->filter_order_Dir('DESC')->getList();
+$orders = $order_model->clearState()->order_type('normal')->limit(5)->limitstart(0)->filter_order('created_on')->filter_order_Dir('DESC')->getList();
 require( JModuleHelper::getLayoutPath('mod_j2store_orders') );
 
 ?>

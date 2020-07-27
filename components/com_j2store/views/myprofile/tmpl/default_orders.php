@@ -8,22 +8,25 @@
 defined('_JEXEC') or die;
 $currency = J2Store::currency();
 $doc = JFactory::getDocument();
-$doc->addStyleSheet(JUri::root().'media/j2store/css/font-awesome.min.css');
+J2Store::strapper()->addFontAwesome();
 ?>
 
 <?php if(isset($this->orders) && count($this->orders)) : ?>
+    <?php echo J2Store::plugin()->eventWithHtml('BeforeMyProfileOrderDisplay',array($this->orders));?>
 <table class="table table-bordered table-striped">
 	<thead>
-		<th><?php echo JText::_('J2STORE_ORDER_DATE');?></th>
-		<th><?php echo JText::_('J2STORE_INVOICE_NO');?></th>
-		<th><?php echo JText::_('J2STORE_ORDER_AMOUNT');?></th>
-		<th><?php echo JText::_('J2STORE_ORDER_STATUS');?></th>
-		<th><?php echo JText::_('J2STORE_ACTIONS');?></th>
+        <tr>
+            <th><?php echo JText::_('J2STORE_ORDER_DATE');?></th>
+            <th><?php echo JText::_('J2STORE_INVOICE_NO');?></th>
+            <th><?php echo JText::_('J2STORE_ORDER_AMOUNT');?></th>
+            <th><?php echo JText::_('J2STORE_ORDER_STATUS');?></th>
+            <th><?php echo JText::_('J2STORE_ACTIONS');?></th>
+        </tr>
 	</thead>
 	<tbody>
 		<?php foreach($this->orders as $item):?>
 		<?php
-		$order = F0FTable::getInstance('Order', 'J2StoreTable');
+		$order = F0FTable::getInstance('Order', 'J2StoreTable')->getClone();
 		$order->load(array('order_id'=>$item->order_id));
 
 		?>
@@ -67,5 +70,15 @@ $doc->addStyleSheet(JUri::root().'media/j2store/css/font-awesome.min.css');
 		</tr>
 		<?php endforeach;?>
 	</tbody>
+    <tfoot>
+        <tr>
+            <td colspan="5">
+                <?php
+
+                echo $this->order_pagination->getListFooter(); ?>
+            </td>
+        </tr>
+    </tfoot>
 </table>
+    <?php echo J2Store::plugin()->eventWithHtml('AfterMyProfileOrderDisplay',array($this->orders));?>
 <?php endif; ?>

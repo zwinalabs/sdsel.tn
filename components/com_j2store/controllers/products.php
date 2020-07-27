@@ -11,6 +11,8 @@ defined('_JEXEC') or die;
 require_once(JPATH_ADMINISTRATOR.'/components/com_j2store/controllers/productbase.php');
 class J2StoreControllerProducts extends J2StoreControllerProductsBase
 {
+
+	protected $cacheableTasks = array();
 	var $_catids = array();
 
 	public function browse() {
@@ -81,7 +83,8 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		$itemid = $app->input->get('id', 0, 'int') . ':' . $app->input->get('Itemid', 0, 'int');
 		// Get the pagination request variables
 		$limit		= $params->get('page_limit');
-
+		$show_feature_only	= $params->get('show_feature_only',0);
+		$model->setState('show_feature_only', $show_feature_only);
 		$model->setState('list.limit', $limit);
 		$limitstart = $app->input->get('limitstart', 0, 'int');
 
@@ -96,13 +99,17 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		}
 		$model->setState('list.ordering', $orderCol);
 
-		$listOrder = $app->getUserStateFromRequest('com_j2store.product.list.' . $itemid . '.filter_order_Dir',
+		/*$listOrder = $app->getUserStateFromRequest('com_j2store.product.list.' . $itemid . '.filter_order_Dir',
 				'filter_order_Dir', '', 'cmd');
 		if (!in_array(strtoupper($listOrder), array('ASC', 'DESC', '')))
 		{
 			$listOrder = 'ASC';
-		}
+		}*/
+
+        $listOrder = $params->get('list_order_direction','ASC');
 		$model->setState('list.direction', $listOrder);
+        $listOrder = $params->get('category_order_direction','ASC');
+        $model->setState('category_order_direction', $listOrder);
 
 		foreach($states as $key => $value){
 			$model->setState($key,$value);
@@ -137,6 +144,7 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		$model->setState('search', $search);
 		//set product ids
 		$items = $model->getSFProducts();
+
 		$filter_items = $model->getSFAllProducts();
 		$filters = array();
 		//$filters = $this->getFilters($items);
@@ -165,7 +173,7 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 	                }
 	            }
 			}
-
+            J2Store::plugin()->event('ViewProductListPagination', array(&$items, &$pagination, &$params, $model));
 			$view->assign('pagination', $pagination);
 		}
 
@@ -178,7 +186,13 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 
 		// Because the application sets a default page title,
 		// we need to get it from the menu item itself
-		$menu = $menus->getActive();
+		$item_id = $app->input->get('Itemid',0);
+		if($item_id){
+			$menu = $menus->getItem($item_id);
+		}else{
+			$menu = $menus->getActive();
+		}
+
 
 		if ($menu)
 		{
@@ -215,11 +229,11 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		// Set Facebook meta data
 
 		$uri = JURI::getInstance();
-		$document->setMetaData('og:title', $document->getTitle());
-		$document->setMetaData('og:site_name', $app->get('sitename'));
-		$document->setMetaData('og:description', strip_tags($document->getDescription()));
-		$document->setMetaData('og:url', $uri->toString());
-		$document->setMetaData('og:type', 'product.group');
+		$document->setMetaData('og:title', $document->getTitle(),'property');
+		$document->setMetaData('og:site_name', $app->get('sitename'),'property');
+		$document->setMetaData('og:description', strip_tags($document->getDescription()),'property');
+		$document->setMetaData('og:url', $uri->toString(),'property');
+		$document->setMetaData('og:type', 'product.group','property');
 
 		$catids = $model->getState('catids', array());
 		$category = false;
@@ -277,7 +291,7 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		}
 
 		//allow plugins to modify the data
-		J2Store::plugin()->event('ViewProductList', array(&$items, &$view, $params, $model));
+		J2Store::plugin()->event('ViewProductList', array(&$items, &$view, &$params, $model));
 
 		$view->assign('products',$items);
 		$view->assign('state', $model->getState());
@@ -287,7 +301,12 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		$view->assign('currency', J2store::currency());
 
 		$view->assign('active_menu', $menu) ;
-		$content ='var j2store_product_base_link ="'. $menu->link.'&Itemid='.$menu->id .'";';
+		if(isset($menu->link) && isset($menu->id)){
+            $content ='var j2store_product_base_link ="'. $menu->link.'&Itemid='.$menu->id .'";';
+        }else{
+            $content ='var j2store_product_base_link = "";';
+        }
+
 		JFactory::getDocument()->addScriptDeclaration($content);
 
 		$this->display(in_array('browse', $this->cacheableTasks));
@@ -295,7 +314,7 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		return true;
 	}
 
-	protected function processProducts(&$items) {
+	public function processProducts(&$items) {
 
 		foreach ($items as &$item) {
 
@@ -469,38 +488,13 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 
 
 	public function getPriceRanges($items){
-
 		//get the active menu details
-		$menu = JFactory::getApplication()->getMenu()->getActive();
 		$params = F0FModel::getTmpInstance('Products', 'J2StoreModel')->getMergedParams();
-		$ranges =array();
-		$currency = J2Store::currency();
-		//price filters
-		if(isset($items['0']->pricing->price )) {
-			$priceHigh = abs( $items['0']->pricing->price );
-		}else {
-			$priceHigh = 0;
-		}
-		//create link to be concatinated
+		$ranges = array();
 		//get the highest price
 		$priceHigh = abs($params->get('list_price_filter_upper_limit', '1000'));
-		$link = '';
-		$priceLow =0;
-		$range =0;
-		if(count($items )) {
-			foreach($items as $item){
-
-				//$item->pricing->price
-				//calculate the price low
-				$priceLow = ( count($item) == 1 ) ?  0 : abs( $item[count( $item ) - 1]->pricing->price );
-				//calculate the range price high - low price
-				$range = ( abs( $priceHigh ) - abs( $priceLow ) )/4;
-				//now round the price
-				$roundRange = F0FModel::getTmpInstance('Products','J2StoreModel')->_priceRound($range, $params->get( 'list_price_round_digit', '100' ), true);
-				//get the lowest price
-				$roundPriceLow = F0FModel::getTmpInstance('Products','J2StoreModel')->_priceRound( $priceLow, $params->get( 'list_price_round_digit', '100' ) );
-			}
-		}
+		$priceLow = 0;
+        $range = ( abs( $priceHigh ) - abs( $priceLow ) )/4;
 		$ranges['max_price'] = $priceHigh;
 		$ranges['min_price'] = $priceLow;
 		$ranges['range'] = $range;
@@ -510,10 +504,11 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 
 	public function view() {
 
-		$product_id = $this->input->getInt('id');
+		$app = JFactory::getApplication();
+		$product_id = $app->input->getInt('id');
 
 		if(!$product_id) {
-			$this->setRedirect(JRoute::_('index.php'));
+			$app->redirect(JRoute::_('index.php'), 301);
 			return;
 		}
 
@@ -521,7 +516,7 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		J2Store::utilities()->nocache();
 		J2Store::utilities()->clear_cache();
 
-		$app = JFactory::getApplication();
+
 
 		$view = $this->getThisView();
 
@@ -541,19 +536,33 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 
 		//get product
 		$product = $product_helper->setId($product_id)->getProduct();
+        $user = JFactory::getUser();
+        //access
+        $access_groups = $user->getAuthorisedViewLevels();
+		if(!isset($product->source->access) || empty($product->source->access) || !in_array($product->source->access,$access_groups) ){
+            $app->redirect(JRoute::_('index.php'), 301);
+            return;
+        }
+
 		F0FModel::getTmpInstance('Products', 'J2StoreModel')->runMyBehaviorFlag(true)->getProduct($product);
 
-		if( ($product->visibility !=1) || ($product->enabled !=1) ){
+		if( (isset($product->exists) && $product->exists == 0) || ($product->visibility !=1) || ($product->enabled !=1) ){
 			$this->setRedirect(JRoute::_('index.php'),JText::_('J2STORE_PRODUCT_NOT_ENABLED_CONTACT_SITE_ADMIN_FOR_MORE_DETAILS'),'warning');
 			return;
 		}
 
 		//run plugin events
 		$model->executePlugins($product->source, $params, 'com_content.article.productlist');
-
-		$product->product_short_desc = $model->runPrepareEventOnDescription($product->product_short_desc, $product->product_source_id, $params, 'com_content.article.productlist');
-		$product->product_long_desc = $model->runPrepareEventOnDescription($product->product_long_desc, $product->product_source_id, $params, 'com_content.article.productlist');
-
+		$text = $product->product_short_desc .":j2storesplite:".$product->product_long_desc;
+		$text = $model->runPrepareEventOnDescription($text, $product->product_source_id, $params, 'com_content.article.productlist');
+		//$product->product_long_desc = $model->runPrepareEventOnDescription($product->product_long_desc, $product->product_source_id, $params, 'com_content.article.productlist');
+		$desc_array = explode ( ':j2storesplite:', $text );
+		if(isset( $desc_array[0] )){
+			$product->product_short_desc = $desc_array[0];
+		}
+		if(isset( $desc_array[1] )){
+			$product->product_long_desc = $desc_array[1];
+		}
 		//get filters / specs by product
 		$filters = F0FModel::getTmpInstance('Products', 'J2StoreModel')->getProductFilters($product->j2store_product_id);
 
@@ -657,11 +666,11 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		// Set Facebook meta data
 
 		$uri = JURI::getInstance();
-		$document->setMetaData('og:title', $document->getTitle());
-		$document->setMetaData('og:site_name', $app->get('sitename'));
-		$document->setMetaData('og:description', strip_tags($document->getDescription()));
-		$document->setMetaData('og:url', $uri->toString());
-		$document->setMetaData('og:type', 'product');
+		$document->setMetaData('og:title', $document->getTitle(),'property');
+		$document->setMetaData('og:site_name', $app->get('sitename'),'property');
+		$document->setMetaData('og:description', strip_tags($document->getDescription()),'property');
+		$document->setMetaData('og:url', $uri->toString(),'property');
+		$document->setMetaData('og:type', 'product','property');
 
 		if(isset($product->main_image)) {
 			$facebookImage = $product->main_image;
@@ -673,7 +682,7 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 			if (JFile::exists(JPATH_SITE.'/'.$facebookImage))
 			{
 				$image = substr(JURI::root(), 0, -1).'/'.str_replace(JURI::root(true), '', $facebookImage);
-				$document->setMetaData('og:image', $image);
+				$document->setMetaData('og:image', $image,'property');
 				$document->setMetaData('image', $image);
 			}
 		}
@@ -700,11 +709,15 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 			}
 		}
 		//$active_menu = $app->getMenu()->getActive();
+		
 		$back_link = "";
 		$back_link_title = "";
 		$item_id = "";
 		if(!empty($active)){
-			$back_link = $active->link;
+			$back_link = isset( $_SERVER['HTTP_REFERER'] ) && $_SERVER['HTTP_REFERER'] ? $_SERVER['HTTP_REFERER']: '';
+			if(empty($_SERVER['HTTP_REFERER'])){
+				$back_link = $active->link;
+			}
 			$back_link_title = $active->title;
 			$item_id = $active->id;
 		}
@@ -755,18 +768,16 @@ class J2StoreControllerProducts extends J2StoreControllerProductsBase
 		//add custom styles
 		$custom_css = $params->get('custom_css', '');
 		$document->addStyleDeclaration(strip_tags($custom_css));
-
-		//allow plugins to modify the data
-		J2Store::plugin()->event('ViewProduct', array(&$product, &$view));
-
-
-		$view->assign('product', $product);
+		$view->assign('params', $params);
 		$view->assign('filters', $filters);
 		$view->assign('up_sells', $up_sells);
 		$view->assign('cross_sells', $cross_sells);
 		$view->assign('product_helper', $product_helper);
-		$view->assign('params', $params);
 		$view->assign('currency', J2store::currency());
+		//allow plugins to modify the data
+		J2Store::plugin()->event('ViewProduct', array(&$product, &$view));
+
+		$view->assign('product', $product);
 		$view->setLayout('view');
 		$view->display();
 	}
